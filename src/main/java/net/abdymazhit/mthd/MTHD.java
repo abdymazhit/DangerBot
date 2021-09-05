@@ -3,10 +3,15 @@ package net.abdymazhit.mthd;
 import com.google.gson.Gson;
 import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.customs.Config;
+import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
+import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.Compression;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
@@ -34,8 +39,14 @@ public class MTHD {
     /** Текущий сервер */
     public final Guild guild;
 
+    /** База данных */
+    public final Database database;
+
     /** Канал авторизации */
     public final AuthChannel authChannel;
+
+    /** Инструменты для упрощения работы */
+    public final Utils utils;
 
     /**
      * Создает бота
@@ -66,7 +77,14 @@ public class MTHD {
         JDA jda = builder.build().awaitReady();
         guild = jda.getGuilds().get(0);
 
+        database = new Database();
         authChannel = new AuthChannel();
+        utils = new Utils();
+
+//        Обновить команды, только при изменении/добавлении команды
+//        updateCommands();
+
+        addEventListeners(jda);
     }
 
     /**
@@ -92,6 +110,26 @@ public class MTHD {
         }
 
         return config;
+    }
+
+    /**
+     * Обновляет команды
+     */
+    private void updateCommands() {
+        CommandListUpdateAction commandsAction = guild.updateCommands();
+
+        commandsAction = commandsAction.addCommands(new CommandData("auth", "Авторизация")
+                .addOption(OptionType.STRING, "token", "Токен авторизации", true));
+
+        commandsAction.queue();
+    }
+
+    /**
+     * Добавляет слушатели событий
+     * @param jda Объект для работы с Discord API
+     */
+    private void addEventListeners(JDA jda) {
+        jda.addEventListener(new AuthCommandListener());
     }
 
     /**

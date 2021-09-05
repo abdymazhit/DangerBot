@@ -13,4 +13,14 @@ public class Config {
 
     /** Токен VimeWorld.ru Public API */
     public String vimeApiToken  = "VIMEWORLD_API_TOKEN";
+
+    /** Параметры базы данных */
+    public PostgreSQL postgreSQL = new PostgreSQL();
+
+    /** Параметры базы данных */
+    public static class PostgreSQL {
+        public String url = "jdbc:postgresql://host:port/database";
+        public String username = "username";
+        public String password = "password";
+    }
 }
