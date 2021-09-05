@@ -1,6 +1,7 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
+import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -33,6 +34,9 @@ public class MTHD {
     /** Текущий сервер */
     public final Guild guild;
 
+    /** Канал авторизации */
+    public final AuthChannel authChannel;
+
     /**
      * Создает бота
      * @throws IOException Ошибка чтения файла конфигурации
@@ -61,6 +65,8 @@ public class MTHD {
         builder.setCompression(Compression.ZLIB);
         JDA jda = builder.build().awaitReady();
         guild = jda.getGuilds().get(0);
+
+        authChannel = new AuthChannel();
     }
 
     /**
@@ -86,5 +92,13 @@ public class MTHD {
         }
 
         return config;
+    }
+
+    /**
+     * Получает объект главного класса
+     * @return Объект главного класса
+     */
+    public static MTHD getInstance() {
+        return instance;
     }
 }
