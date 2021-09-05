@@ -2,7 +2,14 @@ package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
 import net.abdymazhit.mthd.customs.Config;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.Compression;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
+import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -23,21 +30,37 @@ public class MTHD {
     /** Файл конфигурации */
     public Config config;
 
+    /** Текущий сервер */
+    public final Guild guild;
+
     /**
      * Создает бота
      * @throws IOException Ошибка чтения файла конфигурации
+     * @throws LoginException Ошибка входа
+     * @throws InterruptedException Ошибка работы Discord API
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, LoginException, InterruptedException {
         new MTHD();
     }
 
     /**
      * Инициализирует бота
      * @throws IOException Ошибка чтения файла конфигурации
+     * @throws LoginException Ошибка входа
+     * @throws InterruptedException Ошибка работы Discord API
      */
-    public MTHD() throws IOException {
+    public MTHD() throws IOException, LoginException, InterruptedException {
         instance = this;
         config = getConfig();
+
+        JDABuilder builder = JDABuilder.createDefault(config.token);
+        builder.enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES);
+        builder.enableCache(CacheFlag.CLIENT_STATUS);
+        builder.disableCache(CacheFlag.VOICE_STATE);
+        builder.setBulkDeleteSplittingEnabled(false);
+        builder.setCompression(Compression.ZLIB);
+        JDA jda = builder.build().awaitReady();
+        guild = jda.getGuilds().get(0);
     }
 
     /**
