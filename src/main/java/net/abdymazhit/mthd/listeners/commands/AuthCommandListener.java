@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Команда авторизации
  *
- * @version   05.09.2021
+ * @version   06.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -144,9 +144,11 @@ public class AuthCommandListener extends ListenerAdapter {
                 statement.close();
             }
 
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO users_history (member_id, username, authorized_in) VALUES (?, ?, ?);");
+            int userId = MTHD.getInstance().database.getUserId(username);
+
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO users_auth_history (member_id, user_id, authorized_at) VALUES (?, ?, ?);");
             statement.setString(1, memberId);
-            statement.setString(2, username);
+            statement.setInt(2, userId);
             statement.setTimestamp(3, Timestamp.from(Instant.now()));
             statement.executeUpdate();
             statement.close();

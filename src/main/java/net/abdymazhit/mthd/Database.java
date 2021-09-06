@@ -2,10 +2,7 @@ package net.abdymazhit.mthd;
 
 import net.abdymazhit.mthd.customs.Config;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * Отвечает за работу с базой данных
@@ -43,7 +40,7 @@ public class Database {
         }
 
 //        Создать таблицы, только при необходимости
-//        createTables();
+        createTables();
     }
 
     /**
@@ -137,8 +134,8 @@ public class Database {
                     "id serial not null constraint teams_pk primary key, " +
                     "name varchar(50) not null, " +
                     "leader_id int not null, " +
-                    "points int not null, " +
-                    "isDeleted boolean);");
+                    "points int default 0 not null, " +
+                    "is_deleted boolean);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (SQLException e) {
@@ -232,6 +229,30 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Получает id пользователя
+     * @param username Ник пользователя
+     * @return Id пользователя
+     */
+    public int getUserId(String username) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id FROM users WHERE username ILIKE ?;");
+            preparedStatement.setString(1, username);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     /**

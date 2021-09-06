@@ -1,9 +1,11 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
+import net.abdymazhit.mthd.channels.AdminChannel;
 import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
+import net.abdymazhit.mthd.listeners.commands.TeamCreateCommandListener;
 import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -45,6 +47,9 @@ public class MTHD {
     /** Канал авторизации */
     public final AuthChannel authChannel;
 
+    /** Канал администрации */
+    public final AdminChannel adminChannel;
+
     /** Инструменты для упрощения работы */
     public final Utils utils;
 
@@ -79,6 +84,7 @@ public class MTHD {
 
         database = new Database();
         authChannel = new AuthChannel();
+        adminChannel = new AdminChannel();
         utils = new Utils();
 
 //        Обновить команды, только при изменении/добавлении команды
@@ -121,11 +127,6 @@ public class MTHD {
         commandsAction = commandsAction.addCommands(new CommandData("auth", "Авторизация")
                 .addOption(OptionType.STRING, "token", "Токен авторизации", true));
 
-        commandsAction = commandsAction.addCommands(new CommandData("team", "Команды")
-                .addOption(OptionType.STRING, "subcommand", "Подкоманда", true)
-                .addOption(OptionType.STRING, "value", "Значение", false)
-                .addOption(OptionType.STRING, "subValue", "Подзначение", false));
-
         commandsAction.queue();
     }
 
@@ -135,6 +136,7 @@ public class MTHD {
      */
     private void addEventListeners(JDA jda) {
         jda.addEventListener(new AuthCommandListener());
+        jda.addEventListener(new TeamCreateCommandListener());
     }
 
     /**
