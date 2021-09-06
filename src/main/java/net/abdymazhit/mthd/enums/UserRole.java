@@ -15,7 +15,9 @@ public enum UserRole {
     AUTHORIZED("Authorized"),
     LEADER("Leader"),
     TEAM_RATING("Team Rating"),
-    SINGLE_RATING("Single Rating");
+    SINGLE_RATING("Single Rating"),
+    ASSISTANT("Assistant"),
+    ADMIN("Admin");
 
     private final String name;
     private Role role;
