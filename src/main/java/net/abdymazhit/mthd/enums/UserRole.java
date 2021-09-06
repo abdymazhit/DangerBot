@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Представляет собой роль пользователя
  *
- * @version   05.09.2021
+ * @version   06.09.2021
  * @author    Islam Abdymazhit
  */
 public enum UserRole {
@@ -29,7 +29,7 @@ public enum UserRole {
     UserRole(String name) {
         this.name = name;
         List<Role> roles = MTHD.getInstance().guild.getRolesByName(name, true);
-        if (!roles.isEmpty()) {
+        if(!roles.isEmpty()) {
             this.role = roles.get(0);
         }
     }

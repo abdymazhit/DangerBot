@@ -5,7 +5,7 @@ import net.abdymazhit.mthd.customs.Channel;
 /**
  * Канал авторизации
  *
- * @version   05.09.2021
+ * @version   06.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthChannel extends Channel {
@@ -14,8 +14,8 @@ public class AuthChannel extends Channel {
      * Инициализирует канал авторизации
      */
     public AuthChannel() {
-        deleteChannel("авторизация");
-        createChannel("авторизация", 0);
+        deleteChannel("authorization");
+        createChannel("authorization", 0);
         sendChannelMessage();
     }
 

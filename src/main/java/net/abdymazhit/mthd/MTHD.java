@@ -25,7 +25,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   05.09.2021
+ * @version   06.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -120,6 +120,11 @@ public class MTHD {
 
         commandsAction = commandsAction.addCommands(new CommandData("auth", "Авторизация")
                 .addOption(OptionType.STRING, "token", "Токен авторизации", true));
+
+        commandsAction = commandsAction.addCommands(new CommandData("team", "Команды")
+                .addOption(OptionType.STRING, "subcommand", "Подкоманда", true)
+                .addOption(OptionType.STRING, "value", "Значение", false)
+                .addOption(OptionType.STRING, "subValue", "Подзначение", false));
 
         commandsAction.queue();
     }
