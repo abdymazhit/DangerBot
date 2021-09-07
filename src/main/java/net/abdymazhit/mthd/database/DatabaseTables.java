@@ -33,8 +33,8 @@ public record DatabaseTables(Connection connection) {
         createTeamsMembersAdditionHistoryTable();
         createTeamsMembersDeletionHistoryTable();
 
-        createTeamsNamesChangeHistory();
-        createTeamsLeadersChangeHistory();
+        createTeamsNamesRenameHistory();
+        createTeamsLeadersTransferHistory();
     }
 
     /**
@@ -207,15 +207,15 @@ public record DatabaseTables(Connection connection) {
     }
 
     /**
-     * Создает таблицу истории изменения названии команд
+     * Создает таблицу истории передачи прав лидера команд
      */
-    private void createTeamsNamesChangeHistory() {
+    private void createTeamsLeadersTransferHistory() {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_names_change_history (" +
-                    "id serial not null constraint teams_names_change_history_pk primary key, " +
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_leaders_transfer_history (" +
+                    "id serial not null constraint teams_leaders_transfer_history_pk primary key, " +
                     "team_id int not null, " +
-                    "from_name varchar(50) not null, " +
-                    "to_name varchar(50) not null, " +
+                    "from_id int not null, " +
+                    "to_id int not null, " +
                     "changer_id int not null, " +
                     "changed_at timestamp not null);");
             preparedStatement.executeUpdate();
@@ -226,15 +226,15 @@ public record DatabaseTables(Connection connection) {
     }
 
     /**
-     * Создает таблицу истории изменения лидеров команд
+     * Создает таблицу истории переименовании команд
      */
-    private void createTeamsLeadersChangeHistory() {
+    private void createTeamsNamesRenameHistory() {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_leaders_change_history (" +
-                    "id serial not null constraint teams_leaders_change_history_pk primary key, " +
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_names_rename_history (" +
+                    "id serial not null constraint teams_names_rename_history_pk primary key, " +
                     "team_id int not null, " +
-                    "from_id int not null, " +
-                    "to_id int not null, " +
+                    "from_name varchar(50) not null, " +
+                    "to_name varchar(50) not null, " +
                     "changer_id int not null, " +
                     "changed_at timestamp not null);");
             preparedStatement.executeUpdate();

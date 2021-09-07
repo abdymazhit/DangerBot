@@ -217,6 +217,30 @@ public class Database {
     }
 
     /**
+     * Получает id команды
+     * @param teamName Название команды
+     * @return Id команды
+     */
+    public int getTeamIdByExactName(String teamName) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id FROM teams WHERE name = ? AND is_deleted is null;");
+            preparedStatement.setString(1, teamName);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    /**
      * Получает подключение к базе данных
      * @return Подключение к базе данных
      */

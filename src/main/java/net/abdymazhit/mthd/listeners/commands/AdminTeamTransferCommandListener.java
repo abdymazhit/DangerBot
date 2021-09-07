@@ -157,7 +157,7 @@ public class AdminTeamTransferCommandListener extends ListenerAdapter {
             createStatement.close();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_leaders_change_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
+                    "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, fromId);
             historyStatement.setInt(3, toId);

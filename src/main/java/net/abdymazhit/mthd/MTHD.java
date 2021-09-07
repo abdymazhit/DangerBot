@@ -141,6 +141,7 @@ public class MTHD {
         jda.addEventListener(new AdminTeamAddCommandListener());
         jda.addEventListener(new AdminTeamDeleteCommandListener());
         jda.addEventListener(new AdminTeamTransferCommandListener());
+        jda.addEventListener(new AdminTeamRenameCommandListener());
     }
 
     /**
