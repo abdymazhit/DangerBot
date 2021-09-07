@@ -32,9 +32,9 @@ public class TeamKickCommandListener extends ListenerAdapter {
         MessageChannel messageChannel = event.getChannel();
         Member member = event.getMember();
 
-        if (!contentRaw.startsWith("!team kick")) return;
-        if (!messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) return;
-        if (member == null) return;
+        if(!contentRaw.startsWith("!team kick")) return;
+        if(!messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) return;
+        if(member == null) return;
 
         String[] command = contentRaw.split(" ");
 
