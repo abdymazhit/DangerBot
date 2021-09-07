@@ -4,8 +4,9 @@ import com.google.gson.Gson;
 import net.abdymazhit.mthd.channels.AdminChannel;
 import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.customs.Config;
+import net.abdymazhit.mthd.listeners.commands.AdminTeamAddCommandListener;
+import net.abdymazhit.mthd.listeners.commands.AdminTeamCreateCommandListener;
 import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
-import net.abdymazhit.mthd.listeners.commands.TeamCreateCommandListener;
 import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -27,7 +28,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   06.09.2021
+ * @version   07.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -136,7 +137,8 @@ public class MTHD {
      */
     private void addEventListeners(JDA jda) {
         jda.addEventListener(new AuthCommandListener());
-        jda.addEventListener(new TeamCreateCommandListener());
+        jda.addEventListener(new AdminTeamCreateCommandListener());
+        jda.addEventListener(new AdminTeamAddCommandListener());
     }
 
     /**

@@ -12,12 +12,12 @@ import java.sql.*;
 import java.time.Instant;
 
 /**
- * Команда создания команды
+ * Администраторская команда создания команды
  *
- * @version   06.09.2021
+ * @version   07.09.2021
  * @author    Islam Abdymazhit
  */
-public class TeamCreateCommandListener extends ListenerAdapter {
+public class AdminTeamCreateCommandListener extends ListenerAdapter {
 
     /**
      * Событие получения сообщения
@@ -29,7 +29,7 @@ public class TeamCreateCommandListener extends ListenerAdapter {
         MessageChannel messageChannel = event.getChannel();
         Member member = event.getMember();
 
-        if(!contentRaw.startsWith("!team create")) return;
+        if(!contentRaw.startsWith("!adminteam create")) return;
         if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
         if(member == null) return;
 
@@ -69,7 +69,7 @@ public class TeamCreateCommandListener extends ListenerAdapter {
 
         int creatorId = MTHD.getInstance().database.getUserId(creatorName);
         if(creatorId < 0) {
-            message.reply("Ошибка! Вы не зарегистрированы в сервере!").queue();
+            message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
         }
 
@@ -78,25 +78,25 @@ public class TeamCreateCommandListener extends ListenerAdapter {
 
         int leaderId = MTHD.getInstance().database.getUserId(leaderName);
         if(leaderId < 0) {
-            message.reply("Ошибка! Лидер не зарегистрирован в сервере!").queue();
+            message.reply("Ошибка! Лидер не зарегистрирован на сервере!").queue();
             return;
         }
 
-        boolean isUserTeamMember = isUserTeamMember(leaderId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(leaderId);
         if(isUserTeamMember) {
-            message.reply("Ошибка! Лидер является участником другой команды!").queue();
+            message.reply("Ошибка! Лидер уже является участником другой команды!").queue();
             return;
         }
 
-        boolean isUserAlreadyLeader = isUserAlreadyLeader(leaderId);
-        if(isUserAlreadyLeader) {
-            message.reply("Ошибка! Лидер уже имеет команду!").queue();
+        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(leaderId);
+        if(isUserTeamLeader) {
+            message.reply("Ошибка! Лидер уже является лидером другой команды!").queue();
             return;
         }
 
-        boolean isTeamAlreadyExists = isTeamAlreadyExists(teamName);
-        if(isTeamAlreadyExists) {
-            message.reply("Ошибка! Команда уже существует!").queue();
+        boolean isTeamExists = MTHD.getInstance().database.isTeamExists(teamName);
+        if(isTeamExists) {
+            message.reply("Ошибка! Команда с таким именем уже существует!").queue();
             return;
         }
 
@@ -107,78 +107,6 @@ public class TeamCreateCommandListener extends ListenerAdapter {
         }
 
         message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: " + leaderName).queue();
-    }
-
-    /**
-     * Проверяет, является ли лидер участником команды
-     * @param userId Id лидера
-     * @return Значение, является ли лидер участником команды
-     */
-    private boolean isUserTeamMember(int userId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams_members WHERE user_id = ?);");
-            preparedStatement.setInt(1, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getBoolean(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return true;
-    }
-
-    /**
-     * Проверяет, имеет ли уже лидер команду
-     * @param userId Id лидера
-     * @return Значение, имеет ли уже лидер команду
-     */
-    private boolean isUserAlreadyLeader(int userId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ?);");
-            preparedStatement.setInt(1, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getBoolean(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return true;
-    }
-
-    /**
-     * Проверяет, существует ли команда по названию
-     * @param teamName Название команды
-     * @return Значение, существует ли команда
-     */
-    private boolean isTeamAlreadyExists(String teamName) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE name ILIKE ? AND is_deleted is null);");
-            preparedStatement.setString(1, teamName);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getBoolean(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return true;
     }
 
     /**

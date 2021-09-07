@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   06.09.2021
+ * @version   07.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -35,8 +35,10 @@ public class AdminChannel extends Channel {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Команды администратора");
         embedBuilder.setColor(0xFF58B9FF);
-        embedBuilder.addField("Создание команды", "Для создания команды введите `!team create <TEAM_NAME> <LEADER_NAME>`", false);
-        embedBuilder.addField("Удаление команды", "Для удаления команды введите `!team disband <TEAM_NAME>`", false);
+        embedBuilder.addField("Создание команды",
+                "Для создания команды введите `!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
+        embedBuilder.addField("Добавление участника в команду",
+                "Для добавления участника в команду введите `!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
         channel.sendMessageEmbeds(embedBuilder.build()).queue();
         embedBuilder.clear();
     }
