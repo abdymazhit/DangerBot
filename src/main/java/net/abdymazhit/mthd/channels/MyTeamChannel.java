@@ -41,6 +41,8 @@ public class MyTeamChannel extends Channel {
                 "`!team kick <NAME>`", false);
         embedBuilder.addField("Передать права лидера команды",
                 "`!team transfer <NAME>`", false);
+        embedBuilder.addField("Удалить команду",
+                "`!team disband`", false);
         channel.sendMessageEmbeds(embedBuilder.build()).queue();
         embedBuilder.clear();
     }

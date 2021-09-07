@@ -15,7 +15,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 
 /**
- * Команда передавать права лидера
+ * Команда передать права лидера
  *
  * @version   07.09.2021
  * @author    Islam Abdymazhit
