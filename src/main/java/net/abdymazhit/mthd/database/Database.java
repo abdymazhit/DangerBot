@@ -217,6 +217,30 @@ public class Database {
     }
 
     /**
+     * Получает id команды участника
+     * @param memberId Id участника
+     * @return Id команды
+     */
+    public int getMemberTeamId(int memberId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT team_id FROM teams_members WHERE member_id = ?;");
+            preparedStatement.setInt(1, memberId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("team_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    /**
      * Получает id команды
      * @param teamName Название команды
      * @return Id команды

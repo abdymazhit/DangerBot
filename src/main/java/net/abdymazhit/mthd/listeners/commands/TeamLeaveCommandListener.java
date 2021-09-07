@@ -8,16 +8,19 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 
 /**
- * Администраторская команда удаления участника из команды
+ * Команда покинуть команду
  *
  * @version   07.09.2021
  * @author    Islam Abdymazhit
  */
-public class AdminTeamDeleteCommandListener extends ListenerAdapter {
+public class TeamLeaveCommandListener extends ListenerAdapter {
 
     /**
      * Событие получения сообщения
@@ -29,23 +32,13 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
         MessageChannel messageChannel = event.getChannel();
         Member member = event.getMember();
 
-        if(!contentRaw.startsWith("!adminteam delete")) return;
-        if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
-        if(member == null) return;
+        if (!contentRaw.startsWith("!team leave")) return;
+        if (!messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) return;
+        if (member == null) return;
 
         String[] command = contentRaw.split(" ");
 
-        if(command.length == 2) {
-            message.reply("Ошибка! Укажите название команды!").queue();
-            return;
-        }
-
-        if(command.length == 3) {
-            message.reply("Ошибка! Укажите участника команды!").queue();
-            return;
-        }
-
-        if(command.length > 4) {
+        if(command.length > 2) {
             message.reply("Ошибка! Неверная команда!").queue();
             return;
         }
@@ -55,8 +48,13 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.ADMIN.getRole())) {
-            message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+        if(member.getRoles().contains(UserRole.LEADER.getRole())) {
+            message.reply("Ошибка! Вы не можете покинуть команду, так как Вы являетесь лидером команды!").queue();
+            return;
+        }
+
+        if(!member.getRoles().contains(UserRole.MEMBER.getRole())) {
+            message.reply("Ошибка! Команда доступна только для участников команды!").queue();
             return;
         }
 
@@ -73,41 +71,19 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
             return;
         }
 
-        String teamName = command[2];
-        String memberName = command[3];
-
-        int memberId = MTHD.getInstance().database.getUserId(memberName);
-        if(memberId < 0) {
-            message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
-            return;
-        }
-
-        int teamId = MTHD.getInstance().database.getTeamId(teamName);
+        int teamId = MTHD.getInstance().database.getMemberTeamId(deleterId);
         if(teamId < 0) {
-            message.reply("Ошибка! Команда с таким именем не существует!").queue();
+            message.reply("Ошибка! Вы не являетесь участником какой-либо команды!").queue();
             return;
         }
 
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberId);
-        if(isUserTeamLeader) {
-            message.reply("Ошибка! Участник является лидером команды! " +
-                    "Для удаления участника из команды Вы сперва должны передавать права лидера другому игроку!").queue();
-            return;
-        }
-
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberId, teamId);
-        if(!isUserTeamMember) {
-            message.reply("Ошибка! Участник не является участником этой команды!").queue();
-            return;
-        }
-
-        boolean isMemberDeleted = deleteTeamMember(teamId, memberId, deleterId);
+        boolean isMemberDeleted = deleteTeamMember(teamId, deleterId, deleterId);
         if(!isMemberDeleted) {
-            message.reply("Ошибка! По неизвестной причине участник не удалился из команды! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Ошибка! По неизвестной причине Вы не смогли покинуть команду! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        message.reply("Участник успешно удален! Название команды: " + teamName + ", название участника: " + memberName).queue();
+        message.reply("Вы успешно покинули команду!").queue();
     }
 
     /**

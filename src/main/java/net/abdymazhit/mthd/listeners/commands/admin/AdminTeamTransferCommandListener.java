@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners.commands;
+package net.abdymazhit.mthd.listeners.commands.admin;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.UserRole;
