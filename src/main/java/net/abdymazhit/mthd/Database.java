@@ -280,6 +280,32 @@ public class Database {
     }
 
     /**
+     * Проверяет, является ли пользователь участником команды
+     * @param userId Id пользователя
+     * @param teamId Id команды
+     * @return Значение, является ли пользователь участником команды
+     */
+    public boolean isUserTeamMember(int userId, int teamId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT EXISTS(SELECT 1 FROM teams_members WHERE member_id = ? AND team_id = ?);");
+            preparedStatement.setInt(1, userId);
+            preparedStatement.setInt(2, teamId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getBoolean(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
+    /**
      * Проверяет, является ли пользователь лидером команды
      * @param userId Id пользователя
      * @return Значение, является ли пользователь лидером команды

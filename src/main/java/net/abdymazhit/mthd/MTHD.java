@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.listeners.commands.AdminTeamAddCommandListener;
 import net.abdymazhit.mthd.listeners.commands.AdminTeamCreateCommandListener;
+import net.abdymazhit.mthd.listeners.commands.AdminTeamDeleteCommandListener;
 import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
 import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
@@ -139,6 +140,7 @@ public class MTHD {
         jda.addEventListener(new AuthCommandListener());
         jda.addEventListener(new AdminTeamCreateCommandListener());
         jda.addEventListener(new AdminTeamAddCommandListener());
+        jda.addEventListener(new AdminTeamDeleteCommandListener());
     }
 
     /**
