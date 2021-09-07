@@ -76,6 +76,12 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
         String teamName = command[2];
         String leaderName = command[3];
 
+        boolean isTeamExists = MTHD.getInstance().database.isTeamExists(teamName);
+        if(isTeamExists) {
+            message.reply("Ошибка! Команда с таким именем уже существует!").queue();
+            return;
+        }
+
         int leaderId = MTHD.getInstance().database.getUserId(leaderName);
         if(leaderId < 0) {
             message.reply("Ошибка! Лидер не зарегистрирован на сервере!").queue();
@@ -91,12 +97,6 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
         boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(leaderId);
         if(isUserTeamLeader) {
             message.reply("Ошибка! Лидер уже является лидером другой команды!").queue();
-            return;
-        }
-
-        boolean isTeamExists = MTHD.getInstance().database.isTeamExists(teamName);
-        if(isTeamExists) {
-            message.reply("Ошибка! Команда с таким именем уже существует!").queue();
             return;
         }
 
@@ -119,12 +119,12 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
     private boolean createTeam(String teamName, int leaderId, int creatorId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
+            PreparedStatement createStatement = connection.prepareStatement(
                     "INSERT INTO teams (name, leader_id) VALUES (?, ?) RETURNING id;");
-            preparedStatement.setString(1, teamName);
-            preparedStatement.setInt(2, leaderId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            createStatement.setString(1, teamName);
+            createStatement.setInt(2, leaderId);
+            ResultSet resultSet = createStatement.executeQuery();
+            createStatement.close();
 
             if(resultSet.next()) {
                 int teamId = resultSet.getInt("id");
@@ -139,7 +139,7 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
                 historyStatement.executeUpdate();
                 historyStatement.close();
 
-                // Вернуть значение, что команда добавлена
+                // Вернуть значение, что команда создана
                 return true;
             }
         } catch (SQLException e) {

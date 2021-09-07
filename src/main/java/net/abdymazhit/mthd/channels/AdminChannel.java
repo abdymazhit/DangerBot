@@ -36,11 +36,13 @@ public class AdminChannel extends Channel {
         embedBuilder.setTitle("Команды администратора");
         embedBuilder.setColor(0xFF58B9FF);
         embedBuilder.addField("Создание команды",
-                "Для создания команды введите `!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
+                "`!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
+        embedBuilder.addField("Удаление команды",
+                "`!adminteam disband <TEAM_NAME>`", false);
         embedBuilder.addField("Добавление участника в команду",
-                "Для добавления участника в команду введите `!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
+                "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
         embedBuilder.addField("Удаление участника из команды",
-                "Для удаления участника из команды введите `!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
+                "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
         channel.sendMessageEmbeds(embedBuilder.build()).queue();
         embedBuilder.clear();
     }

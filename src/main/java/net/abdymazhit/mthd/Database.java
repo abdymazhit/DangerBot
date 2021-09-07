@@ -256,9 +256,9 @@ public class Database {
     }
 
     /**
-     * Проверяет, является ли пользователь участником команды
+     * Проверяет, является ли пользователь участником какой-либо команды
      * @param userId Id пользователя
-     * @return Значение, является ли пользователь участником команды
+     * @return Значение, является ли пользователь участником какой-либо
      */
     public boolean isUserTeamMember(int userId) {
         try {
@@ -306,15 +306,15 @@ public class Database {
     }
 
     /**
-     * Проверяет, является ли пользователь лидером команды
+     * Проверяет, является ли пользователь лидером какой-либо команды
      * @param userId Id пользователя
-     * @return Значение, является ли пользователь лидером команды
+     * @return Значение, является ли пользователь лидером какой-либо команды
      */
     public boolean isUserTeamLeader(int userId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ?);");
+                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND is_deleted is null);");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
@@ -362,7 +362,7 @@ public class Database {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM teams WHERE name ILIKE ?;");
+                    "SELECT id FROM teams WHERE name ILIKE ? AND is_deleted is null;");
             preparedStatement.setString(1, teamName);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();

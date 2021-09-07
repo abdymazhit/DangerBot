@@ -120,26 +120,24 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
     private boolean deleteTeamMember(int teamId, int memberId, int deleterId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
+            PreparedStatement deleteStatement = connection.prepareStatement(
                     "DELETE FROM teams_members WHERE team_id = ? AND member_id = ? RETURNING id;");
-            preparedStatement.setInt(1, teamId);
-            preparedStatement.setInt(2, memberId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            deleteStatement.setInt(1, teamId);
+            deleteStatement.setInt(2, memberId);
+            deleteStatement.executeUpdate();
+            deleteStatement.close();
 
-            if(resultSet.next()) {
-                PreparedStatement historyStatement = connection.prepareStatement(
-                        "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
-                historyStatement.setInt(1, teamId);
-                historyStatement.setInt(2, memberId);
-                historyStatement.setInt(3, deleterId);
-                historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
-                historyStatement.executeUpdate();
-                historyStatement.close();
+            PreparedStatement historyStatement = connection.prepareStatement(
+                    "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
+            historyStatement.setInt(1, teamId);
+            historyStatement.setInt(2, memberId);
+            historyStatement.setInt(3, deleterId);
+            historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
+            historyStatement.executeUpdate();
+            historyStatement.close();
 
-                // Вернуть значение, что участник удален
-                return true;
-            }
+            // Вернуть значение, что участник удален
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
         }

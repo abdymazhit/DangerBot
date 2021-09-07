@@ -119,26 +119,24 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
     private boolean addTeamMember(int teamId, int memberId, int adderId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
+            PreparedStatement addStatement = connection.prepareStatement(
                     "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?) RETURNING id;");
-            preparedStatement.setInt(1, teamId);
-            preparedStatement.setInt(2, memberId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            addStatement.setInt(1, teamId);
+            addStatement.setInt(2, memberId);
+            addStatement.executeUpdate();
+            addStatement.close();
 
-            if(resultSet.next()) {
-                PreparedStatement historyStatement = connection.prepareStatement(
-                        "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
-                historyStatement.setInt(1, teamId);
-                historyStatement.setInt(2, memberId);
-                historyStatement.setInt(3, adderId);
-                historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
-                historyStatement.executeUpdate();
-                historyStatement.close();
+            PreparedStatement historyStatement = connection.prepareStatement(
+                    "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
+            historyStatement.setInt(1, teamId);
+            historyStatement.setInt(2, memberId);
+            historyStatement.setInt(3, adderId);
+            historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
+            historyStatement.executeUpdate();
+            historyStatement.close();
 
-                // Вернуть значение, что участник добавлен
-                return true;
-            }
+            // Вернуть значение, что участник добавлен
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
