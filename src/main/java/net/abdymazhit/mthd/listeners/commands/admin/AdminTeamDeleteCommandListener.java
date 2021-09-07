@@ -121,7 +121,7 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ? RETURNING id;");
+                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, memberId);
             deleteStatement.executeUpdate();

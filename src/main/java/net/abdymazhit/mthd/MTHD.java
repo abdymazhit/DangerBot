@@ -7,6 +7,7 @@ import net.abdymazhit.mthd.channels.MyTeamChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
+import net.abdymazhit.mthd.listeners.commands.TeamKickCommandListener;
 import net.abdymazhit.mthd.listeners.commands.TeamLeaveCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.*;
 import net.abdymazhit.mthd.utils.Utils;
@@ -151,6 +152,7 @@ public class MTHD {
         jda.addEventListener(new AdminTeamRenameCommandListener());
 
         jda.addEventListener(new TeamLeaveCommandListener());
+        jda.addEventListener(new TeamKickCommandListener());
     }
 
     /**

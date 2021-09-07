@@ -37,6 +37,8 @@ public class MyTeamChannel extends Channel {
         embedBuilder.setColor(0xFF58B9FF);
         embedBuilder.addField("Покинуть команду",
                 "`!team leave`", false);
+        embedBuilder.addField("Исключить участника из команды",
+                "`!team kick <NAME>`", false);
         channel.sendMessageEmbeds(embedBuilder.build()).queue();
         embedBuilder.clear();
     }
