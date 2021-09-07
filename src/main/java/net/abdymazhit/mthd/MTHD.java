@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import net.abdymazhit.mthd.channels.AdminChannel;
 import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.customs.Config;
+import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.commands.*;
 import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
@@ -139,6 +140,7 @@ public class MTHD {
         jda.addEventListener(new AdminTeamDisbandCommandListener());
         jda.addEventListener(new AdminTeamAddCommandListener());
         jda.addEventListener(new AdminTeamDeleteCommandListener());
+        jda.addEventListener(new AdminTeamTransferCommandListener());
     }
 
     /**

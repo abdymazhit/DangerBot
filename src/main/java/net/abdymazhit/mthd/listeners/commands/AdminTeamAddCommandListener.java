@@ -84,13 +84,13 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
 
         boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberId);
         if(isUserTeamMember) {
-            message.reply("Ошибка! Участник уже является участником другой команды!").queue();
+            message.reply("Ошибка! Участник уже является участником команды!").queue();
             return;
         }
 
         boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberId);
         if(isUserTeamLeader) {
-            message.reply("Ошибка! Участник уже является лидером другой команды!").queue();
+            message.reply("Ошибка! Участник уже является лидером команды!").queue();
             return;
         }
 
@@ -120,7 +120,7 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement addStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?) RETURNING id;");
+                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             addStatement.setInt(1, teamId);
             addStatement.setInt(2, memberId);
             addStatement.executeUpdate();

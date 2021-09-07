@@ -43,6 +43,8 @@ public class AdminChannel extends Channel {
                 "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
         embedBuilder.addField("Удаление участника из команды",
                 "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
+        embedBuilder.addField("Передача прав лидера команды",
+                "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`", false);
         channel.sendMessageEmbeds(embedBuilder.build()).queue();
         embedBuilder.clear();
     }
