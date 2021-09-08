@@ -29,7 +29,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   07.09.2021
+ * @version   08.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -153,6 +153,7 @@ public class MTHD {
         jda.addEventListener(new TeamKickCommandListener());
         jda.addEventListener(new TeamTransferCommandListener());
         jda.addEventListener(new TeamDisbandCommandListener());
+        jda.addEventListener(new TeamInfoCommandListener());
     }
 
     /**

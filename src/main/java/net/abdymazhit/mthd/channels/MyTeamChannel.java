@@ -10,13 +10,13 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   07.09.2021
+ * @version   08.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
 
     /**
-     * Инициализирует канал администрации
+     * Инициализирует канал моя команда
      */
     public MyTeamChannel() {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
@@ -29,7 +29,7 @@ public class MyTeamChannel extends Channel {
     }
 
     /**
-     * Отправляет сообщение канала администрации
+     * Отправляет сообщение канала моя команда
      */
     private void sendChannelMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -43,6 +43,8 @@ public class MyTeamChannel extends Channel {
                 "`!team transfer <NAME>`", false);
         embedBuilder.addField("Удалить команду",
                 "`!team disband`", false);
+        embedBuilder.addField("Посмотреть информацию о команде",
+                "`!team info`", false);
         channel.sendMessageEmbeds(embedBuilder.build()).queue();
         embedBuilder.clear();
     }

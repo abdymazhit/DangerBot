@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   07.09.2021
+ * @version   08.09.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -110,6 +110,12 @@ public record DatabaseTables(Connection connection) {
                     "name varchar(50) not null, " +
                     "leader_id int not null, " +
                     "points int default 0 not null, " +
+                    "games int default 0 not null, " +
+                    "wins int default 0 not null, " +
+                    "kills int default 0 not null, " +
+                    "deaths int default 0 not null, " +
+                    "won_beds int default 0 not null, " +
+                    "lost_beds int default 0 not null, " +
                     "is_deleted boolean);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
