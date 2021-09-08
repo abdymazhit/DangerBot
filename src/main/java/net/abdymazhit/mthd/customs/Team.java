@@ -286,12 +286,25 @@ public class Team {
         try {
             Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
             if(leaderMember == null) return;
-            leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE));
+            if(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)) {
+                leader.setDiscordOnline(true);
+            } else {
+                leader.setDiscordOnline(false);
+            }
 
             for(UserAccount user : members) {
-                Member userMember = MTHD.getInstance().guild.getMemberById(user.getDiscordId());
+                Member userMember = MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).submit().get();
                 if(userMember == null) return;
-                leader.setDiscordOnline(userMember.getOnlineStatus().equals(OnlineStatus.ONLINE));
+
+                if(userMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                        userMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                        userMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)) {
+                    user.setDiscordOnline(true);
+                } else {
+                    user.setDiscordOnline(false);
+                }
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();

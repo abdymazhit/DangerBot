@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Команда авторизации
  *
- * @version   06.09.2021
+ * @version   08.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -82,6 +82,9 @@ public class AuthCommandListener extends ListenerAdapter {
 
         JsonObject ownerObject = ownerElement.getAsJsonObject();
         String username = ownerObject.get("username").getAsString();
+        String level = ownerObject.get("level").getAsString();
+        String percent = ownerObject.get("levelPercentage").getAsString();
+        String rank = ownerObject.get("rank").getAsString();
 
         boolean isAdded = addUser(member.getId(), username);
         if(!isAdded) {
@@ -98,7 +101,7 @@ public class AuthCommandListener extends ListenerAdapter {
         MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
 
         // Отправить сообщение о успешной авторизации
-        event.reply("Вы успешно авторизовались! Ваш ник: " + username).setEphemeral(true).queue();
+        event.replyEmbeds(MTHD.getInstance().utils.getAuthInfoMessageEmbed(username, level, percent, rank)).setEphemeral(true).queue();
     }
 
     /**
@@ -121,8 +124,12 @@ public class AuthCommandListener extends ListenerAdapter {
 
                 if(member != null) {
                     // Удалить роли старого пользователя
-                    for(Role role : member.getRoles()) {
-                        MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                    if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
+                        for(Role role : member.getRoles()) {
+                            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
+                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                            }
+                        }
                     }
 
                     // Изменить ник старого пользователя

@@ -16,6 +16,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.Date;
 
 /**
  * Представляет собой инструменты для упрощения работы
@@ -71,44 +72,54 @@ public class Utils {
     }
 
     /**
+     * Получает embed сообщение о успешной авторизации
+     * @param username Имя игрока
+     * @param level Уровень игрока
+     * @param percent Проценты игрока
+     * @param rank Ранг игрока
+     * @return Embed сообщение о успешной авторизации
+     */
+    public MessageEmbed getAuthInfoMessageEmbed(String username, String level, String percent, String rank) {
+        embedBuilder.setColor(3092790);
+        embedBuilder.setTitle("Успешная авторизация!");
+        embedBuilder.setDescription("""
+                **Ваш ник:** `%username%`
+                **Уровень:** `%level% [%percent%%]`
+                **Статус:** `%rank%`
+                """
+                .replace("%username%", username)
+                .replace("%level%", level)
+                .replace("%percent%", String.valueOf((int) (Double.parseDouble(percent) * 100)))
+                .replace("%rank%", rank));
+        embedBuilder.setThumbnail("http://skin.vimeworld.ru/head/3d/" + username +".png");
+        embedBuilder.setTimestamp(new Date().toInstant());
+
+        MessageEmbed messageEmbed = embedBuilder.build();
+        embedBuilder.clear();
+
+        return messageEmbed;
+    }
+
+    /**
      * Получает информационное embed сообщение команды
      * @param team Команда
      * @return Информационное embed сообщение команды
      */
     public MessageEmbed getTeamInfoMessageEmbed(Team team) {
-        String message = """
-                **=== %team_name% ===**
-                
-                Лидер:
-                %leader%
-                
-                Участники:
-                %members%
-               
-                Очков рейтинга: %points%
-                Сыгранных игр: %games%
-                Выигранных игр: %wins%
-                Количество убийств: %kills%
-                Количество смертей: %deaths%
-                Выигранных кроватей: %won_beds%
-                Проигранных кроватей: %lost_beds%
-                """;
-
-        StringBuilder leaderString = new StringBuilder();
+        StringBuilder membersString = new StringBuilder();
         if(team.getLeader().isVimeOnline()) {
-            leaderString.append("<:emote:884826184729366538> ");
+            membersString.append("<:emote:884826184729366538> ");
         } else {
-            leaderString.append("<:emote:884826184641294346> ");
+            membersString.append("<:emote:884826184641294346> ");
         }
 
         if(team.getLeader().isDiscordOnline()) {
-            leaderString.append("<:emote:884825784857010196> ");
+            membersString.append("<:emote:884825784857010196> ");
         } else {
-            leaderString.append("<:emote:884825362863910962> ");
+            membersString.append("<:emote:884825362863910962> ");
         }
-        leaderString.append(team.getLeader().getUsername());
+        membersString.append("`").append(team.getLeader().getUsername()).append("`").append("\n");
 
-        StringBuilder membersString = new StringBuilder();
         for(UserAccount user : team.getMembers()) {
             if(user.isVimeOnline()) {
                 membersString.append("<:emote:884826184729366538> ");
@@ -121,22 +132,33 @@ public class Utils {
             } else {
                 membersString.append("<:emote:884825362863910962> ");
             }
-            membersString.append(user.getUsername());
+            membersString.append("`").append(user.getUsername()).append("`").append("\n");
         }
 
-        message = message.replace("%team_name%", team.getName());
-        message = message.replace("%leader%", leaderString.toString());
-        message = message.replace("%members%", membersString.toString());
-        message = message.replace("%points%", String.valueOf(team.getPoints()));
-        message = message.replace("%games%", String.valueOf(team.getGames()));
-        message = message.replace("%wins%", String.valueOf(team.getWins()));
-        message = message.replace("%kills%", String.valueOf(team.getKills()));
-        message = message.replace("%deaths%", String.valueOf(team.getDeaths()));
-        message = message.replace("%won_beds%", String.valueOf(team.getWon_beds()));
-        message = message.replace("%lost_beds%", String.valueOf(team.getLost_beds()));
-
         embedBuilder.setColor(3092790);
-        embedBuilder.setDescription(message);
+        embedBuilder.addField("Игроки", ">>> " + membersString, false);
+        embedBuilder.addField("Рейтинг", """
+                >>> ```
+                %points%
+                ```
+                """.replace("%points%", String.valueOf(team.getPoints())), true);
+        embedBuilder.addField("Побед", """
+                >>> ```
+                %wins%
+                ```
+                """.replace("%wins%", String.valueOf(team.getWins())), true);
+        embedBuilder.addField("Всего игр", """
+                >>> ```
+                %games%
+                ```
+                """.replace("%games%", String.valueOf(team.getGames())), true);
+        embedBuilder.setDescription("""
+                ```
+                \040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%team_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040
+                ```
+                """.replace("%team_name%", team.getName()));
+        embedBuilder.setImage("https://media.discordapp.net/attachments/880669658116673606/884176299562762300/line.gif?width=324&height=4");
+
         MessageEmbed messageEmbed = embedBuilder.build();
         embedBuilder.clear();
 
