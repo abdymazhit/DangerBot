@@ -8,10 +8,11 @@ import java.util.List;
 /**
  * Представляет собой роль пользователя
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public enum UserRole {
+    TEST("Test"),
     AUTHORIZED("Authorized"),
     MEMBER("Member"),
     LEADER("Leader"),

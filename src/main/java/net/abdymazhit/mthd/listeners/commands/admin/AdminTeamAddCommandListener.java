@@ -1,20 +1,24 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener extends ListenerAdapter {
@@ -27,11 +31,11 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member adder = event.getMember();
 
         if(!contentRaw.startsWith("!adminteam add")) return;
         if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
-        if(member == null) return;
+        if(adder == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -50,24 +54,17 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
-        if(!member.getRoles().contains(UserRole.ADMIN.getRole())) {
+        if(!adder.getRoles().contains(UserRole.ADMIN.getRole())) {
             message.reply("Ошибка! У вас нет прав для этого действия!").queue();
             return;
         }
 
-        String adderName;
-        if(member.getNickname() == null) {
-            adderName = member.getEffectiveName();
-        } else {
-            adderName = member.getNickname();
+        if(!adder.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int adderId = MTHD.getInstance().database.getUserId(adderName);
+        int adderId = MTHD.getInstance().database.getUserId(adder.getId());
         if(adderId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -76,21 +73,15 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
         String teamName = command[2];
         String memberName = command[3];
 
-        int memberId = MTHD.getInstance().database.getUserId(memberName);
-        if(memberId < 0) {
+        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
+        if(memberAccount == null) {
             message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberId);
-        if(isUserTeamMember) {
-            message.reply("Ошибка! Участник уже является участником команды!").queue();
-            return;
-        }
-
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberId);
-        if(isUserTeamLeader) {
-            message.reply("Ошибка! Участник уже является лидером команды!").queue();
+        int memberTeamId = MTHD.getInstance().database.getUserTeamId(memberAccount.getId());
+        if(memberTeamId > 0) {
+            message.reply("Ошибка! Участник уже состоит в команде!").queue();
             return;
         }
 
@@ -100,13 +91,28 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
             return;
         }
 
-        boolean isMemberAdded = addTeamMember(teamId, memberId, adderId);
+        boolean isMemberAdded = addTeamMember(teamId, memberAccount.getId(), adderId);
         if(!isMemberAdded) {
-            message.reply("Ошибка! По неизвестной причине участник не добавился в команду! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при добавлении участника в команду! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        message.reply("Участник успешно добавлен! Название команды: " + teamName + ", название участника: " + memberName).queue();
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamName, true);
+        if(teamRoles.size() != 1) {
+            message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        try {
+            MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), teamRoles.get(0)).submit().get();
+            MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при добавлении участнику роли команды и роли участника! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        message.reply("Участник успешно добавлен в команду! Название команды: " + teamName + ", ник участника: " + memberName).queue();
     }
 
     /**
@@ -135,12 +141,11 @@ public class AdminTeamAddCommandListener extends ListenerAdapter {
             historyStatement.executeUpdate();
             historyStatement.close();
 
-            // Вернуть значение, что участник добавлен
+            // Вернуть значение, что участник успешно добавлен
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 }

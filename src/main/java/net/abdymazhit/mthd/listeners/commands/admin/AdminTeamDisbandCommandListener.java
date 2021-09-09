@@ -5,16 +5,19 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда удаления команды
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDisbandCommandListener extends ListenerAdapter {
@@ -27,11 +30,11 @@ public class AdminTeamDisbandCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member deleter = event.getMember();
 
         if(!contentRaw.startsWith("!adminteam disband")) return;
         if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
-        if(member == null) return;
+        if(deleter == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -45,24 +48,17 @@ public class AdminTeamDisbandCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
-        if(!member.getRoles().contains(UserRole.ADMIN.getRole())) {
+        if(!deleter.getRoles().contains(UserRole.ADMIN.getRole())) {
             message.reply("Ошибка! У вас нет прав для этого действия!").queue();
             return;
         }
 
-        String deleterName;
-        if(member.getNickname() == null) {
-            deleterName = member.getEffectiveName();
-        } else {
-            deleterName = member.getNickname();
+        if(!deleter.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int deleterId = MTHD.getInstance().database.getUserId(deleterName);
+        int deleterId = MTHD.getInstance().database.getUserId(deleter.getId());
         if(deleterId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -76,9 +72,23 @@ public class AdminTeamDisbandCommandListener extends ListenerAdapter {
             return;
         }
 
-        boolean isDisbanded = disbandTeam(teamId, deleterId);
-        if(!isDisbanded) {
-            message.reply("Ошибка! По неизвестной причине команда не удалилась! Свяжитесь с разработчиком бота!").queue();
+        String errorMessage = disbandTeam(teamId, deleterId);
+        if(errorMessage != null) {
+            message.reply(errorMessage).queue();
+            return;
+        }
+
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamName, true);
+        if(teamRoles.size() != 1) {
+            message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        try {
+            teamRoles.get(0).delete().submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при удалении роли команды! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
@@ -89,22 +99,38 @@ public class AdminTeamDisbandCommandListener extends ListenerAdapter {
      * Удаляет команду
      * @param teamId Id команды
      * @param deleterId Id удаляющего
-     * @return Значение, удалена ли команда
+     * @return Текст ошибки удаления команды
      */
-    private boolean disbandTeam(int teamId, int deleterId) {
+    private String disbandTeam(int teamId, int deleterId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                    "UPDATE teams SET is_deleted = true WHERE id = ?;");
+                    "UPDATE teams SET is_deleted = true WHERE id = ? RETURNING (SELECT member_id FROM users WHERE users.id = teams.leader_id);");
             updateStatement.setInt(1, teamId);
-            updateStatement.executeUpdate();
+            ResultSet updateResultSet = updateStatement.executeQuery();
             updateStatement.close();
+            if(updateResultSet.next()) {
+                try {
+                    MTHD.getInstance().guild.removeRoleFromMember(updateResultSet.getString("member_id"), UserRole.LEADER.getRole()).submit().get();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    return "Критическая ошибка при удалении у лидера команды роли лидера! Свяжитесь с разработчиком бота!";
+                }
+            }
 
             PreparedStatement membersStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ?;");
+                    "DELETE FROM teams_members WHERE team_id = ? RETURNING (SELECT member_id FROM users WHERE users.id = teams_members.member_id);");
             membersStatement.setInt(1, teamId);
-            membersStatement.executeUpdate();
+            ResultSet membersResultSet = membersStatement.executeQuery();
             membersStatement.close();
+            while(membersResultSet.next()) {
+                try {
+                    MTHD.getInstance().guild.removeRoleFromMember(membersResultSet.getString("member_id"), UserRole.MEMBER.getRole()).submit().get();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    return "Критическая ошибка при удалении у участников команды роли участника! Свяжитесь с разработчиком бота!";
+                }
+            }
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_deletion_history (team_id, deleter_id, deleted_at) VALUES (?, ?, ?);");
@@ -114,12 +140,11 @@ public class AdminTeamDisbandCommandListener extends ListenerAdapter {
             historyStatement.executeUpdate();
             historyStatement.close();
 
-            // Вернуть значение, что команда удалена
-            return true;
+            // Вернуть значение, что команда успешно удалена
+            return null;
         } catch (SQLException e) {
             e.printStackTrace();
+            return "Критическая ошибка при удалении команды! Свяжитесь с разработчиком бота!";
         }
-
-        return false;
     }
 }

@@ -1,6 +1,8 @@
 package net.abdymazhit.mthd.listeners.commands;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -13,11 +15,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Команда передать права лидера
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener extends ListenerAdapter {
@@ -30,11 +33,11 @@ public class TeamTransferCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member changer = event.getMember();
 
         if(!contentRaw.startsWith("!team transfer")) return;
         if(!messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) return;
-        if(member == null) return;
+        if(changer == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -48,24 +51,17 @@ public class TeamTransferCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
-        if(!member.getRoles().contains(UserRole.LEADER.getRole())) {
+        if(!changer.getRoles().contains(UserRole.LEADER.getRole())) {
             message.reply("Ошибка! Вы не являетесь лидером команды!").queue();
             return;
         }
 
-        String changerName;
-        if(member.getNickname() == null) {
-            changerName = member.getEffectiveName();
-        } else {
-            changerName = member.getNickname();
+        if(!changer.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int changerId = MTHD.getInstance().database.getUserId(changerName);
+        int changerId = MTHD.getInstance().database.getUserId(changer.getId());
         if(changerId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -73,27 +69,39 @@ public class TeamTransferCommandListener extends ListenerAdapter {
 
         String newLeaderName = command[2];
 
-        int teamId = MTHD.getInstance().database.getLeaderTeamId(changerId);
-        if(teamId < 0) {
+        Team team = MTHD.getInstance().database.getLeaderTeam(changerId);
+        if(team == null) {
             message.reply("Ошибка! Вы не являетесь лидером какой-либо команды!").queue();
             return;
         }
 
-        int newLeaderId = MTHD.getInstance().database.getUserId(newLeaderName);
-        if(newLeaderId < 0) {
+        UserAccount newLeaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(newLeaderName);
+        if(newLeaderAccount == null) {
             message.reply("Ошибка! Новый лидер команды не зарегистрирован на сервере!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderId, teamId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.getId(), team.id);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Новый лидер команды в настоящий момент не является участником этой команды!").queue();
             return;
         }
 
-        boolean isTransferred = transferLeader(teamId, changerId, newLeaderId, changerId);
+        boolean isTransferred = transferLeader(team.id, changerId, newLeaderAccount.getId(), changerId);
         if(!isTransferred) {
-            message.reply("Ошибка! По неизвестной причине Вы не смогли передать права лидера! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при передачи прав лидера! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        try {
+            MTHD.getInstance().guild.removeRoleFromMember(changer.getId(), UserRole.LEADER.getRole()).submit().get();
+            MTHD.getInstance().guild.addRoleToMember(changer.getId(), UserRole.MEMBER.getRole()).submit().get();
+
+            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при передачи ролей между текущим и новым лидером команды! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
@@ -142,12 +150,11 @@ public class TeamTransferCommandListener extends ListenerAdapter {
             historyStatement.executeUpdate();
             historyStatement.close();
 
-            // Вернуть значение, что права лидера переданы
+            // Вернуть значение, что права лидера успешно переданы
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 }

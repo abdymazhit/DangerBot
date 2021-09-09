@@ -1,20 +1,23 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда создания команды
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener extends ListenerAdapter {
@@ -27,11 +30,11 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member creator = event.getMember();
 
         if(!contentRaw.startsWith("!adminteam create")) return;
         if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
-        if(member == null) return;
+        if(creator == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -50,24 +53,17 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
-        if(!member.getRoles().contains(UserRole.ADMIN.getRole())) {
+        if(!creator.getRoles().contains(UserRole.ADMIN.getRole())) {
             message.reply("Ошибка! У вас нет прав для этого действия!").queue();
             return;
         }
 
-        String creatorName;
-        if(member.getNickname() == null) {
-            creatorName = member.getEffectiveName();
-        } else {
-            creatorName = member.getNickname();
+        if(!creator.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int creatorId = MTHD.getInstance().database.getUserId(creatorName);
+        int creatorId = MTHD.getInstance().database.getUserId(creator.getId());
         if(creatorId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -76,37 +72,43 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
         String teamName = command[2];
         String leaderName = command[3];
 
-        boolean isTeamExists = MTHD.getInstance().database.isTeamExists(teamName);
-        if(isTeamExists) {
-            message.reply("Ошибка! Команда с таким именем уже существует!").queue();
-            return;
-        }
-
-        int leaderId = MTHD.getInstance().database.getUserId(leaderName);
-        if(leaderId < 0) {
+        UserAccount leaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(leaderName);
+        if(leaderAccount == null) {
             message.reply("Ошибка! Лидер не зарегистрирован на сервере!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(leaderId);
-        if(isUserTeamMember) {
-            message.reply("Ошибка! Лидер уже является участником другой команды!").queue();
+        int leaderTeamId = MTHD.getInstance().database.getUserTeamId(leaderAccount.getId());
+        if(leaderTeamId > 0) {
+            message.reply("Ошибка! Лидер уже состоит в команде!").queue();
             return;
         }
 
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(leaderId);
-        if(isUserTeamLeader) {
-            message.reply("Ошибка! Лидер уже является лидером другой команды!").queue();
+        if(!MTHD.getInstance().guild.getRolesByName(teamName, true).isEmpty()) {
+            message.reply("Ошибка! Вы пытаетесь занять роль команды, которая уже существует! " +
+                    "Возможно вы пытаетесь занять роли сервера: Admin, Assistant... Если Вы уверены, " +
+                    "что не занимаете роль сервера свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        boolean isCreated = createTeam(teamName, leaderId, creatorId);
-        if(!isCreated) {
-            message.reply("Ошибка! По неизвестной причине команда не создалась! Свяжитесь с разработчиком бота!").queue();
+        String errorMessage = createTeam(teamName, leaderAccount.getId(), creatorId);
+        if(errorMessage != null) {
+            message.reply(errorMessage).queue();
             return;
         }
 
-        message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: " + leaderName).queue();
+        try {
+            Role teamRole = MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
+                    .setColor(10070709).submit().get();
+            MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), teamRole).queue();
+            MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+
+            message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
+                    + leaderName + ", роль команды: " + teamRole.getAsMention()).queue();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при создании роли команды и выдачи лидеру роли лидера! Свяжитесь с разработчиком бота!").queue();
+        }
     }
 
     /**
@@ -114,20 +116,23 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
      * @param teamName Название команды
      * @param leaderId Id лидера команды
      * @param creatorId Id создателя команды
-     * @return Значение, создана ли команда
+     * @return Текст ошибки создания команды
      */
-    private boolean createTeam(String teamName, int leaderId, int creatorId) {
+    private String createTeam(String teamName, int leaderId, int creatorId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement createStatement = connection.prepareStatement(
-                    "INSERT INTO teams (name, leader_id) VALUES (?, ?) RETURNING id;");
+                            "INSERT INTO teams (name, leader_id) SELECT ?, ? " +
+                            "WHERE NOT EXISTS (SELECT leader_id FROM teams WHERE name ILIKE ? AND is_deleted is null)" +
+                            "RETURNING id;");
             createStatement.setString(1, teamName);
             createStatement.setInt(2, leaderId);
-            ResultSet resultSet = createStatement.executeQuery();
+            createStatement.setString(3, teamName);
+            ResultSet createResultSet = createStatement.executeQuery();
             createStatement.close();
 
-            if(resultSet.next()) {
-                int teamId = resultSet.getInt("id");
+            if(createResultSet.next()) {
+                int teamId = createResultSet.getInt("id");
 
                 PreparedStatement historyStatement = connection.prepareStatement(
                         "INSERT INTO teams_creation_history (team_id, name, leader_id, creator_id, created_at) VALUES (?, ?, ?, ?, ?);");
@@ -139,13 +144,14 @@ public class AdminTeamCreateCommandListener extends ListenerAdapter {
                 historyStatement.executeUpdate();
                 historyStatement.close();
 
-                // Вернуть значение, что команда создана
-                return true;
+                // Вернуть значение, что команда успешно создана
+                return null;
+            } else {
+                return "Ошибка! Команда с таким именем уже существует!";
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return "Критическая ошибка при создании команды! Свяжитесь с разработчиком бота!";
         }
-
-        return false;
     }
 }

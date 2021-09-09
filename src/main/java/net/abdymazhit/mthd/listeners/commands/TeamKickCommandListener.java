@@ -1,10 +1,13 @@
 package net.abdymazhit.mthd.listeners.commands;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -13,11 +16,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Команда исключить участника из команды
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamKickCommandListener extends ListenerAdapter {
@@ -30,11 +35,11 @@ public class TeamKickCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member deleter = event.getMember();
 
         if(!contentRaw.startsWith("!team kick")) return;
         if(!messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) return;
-        if(member == null) return;
+        if(deleter == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -48,24 +53,17 @@ public class TeamKickCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
-        if(!member.getRoles().contains(UserRole.LEADER.getRole())) {
+        if(!deleter.getRoles().contains(UserRole.LEADER.getRole())) {
             message.reply("Ошибка! Команда доступна только для лидеров команд!").queue();
             return;
         }
 
-        String deleterName;
-        if(member.getNickname() == null) {
-            deleterName = member.getEffectiveName();
-        } else {
-            deleterName = member.getNickname();
+        if(!deleter.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int deleterId = MTHD.getInstance().database.getUserId(deleterName);
+        int deleterId = MTHD.getInstance().database.getUserId(deleter.getId());
         if(deleterId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -73,28 +71,42 @@ public class TeamKickCommandListener extends ListenerAdapter {
 
         String memberName = command[2];
 
-        int memberId = MTHD.getInstance().database.getUserId(memberName);
-        if(memberId < 0) {
+        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
+        if(memberAccount == null) {
             message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
             return;
         }
 
-        int teamId = MTHD.getInstance().database.getLeaderTeamId(deleterId);
-        if(teamId < 0) {
+        Team team = MTHD.getInstance().database.getLeaderTeam(deleterId);
+        if(team == null) {
             message.reply("Ошибка! Вы не являетесь лидером какой-либо команды!").queue();
             return;
         }
 
-
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberId, teamId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.getId(), team.id);
         if(!isUserTeamMember) {
-            message.reply("Ошибка! Участник не является участником вашей команды!").queue();
+            message.reply("Ошибка! Участник не является участником этой команды!").queue();
             return;
         }
 
-        boolean isMemberDeleted = deleteTeamMember(teamId, memberId, deleterId);
+        boolean isMemberDeleted = deleteTeamMember(team.id, memberAccount.getId(), deleterId);
         if(!isMemberDeleted) {
-            message.reply("Ошибка! По неизвестной причине Вы не смогли выгнать участника из команды! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при удалении участника из команды! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(team.name, true);
+        if(teamRoles.size() != 1) {
+            message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        try {
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).submit().get();
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при удалении у участника роли команды и роли участника! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
@@ -127,12 +139,11 @@ public class TeamKickCommandListener extends ListenerAdapter {
             historyStatement.executeUpdate();
             historyStatement.close();
 
-            // Вернуть значение, что участник удален
+            // Вернуть значение, что участник успешно удален
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 }

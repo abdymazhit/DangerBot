@@ -1,6 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -13,11 +14,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamTransferCommandListener extends ListenerAdapter {
@@ -30,11 +32,11 @@ public class AdminTeamTransferCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member changer = event.getMember();
 
         if(!contentRaw.startsWith("!adminteam transfer")) return;
         if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
-        if(member == null) return;
+        if(changer == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -58,24 +60,17 @@ public class AdminTeamTransferCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
-        if(!member.getRoles().contains(UserRole.ADMIN.getRole())) {
+        if(!changer.getRoles().contains(UserRole.ADMIN.getRole())) {
             message.reply("Ошибка! У вас нет прав для этого действия!").queue();
             return;
         }
 
-        String changerName;
-        if(member.getNickname() == null) {
-            changerName = member.getEffectiveName();
-        } else {
-            changerName = member.getNickname();
+        if(!changer.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int changerId = MTHD.getInstance().database.getUserId(changerName);
+        int changerId = MTHD.getInstance().database.getUserId(changer.getId());
         if(changerId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -91,33 +86,45 @@ public class AdminTeamTransferCommandListener extends ListenerAdapter {
             return;
         }
 
-        int currentLeaderId = MTHD.getInstance().database.getUserId(currentLeaderName);
-        if(currentLeaderId < 0) {
+        UserAccount currentLeaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(currentLeaderName);
+        if(currentLeaderAccount == null) {
             message.reply("Ошибка! Текущий лидер команды не зарегистрирован на сервере!").queue();
             return;
         }
 
-        int newLeaderId = MTHD.getInstance().database.getUserId(newLeaderName);
-        if(newLeaderId < 0) {
+        UserAccount newLeaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(newLeaderName);
+        if(newLeaderAccount == null) {
             message.reply("Ошибка! Новый лидер команды не зарегистрирован на сервере!").queue();
             return;
         }
 
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(currentLeaderId, teamId);
+        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(currentLeaderAccount.getId(), teamId);
         if(!isUserTeamLeader) {
             message.reply("Ошибка! Текущий лидер команды в настоящий момент не является лидером этой команды!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderId, teamId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.getId(), teamId);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Новый лидер команды в настоящий момент не является участником этой команды!").queue();
             return;
         }
 
-        boolean isTransferred = transferLeader(teamId, currentLeaderId, newLeaderId, changerId);
+        boolean isTransferred = transferLeader(teamId, currentLeaderAccount.getId(), newLeaderAccount.getId(), changerId);
         if(!isTransferred) {
-            message.reply("Ошибка! По неизвестной причине права лидера не были переданы! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при передачи прав лидера! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        try {
+            MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).submit().get();
+            MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+
+            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при передачи ролей между текущим и новым лидером команды! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
@@ -166,12 +173,11 @@ public class AdminTeamTransferCommandListener extends ListenerAdapter {
             historyStatement.executeUpdate();
             historyStatement.close();
 
-            // Вернуть значение, что права лидера переданы
+            // Вернуть значение, что права лидера успешно переданы
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 }

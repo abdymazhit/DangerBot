@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Команда посмотреть информацию о команде
  *
- * @version   08.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamInfoCommandListener extends ListenerAdapter {
@@ -39,45 +39,33 @@ public class TeamInfoCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
-            message.reply("Ошибка! Вы не авторизованы!").queue();
-            return;
-        }
-
         if(!member.getRoles().contains(UserRole.LEADER.getRole()) && !member.getRoles().contains(UserRole.MEMBER.getRole())) {
             message.reply("Ошибка! Команда доступна только для участников или лидеров команд!").queue();
             return;
         }
 
-        String memberName;
-        if(member.getNickname() == null) {
-            memberName = member.getEffectiveName();
-        } else {
-            memberName = member.getNickname();
+        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
 
-        int memberId = MTHD.getInstance().database.getUserId(memberName);
+        int memberId = MTHD.getInstance().database.getUserId(member.getId());
         if(memberId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
         }
 
-        int teamId;
-
-        teamId = MTHD.getInstance().database.getLeaderTeamId(memberId);
-        if(teamId < 0) {
-            teamId = MTHD.getInstance().database.getMemberTeamId(memberId);
-        }
-
-        if(teamId < 0) {
-            message.reply("Ошибка! Вы не являетесь участником или лидеров какой-либо команды!").queue();
+        int memberTeamId = MTHD.getInstance().database.getUserTeamId(memberId);
+        if(memberTeamId < 0) {
+            message.reply("Ошибка! Вы не являетесь участником или лидером какой-либо команды!").queue();
             return;
         }
 
-        MessageEmbed messageEmbed = MTHD.getInstance().utils.getTeamInfoMessageEmbed(new Team(teamId));
+        Team team = new Team(memberTeamId);
+        team.getTeamInfoByDatabase();
+        MessageEmbed messageEmbed = MTHD.getInstance().utils.getTeamInfoMessageEmbed(team);
         if(messageEmbed == null) {
-            message.reply("Ошибка! По неизвестной причине " +
-                    "получить информацию о Вашей команде не получилось! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Ошибка! По неизвестной причине получить информацию о Вашей команде не получилось! Свяжитесь с разработчиком бота!").queue();
         } else {
             message.replyEmbeds(messageEmbed).queue();
         }

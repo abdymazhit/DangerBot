@@ -1,20 +1,21 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда удаления участника из команды
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDeleteCommandListener extends ListenerAdapter {
@@ -27,11 +28,11 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         String contentRaw = message.getContentRaw();
         MessageChannel messageChannel = event.getChannel();
-        Member member = event.getMember();
+        Member deleter = event.getMember();
 
         if(!contentRaw.startsWith("!adminteam delete")) return;
         if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
-        if(member == null) return;
+        if(deleter == null) return;
 
         String[] command = contentRaw.split(" ");
 
@@ -50,24 +51,17 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+        if(!deleter.getRoles().contains(UserRole.ADMIN.getRole())) {
+            message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+            return;
+        }
+        
+        if(!deleter.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
             message.reply("Ошибка! Вы не авторизованы!").queue();
             return;
         }
 
-        if(!member.getRoles().contains(UserRole.ADMIN.getRole())) {
-            message.reply("Ошибка! У вас нет прав для этого действия!").queue();
-            return;
-        }
-
-        String deleterName;
-        if(member.getNickname() == null) {
-            deleterName = member.getEffectiveName();
-        } else {
-            deleterName = member.getNickname();
-        }
-
-        int deleterId = MTHD.getInstance().database.getUserId(deleterName);
+        int deleterId = MTHD.getInstance().database.getUserId(deleter.getId());
         if(deleterId < 0) {
             message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
             return;
@@ -76,8 +70,8 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
         String teamName = command[2];
         String memberName = command[3];
 
-        int memberId = MTHD.getInstance().database.getUserId(memberName);
-        if(memberId < 0) {
+        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
+        if(memberAccount == null) {
             message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
             return;
         }
@@ -88,26 +82,41 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
             return;
         }
 
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberId);
+        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberAccount.getId());
         if(isUserTeamLeader) {
             message.reply("Ошибка! Участник является лидером команды! " +
                     "Для удаления участника из команды Вы сперва должны передавать права лидера другому игроку!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberId, teamId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.getId(), teamId);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Участник не является участником этой команды!").queue();
             return;
         }
 
-        boolean isMemberDeleted = deleteTeamMember(teamId, memberId, deleterId);
+        boolean isMemberDeleted = deleteTeamMember(teamId, memberAccount.getId(), deleterId);
         if(!isMemberDeleted) {
-            message.reply("Ошибка! По неизвестной причине участник не удалился из команды! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при удалении участника из команды! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        message.reply("Участник успешно удален! Название команды: " + teamName + ", название участника: " + memberName).queue();
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamName, true);
+        if(teamRoles.size() != 1) {
+            message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        try {
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).submit().get();
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            message.reply("Критическая ошибка при удалении у участника роли команды и роли участника! Свяжитесь с разработчиком бота!").queue();
+            return;
+        }
+
+        message.reply("Участник успешно удален из команды! Название команды: " + teamName + ", ник участника: " + memberName).queue();
     }
 
     /**
@@ -136,12 +145,11 @@ public class AdminTeamDeleteCommandListener extends ListenerAdapter {
             historyStatement.executeUpdate();
             historyStatement.close();
 
-            // Вернуть значение, что участник удален
+            // Вернуть значение, что участник успешно удален
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 }
