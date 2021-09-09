@@ -4,11 +4,14 @@ import com.google.gson.Gson;
 import net.abdymazhit.mthd.channels.AdminChannel;
 import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.channels.MyTeamChannel;
+import net.abdymazhit.mthd.channels.TeamsChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.*;
 import net.abdymazhit.mthd.listeners.commands.admin.*;
+import net.abdymazhit.mthd.listeners.commands.myteam.*;
+import net.abdymazhit.mthd.listeners.commands.teams.TeamNameInfoCommandListener;
 import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -53,6 +56,9 @@ public class MTHD {
     /** Канал администрации */
     public final AdminChannel adminChannel;
 
+    /** Канал команды */
+    public final TeamsChannel teamsChannel;
+
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
 
@@ -90,8 +96,9 @@ public class MTHD {
 
         database = new Database();
         authChannel = new AuthChannel();
-        myTeamChannel = new MyTeamChannel();
         adminChannel = new AdminChannel();
+        teamsChannel = new TeamsChannel();
+        myTeamChannel = new MyTeamChannel();
         utils = new Utils();
 
 //        Обновить команды, только при изменении/добавлении команды
@@ -155,6 +162,8 @@ public class MTHD {
         jda.addEventListener(new TeamTransferCommandListener());
         jda.addEventListener(new TeamDisbandCommandListener());
         jda.addEventListener(new TeamInfoCommandListener());
+
+        jda.addEventListener(new TeamNameInfoCommandListener());
 
         jda.addEventListener(new MessageReceivedListener());
     }

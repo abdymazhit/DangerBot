@@ -1,8 +1,7 @@
-package net.abdymazhit.mthd.listeners.commands;
+package net.abdymazhit.mthd.listeners.commands.myteam;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Team;
-import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -20,12 +19,12 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Команда исключить участника из команды
+ * Команда покинуть команду
  *
  * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
-public class TeamKickCommandListener extends ListenerAdapter {
+public class TeamLeaveCommandListener extends ListenerAdapter {
 
     /**
      * Событие получения сообщения
@@ -37,24 +36,24 @@ public class TeamKickCommandListener extends ListenerAdapter {
         MessageChannel messageChannel = event.getChannel();
         Member deleter = event.getMember();
 
-        if(!contentRaw.startsWith("!team kick")) return;
+        if(!contentRaw.startsWith("!team leave")) return;
         if(!messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) return;
         if(deleter == null) return;
 
         String[] command = contentRaw.split(" ");
 
-        if(command.length == 2) {
-            message.reply("Ошибка! Укажите участника команды!").queue();
-            return;
-        }
-
-        if(command.length > 3) {
+        if(command.length > 2) {
             message.reply("Ошибка! Неверная команда!").queue();
             return;
         }
 
-        if(!deleter.getRoles().contains(UserRole.LEADER.getRole())) {
-            message.reply("Ошибка! Команда доступна только для лидеров команд!").queue();
+        if(deleter.getRoles().contains(UserRole.LEADER.getRole())) {
+            message.reply("Ошибка! Вы не можете покинуть команду, так как Вы являетесь лидером команды!").queue();
+            return;
+        }
+
+        if(!deleter.getRoles().contains(UserRole.MEMBER.getRole())) {
+            message.reply("Ошибка! Команда доступна только для участников команды!").queue();
             return;
         }
 
@@ -69,29 +68,15 @@ public class TeamKickCommandListener extends ListenerAdapter {
             return;
         }
 
-        String memberName = command[2];
-
-        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
-        if(memberAccount == null) {
-            message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
-            return;
-        }
-
-        Team team = MTHD.getInstance().database.getLeaderTeam(deleterId);
+        Team team = MTHD.getInstance().database.getMemberTeam(deleterId);
         if(team == null) {
-            message.reply("Ошибка! Вы не являетесь лидером какой-либо команды!").queue();
+            message.reply("Ошибка! Вы не являетесь участником какой-либо команды!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.getId(), team.id);
-        if(!isUserTeamMember) {
-            message.reply("Ошибка! Участник не является участником этой команды!").queue();
-            return;
-        }
-
-        boolean isMemberDeleted = deleteTeamMember(team.id, memberAccount.getId(), deleterId);
+        boolean isMemberDeleted = deleteTeamMember(team.id, deleterId, deleterId);
         if(!isMemberDeleted) {
-            message.reply("Критическая ошибка при удалении участника из команды! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при попытке покинуть команду! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
@@ -102,15 +87,15 @@ public class TeamKickCommandListener extends ListenerAdapter {
         }
 
         try {
-            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).submit().get();
-            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+            MTHD.getInstance().guild.removeRoleFromMember(deleter.getId(), teamRoles.get(0)).submit().get();
+            MTHD.getInstance().guild.removeRoleFromMember(deleter.getId(), UserRole.MEMBER.getRole()).submit().get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
-            message.reply("Критическая ошибка при удалении у участника роли команды и роли участника! Свяжитесь с разработчиком бота!").queue();
+            message.reply("Критическая ошибка при удалении у Вас роли команды и роли участника! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        message.reply("Вы успешно выгнали участника из команды!").queue();
+        message.reply("Вы успешно покинули команду!").queue();
     }
 
     /**

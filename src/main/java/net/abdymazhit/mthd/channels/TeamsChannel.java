@@ -9,44 +9,38 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Канал моя команда
+ * Канал команды
  *
  * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
-public class MyTeamChannel extends Channel {
+public class TeamsChannel extends Channel {
 
     /**
-     * Инициализирует канал моя команда
+     * Инициализирует канал команды
      */
-    public MyTeamChannel() {
+    public TeamsChannel() {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
-            deleteChannel(category, "my-team");
-            createChannel(category, "my-team", 1);
+            deleteChannel(category, "teams");
+            createChannel(category, "teams", 0);
             sendChannelMessage();
         }
     }
 
     /**
-     * Отправляет сообщение канала моя команда
+     * Отправляет сообщение канала команды
      */
     private void sendChannelMessage() {
         try {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Доступные команды");
             embedBuilder.setColor(0xFF58B9FF);
-            embedBuilder.addField("Исключить участника из команды",
-                    "`!team kick <NAME>`", false);
-            embedBuilder.addField("Передать права лидера команды",
-                    "`!team transfer <NAME>`", false);
-            embedBuilder.addField("Удалить команду",
-                    "`!team disband`", false);
             embedBuilder.addField("Посмотреть информацию о команде",
-                    "`!team info`", false);
-            embedBuilder.addField("Покинуть команду",
-                    "`!team leave`", false);
+                    "`!team info <NAME>`", false);
+            embedBuilder.addField("TOP 100 команд",
+                    "`!team top`", false);
             channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
             embedBuilder.clear();
         } catch (InterruptedException | ExecutionException e) {

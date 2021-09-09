@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners.commands;
+package net.abdymazhit.mthd.listeners.commands.myteam;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Team;
