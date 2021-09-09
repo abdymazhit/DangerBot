@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.channels.AuthChannel;
 import net.abdymazhit.mthd.channels.MyTeamChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
+import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.*;
 import net.abdymazhit.mthd.listeners.commands.admin.*;
 import net.abdymazhit.mthd.utils.Utils;
@@ -29,7 +30,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   08.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -89,8 +90,8 @@ public class MTHD {
 
         database = new Database();
         authChannel = new AuthChannel();
-        adminChannel = new AdminChannel();
         myTeamChannel = new MyTeamChannel();
+        adminChannel = new AdminChannel();
         utils = new Utils();
 
 //        Обновить команды, только при изменении/добавлении команды
@@ -154,6 +155,8 @@ public class MTHD {
         jda.addEventListener(new TeamTransferCommandListener());
         jda.addEventListener(new TeamDisbandCommandListener());
         jda.addEventListener(new TeamInfoCommandListener());
+
+        jda.addEventListener(new MessageReceivedListener());
     }
 
     /**

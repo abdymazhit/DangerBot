@@ -7,10 +7,13 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   08.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
-public record DatabaseTables(Connection connection) {
+public class DatabaseTables {
+
+    /** Подключение к базе данных */
+    private final Connection connection;
 
     /**
      * Создает таблицы в базе данных

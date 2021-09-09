@@ -6,11 +6,12 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Category;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Канал администрации
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -32,22 +33,26 @@ public class AdminChannel extends Channel {
      * Отправляет сообщение канала администрации
      */
     private void sendChannelMessage() {
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Команды администратора");
-        embedBuilder.setColor(0xFF58B9FF);
-        embedBuilder.addField("Создание команды",
-                "`!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
-        embedBuilder.addField("Удаление команды",
-                "`!adminteam disband <TEAM_NAME>`", false);
-        embedBuilder.addField("Добавление участника в команду",
-                "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
-        embedBuilder.addField("Удаление участника из команды",
-                "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
-        embedBuilder.addField("Передача прав лидера команды",
-                "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`", false);
-        embedBuilder.addField("Переименование команды",
-                "`!adminteam rename <TEAM_NAME> <TO_NAME>`", false);
-        channel.sendMessageEmbeds(embedBuilder.build()).queue();
-        embedBuilder.clear();
+        try {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Команды администратора");
+            embedBuilder.setColor(0xFF58B9FF);
+            embedBuilder.addField("Создание команды",
+                    "`!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
+            embedBuilder.addField("Удаление команды",
+                    "`!adminteam disband <TEAM_NAME>`", false);
+            embedBuilder.addField("Добавление участника в команду",
+                    "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
+            embedBuilder.addField("Удаление участника из команды",
+                    "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
+            embedBuilder.addField("Передача прав лидера команды",
+                    "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`", false);
+            embedBuilder.addField("Переименование команды",
+                    "`!adminteam rename <TEAM_NAME> <TO_NAME>`", false);
+            channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
+            embedBuilder.clear();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 }

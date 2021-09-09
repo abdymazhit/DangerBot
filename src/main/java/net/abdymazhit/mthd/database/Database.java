@@ -2,13 +2,15 @@ package net.abdymazhit.mthd.database;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Config;
+import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.UserAccount;
 
 import java.sql.*;
 
 /**
  * Отвечает за работу с базой данных
  *
- * @version   07.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -41,20 +43,20 @@ public class Database {
         }
 
 //        Создать таблицы, только при необходимости
-//        new DatabaseTables(connection);
+        new DatabaseTables(connection);
     }
 
     /**
      * Получает id пользователя
-     * @param username Ник пользователя
+     * @param discordId Discord id пользователя
      * @return Id пользователя
      */
-    public int getUserId(String username) {
+    public int getUserId(String discordId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM users WHERE username ILIKE ?;");
-            preparedStatement.setString(1, username);
+                    "SELECT id FROM users WHERE member_id = ?;");
+            preparedStatement.setString(1, discordId);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
@@ -64,21 +66,119 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return -1;
     }
 
     /**
-     * Проверяет, является ли пользователь участником какой-либо команды
-     * @param userId Id пользователя
-     * @return Значение, является ли пользователь участником какой-либо
+     * Получает id и discord id пользователя
+     * @param username Ник пользователя
+     * @return Id и discord id пользователя
      */
-    public boolean isUserTeamMember(int userId) {
+    public UserAccount getUserIdAndDiscordId(String username) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams_members WHERE member_id = ?);");
+                    "SELECT id, member_id FROM users WHERE username ILIKE ?;");
+            preparedStatement.setString(1, username);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                UserAccount userAccount = new UserAccount(resultSet.getInt("id"));
+                userAccount.setDiscordId(resultSet.getString("member_id"));
+                return userAccount;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Получает id команды пользователя
+     * @param userId Id пользователя
+     * @return Id команды пользователя
+     */
+    public int getUserTeamId(int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id team_id FROM teams WHERE leader_id = ? AND is_deleted IS NULL " +
+                            "UNION SELECT team_id FROM teams_members WHERE member_id = ?;"
+            );
             preparedStatement.setInt(1, userId);
+            preparedStatement.setInt(2, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("team_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * Получает id команды
+     * @param teamName Название команды
+     * @return Id команды
+     */
+    public int getTeamId(String teamName) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id FROM teams WHERE name ILIKE ? AND is_deleted is null;");
+            preparedStatement.setString(1, teamName);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * Проверяет, является ли пользователь лидером команды
+     * @param userId Id пользователя
+     * @return Значение, является ли пользователь лидером команды
+     */
+    public boolean isUserTeamLeader(int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND is_deleted is null);");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getBoolean(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    /**
+     * Проверяет, является ли пользователь лидером команды
+     * @param userId Id пользователя
+     * @param teamId Id команды
+     * @return Значение, является ли пользователь лидером команды
+     */
+    public boolean isUserTeamLeader(int userId, int teamId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND id = ? AND is_deleted is null);");
+            preparedStatement.setInt(1, userId);
+            preparedStatement.setInt(2, teamId);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
@@ -114,154 +214,7 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return true;
-    }
-
-    /**
-     * Проверяет, является ли пользователь лидером какой-либо команды
-     * @param userId Id пользователя
-     * @return Значение, является ли пользователь лидером какой-либо команды
-     */
-    public boolean isUserTeamLeader(int userId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND is_deleted is null);");
-            preparedStatement.setInt(1, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getBoolean(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return true;
-    }
-
-    /**
-     * Проверяет, является ли пользователь лидером команды
-     * @param userId Id пользователя
-     * @param teamId Id команды
-     * @return Значение, является ли пользователь лидером команды
-     */
-    public boolean isUserTeamLeader(int userId, int teamId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND id = ? AND is_deleted is null);");
-            preparedStatement.setInt(1, userId);
-            preparedStatement.setInt(2, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getBoolean(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return true;
-    }
-
-    /**
-     * Проверяет, существует ли команда по названию
-     * @param teamName Название команды
-     * @return Значение, существует ли команда
-     */
-    public boolean isTeamExists(String teamName) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE name ILIKE ? AND is_deleted is null);");
-            preparedStatement.setString(1, teamName);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getBoolean(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return true;
-    }
-
-    /**
-     * Получает id команды
-     * @param teamName Название команды
-     * @return Id команды
-     */
-    public int getTeamId(String teamName) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM teams WHERE name ILIKE ? AND is_deleted is null;");
-            preparedStatement.setString(1, teamName);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getInt("id");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return -1;
-    }
-
-    /**
-     * Получает id команды лидера
-     * @param leaderId Id лидера
-     * @return Id команды
-     */
-    public int getLeaderTeamId(int leaderId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM teams WHERE leader_id = ?;");
-            preparedStatement.setInt(1, leaderId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getInt("id");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return -1;
-    }
-
-    /**
-     * Получает id команды участника
-     * @param memberId Id участника
-     * @return Id команды
-     */
-    public int getMemberTeamId(int memberId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT team_id FROM teams_members WHERE member_id = ?;");
-            preparedStatement.setInt(1, memberId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-
-            if(resultSet.next()) {
-                return resultSet.getInt("team_id");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return -1;
     }
 
     /**
@@ -284,8 +237,57 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return -1;
+    }
+
+    /**
+     * Получает команду лидера
+     * @param leaderId Id лидера
+     * @return Команда лидера
+     */
+    public Team getLeaderTeam(int leaderId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id, name FROM teams WHERE leader_id = ? AND is_deleted is null;");
+            preparedStatement.setInt(1, leaderId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                Team team = new Team(resultSet.getInt("id"));
+                team.name = resultSet.getString("name");
+                return team;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Получает команду участника
+     * @param memberId Id участника
+     * @return Команда участника
+     */
+    public Team getMemberTeam(int memberId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id, name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
+            preparedStatement.setInt(1, memberId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                Team team = new Team(resultSet.getInt("id"));
+                team.name = resultSet.getString("name");
+                return team;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**

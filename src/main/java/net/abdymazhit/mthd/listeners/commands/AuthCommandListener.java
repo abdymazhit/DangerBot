@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Команда авторизации
  *
- * @version   08.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -47,7 +47,8 @@ public class AuthCommandListener extends ListenerAdapter {
             return;
         }
 
-        String token = tokenOption.getAsString().replace("https://api.vime.world/web/token/", "");
+        String token = tokenOption.getAsString().replace("https://api.vime.world/web/token/", "")
+                .replace(" ", "");
         String authInfo = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/misc/token/" + token);
         if(authInfo == null) {
             event.reply("Ошибка! Неверный токен авторизации!").setEphemeral(true).queue();
@@ -118,6 +119,8 @@ public class AuthCommandListener extends ListenerAdapter {
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
+            int userId = -1;
+
             if(resultSet.next()) {
                 String member_id = resultSet.getString("member_id");
                 Member member = MTHD.getInstance().guild.retrieveMemberById(member_id).submit().get();
@@ -138,20 +141,26 @@ public class AuthCommandListener extends ListenerAdapter {
                     }
                 }
 
-                PreparedStatement statement = connection.prepareStatement("UPDATE users SET member_id = ? WHERE username = ?;");
+                PreparedStatement statement = connection.prepareStatement("UPDATE users SET member_id = ? WHERE username = ? RETURNING id;");
                 statement.setString(1, memberId);
                 statement.setString(2, username);
-                statement.executeUpdate();
+                ResultSet statementResultSet = statement.executeQuery();
                 statement.close();
-            } else {
-                PreparedStatement statement = connection.prepareStatement("INSERT INTO users (member_id, username) VALUES (?, ?);");
-                statement.setString(1, memberId);
-                statement.setString(2, username);
-                statement.executeUpdate();
-                statement.close();
-            }
 
-            int userId = MTHD.getInstance().database.getUserId(username);
+                if(statementResultSet.next()) {
+                    userId = statementResultSet.getInt("id");
+                }
+            } else {
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO users (member_id, username) VALUES (?, ?) RETURNING id;");
+                statement.setString(1, memberId);
+                statement.setString(2, username);
+                ResultSet statementResultSet = statement.executeQuery();
+                statement.close();
+
+                if(statementResultSet.next()) {
+                    userId = statementResultSet.getInt("id");
+                }
+            }
 
             PreparedStatement statement = connection.prepareStatement("INSERT INTO users_auth_history (member_id, user_id, authorized_at) VALUES (?, ?, ?);");
             statement.setString(1, memberId);

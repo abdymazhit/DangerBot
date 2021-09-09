@@ -2,6 +2,7 @@ package net.abdymazhit.mthd.customs;
 
 import net.abdymazhit.mthd.MTHD;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import javax.annotation.Nullable;
@@ -11,13 +12,15 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой канал
  *
- * @version   06.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class Channel {
 
     /** Канал */
     public TextChannel channel;
+
+    public Message channelMessage;
 
     /**
      * Удаляет канал

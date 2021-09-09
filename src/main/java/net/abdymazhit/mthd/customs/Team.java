@@ -19,46 +19,46 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой команду
  *
- * @version   08.09.2021
+ * @version   09.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
 
     /** Подключение к базе данных */
-    private final Connection connection;
+    private Connection connection;
 
     /** Id команды */
-    private final int id;
+    public final int id;
 
     /** Название команды */
-    private String name;
+    public String name;
 
     /** Лидер команды */
-    private UserAccount leader;
+    public UserAccount leader;
 
     /** Количество очков команды */
-    private int points;
+    public int points;
 
     /** Количество сыгранных игр команды */
-    private int games;
+    public int games;
 
     /** Количество побед команды */
-    private int wins;
+    public int wins;
 
     /** Количество убийств команды */
-    private int kills;
+    public int kills;
 
     /** Количество смертей команды */
-    private int deaths;
+    public int deaths;
 
     /** Количество выигранных кроватей команды */
-    private int won_beds;
+    public int won_beds;
 
     /** Количество потерянных кроватей команды */
-    private int lost_beds;
+    public int lost_beds;
 
     /** Участники команды */
-    private final List<UserAccount> members;
+    public final List<UserAccount> members;
 
     /**
      * Инициализирует команду
@@ -66,9 +66,14 @@ public class Team {
      */
     public Team(int id) {
         this.id = id;
-        connection = MTHD.getInstance().database.getConnection();
         members = new ArrayList<>();
+    }
 
+    /**
+     * Получить информацию о команде из базы данных
+     */
+    public void getTeamInfoByDatabase() {
+        connection = MTHD.getInstance().database.getConnection();
         getTeamInfo();
         for(UserAccount user : members) {
             getUsersInfo(user);
@@ -77,86 +82,6 @@ public class Team {
         getUsersVimeIds();
         getUsersVimeOnline();
         getUsersDiscordOnline();
-    }
-
-    /**
-     * Получает название команды
-     * @return Название команды
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Получает лидера команды
-     * @return Лидер команды
-     */
-    public UserAccount getLeader() {
-        return leader;
-    }
-
-    /**
-     * Получает количество очков команды
-     * @return Количество очков команды
-     */
-    public int getPoints() {
-        return points;
-    }
-
-    /**
-     * Получает количество сыгранных игр команды
-     * @return Количество сыгранных игр команды
-     */
-    public int getGames() {
-        return games;
-    }
-
-    /**
-     * Получает количество побед команды
-     * @return Количество побед команды
-     */
-    public int getWins() {
-        return wins;
-    }
-
-    /**
-     * Получает количество убийств команды
-     * @return Количество убийств команды
-     */
-    public int getKills() {
-        return kills;
-    }
-
-    /**
-     * Получает количество смертей команды
-     * @return Количество смертей команды
-     */
-    public int getDeaths() {
-        return deaths;
-    }
-
-    /**
-     * Получает количество выигранных кроватей команды
-     * @return Количество выигранных кроватей команды
-     */
-    public int getWon_beds() {
-        return won_beds;
-    }
-
-    /**
-     * Получает количество потерянных кроватей команды
-     * @return Количество потерянных кроватей команды
-     */
-    public int getLost_beds() {
-        return lost_beds;
-    }
-
-    /**
-     * Получает участников команды
-     * @return Участники команды
-     */
-    public List<UserAccount> getMembers() {
-        return members;
     }
 
     /**
@@ -286,25 +211,17 @@ public class Team {
         try {
             Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
             if(leaderMember == null) return;
-            if(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+            leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
                     leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)) {
-                leader.setDiscordOnline(true);
-            } else {
-                leader.setDiscordOnline(false);
-            }
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
 
             for(UserAccount user : members) {
                 Member userMember = MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).submit().get();
                 if(userMember == null) return;
 
-                if(userMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                user.setDiscordOnline(userMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
                         userMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                        userMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)) {
-                    user.setDiscordOnline(true);
-                } else {
-                    user.setDiscordOnline(false);
-                }
+                        userMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
