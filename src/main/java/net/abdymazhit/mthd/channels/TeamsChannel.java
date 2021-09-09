@@ -39,8 +39,6 @@ public class TeamsChannel extends Channel {
             embedBuilder.setColor(0xFF58B9FF);
             embedBuilder.addField("Посмотреть информацию о команде",
                     "`!team info <NAME>`", false);
-            embedBuilder.addField("TOP 100 команд",
-                    "`!team top`", false);
             channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
             embedBuilder.clear();
         } catch (InterruptedException | ExecutionException e) {

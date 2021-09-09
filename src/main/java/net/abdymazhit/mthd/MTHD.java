@@ -1,10 +1,7 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
-import net.abdymazhit.mthd.channels.AdminChannel;
-import net.abdymazhit.mthd.channels.AuthChannel;
-import net.abdymazhit.mthd.channels.MyTeamChannel;
-import net.abdymazhit.mthd.channels.TeamsChannel;
+import net.abdymazhit.mthd.channels.*;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
@@ -62,6 +59,9 @@ public class MTHD {
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
 
+    /** Канал TOP 100 лучших команд */
+    public final TopTeamsChannel topTeamsChannel;
+
     /** Инструменты для упрощения работы */
     public final Utils utils;
 
@@ -99,6 +99,7 @@ public class MTHD {
         adminChannel = new AdminChannel();
         teamsChannel = new TeamsChannel();
         myTeamChannel = new MyTeamChannel();
+        topTeamsChannel = new TopTeamsChannel();
         utils = new Utils();
 
 //        Обновить команды, только при изменении/добавлении команды
