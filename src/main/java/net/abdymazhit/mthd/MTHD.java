@@ -1,15 +1,19 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
-import net.abdymazhit.mthd.channels.*;
+import net.abdymazhit.mthd.channels.AuthChannel;
+import net.abdymazhit.mthd.channels.AdminChannel;
+import net.abdymazhit.mthd.channels.StaffChannel;
+import net.abdymazhit.mthd.channels.MyTeamChannel;
+import net.abdymazhit.mthd.channels.TeamsChannel;
+import net.abdymazhit.mthd.channels.TopTeamsChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
+import net.abdymazhit.mthd.listeners.AuthCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
-import net.abdymazhit.mthd.listeners.commands.*;
-import net.abdymazhit.mthd.listeners.commands.admin.*;
-import net.abdymazhit.mthd.listeners.commands.myteam.*;
-import net.abdymazhit.mthd.listeners.commands.teams.TeamNameInfoCommandListener;
-import net.abdymazhit.mthd.utils.Utils;
+import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
+import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
+import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -30,7 +34,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -52,6 +56,9 @@ public class MTHD {
 
     /** Канал администрации */
     public final AdminChannel adminChannel;
+
+    /** Канал персонала */
+    public final StaffChannel staffChannel;
 
     /** Канал команды */
     public final TeamsChannel teamsChannel;
@@ -97,6 +104,7 @@ public class MTHD {
         database = new Database();
         authChannel = new AuthChannel();
         adminChannel = new AdminChannel();
+        staffChannel = new StaffChannel();
         teamsChannel = new TeamsChannel();
         myTeamChannel = new MyTeamChannel();
         topTeamsChannel = new TopTeamsChannel();
@@ -151,22 +159,11 @@ public class MTHD {
      */
     private void addEventListeners(JDA jda) {
         jda.addEventListener(new AuthCommandListener());
-        jda.addEventListener(new AdminTeamCreateCommandListener());
-        jda.addEventListener(new AdminTeamDisbandCommandListener());
-        jda.addEventListener(new AdminTeamAddCommandListener());
-        jda.addEventListener(new AdminTeamDeleteCommandListener());
-        jda.addEventListener(new AdminTeamTransferCommandListener());
-        jda.addEventListener(new AdminTeamRenameCommandListener());
-
-        jda.addEventListener(new TeamLeaveCommandListener());
-        jda.addEventListener(new TeamKickCommandListener());
-        jda.addEventListener(new TeamTransferCommandListener());
-        jda.addEventListener(new TeamDisbandCommandListener());
-        jda.addEventListener(new TeamInfoCommandListener());
-
-        jda.addEventListener(new TeamNameInfoCommandListener());
-
         jda.addEventListener(new MessageReceivedListener());
+
+        jda.addEventListener(new AdminCommandsListener());
+        jda.addEventListener(new TeamCommandsListener());
+        jda.addEventListener(new StaffCommandListener());
     }
 
     /**

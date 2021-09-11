@@ -4,10 +4,8 @@ import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
 import java.time.Instant;
@@ -17,26 +15,21 @@ import java.util.concurrent.ExecutionException;
 /**
  * Администраторская команда удаления команды
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
-public class AdminTeamDisbandCommandListener extends ListenerAdapter {
+public class AdminTeamDisbandCommandListener {
 
     /**
-     * Событие получения сообщения
+     * Событие получения команды
      */
-    @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
+    public void onCommandReceived(MessageReceivedEvent event) {
         Message message = event.getMessage();
-        String contentRaw = message.getContentRaw();
-        MessageChannel messageChannel = event.getChannel();
         Member deleter = event.getMember();
 
-        if(!contentRaw.startsWith("!adminteam disband")) return;
-        if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
         if(deleter == null) return;
 
-        String[] command = contentRaw.split(" ");
+        String[] command = message.getContentRaw().split(" ");
 
         if(command.length == 2) {
             message.reply("Ошибка! Укажите название команды!").queue();
@@ -93,6 +86,7 @@ public class AdminTeamDisbandCommandListener extends ListenerAdapter {
         }
 
         message.reply("Команда успешно удалена! Название команды: " + teamName).queue();
+        MTHD.getInstance().topTeamsChannel.updateTop();
     }
 
     /**

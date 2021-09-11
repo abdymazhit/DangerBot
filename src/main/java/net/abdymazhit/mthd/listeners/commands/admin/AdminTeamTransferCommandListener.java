@@ -5,9 +5,7 @@ import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,26 +17,21 @@ import java.util.concurrent.ExecutionException;
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
-public class AdminTeamTransferCommandListener extends ListenerAdapter {
+public class AdminTeamTransferCommandListener {
 
     /**
-     * Событие получения сообщения
+     * Событие получения команды
      */
-    @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
+    public void onCommandReceived(MessageReceivedEvent event) {
         Message message = event.getMessage();
-        String contentRaw = message.getContentRaw();
-        MessageChannel messageChannel = event.getChannel();
         Member changer = event.getMember();
 
-        if(!contentRaw.startsWith("!adminteam transfer")) return;
-        if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
         if(changer == null) return;
 
-        String[] command = contentRaw.split(" ");
+        String[] command = message.getContentRaw().split(" ");
 
         if(command.length == 2) {
             message.reply("Ошибка! Укажите название команды!").queue();

@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.utils;
+package net.abdymazhit.mthd;
 
 import com.google.gson.JsonArray;
 import net.abdymazhit.mthd.customs.Team;
@@ -21,7 +21,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {

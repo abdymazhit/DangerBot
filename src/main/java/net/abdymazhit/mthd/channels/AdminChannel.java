@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Канал администрации
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {

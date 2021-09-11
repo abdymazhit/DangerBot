@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class DatabaseTables {
@@ -36,8 +36,20 @@ public class DatabaseTables {
         createTeamsMembersAdditionHistoryTable();
         createTeamsMembersDeletionHistoryTable();
 
-        createTeamsNamesRenameHistory();
-        createTeamsLeadersTransferHistory();
+        createTeamsNamesRenameHistoryTable();
+        createTeamsLeadersTransferHistoryTable();
+
+        createAvailableAssistantsTable();
+        createTeamsInGameSearchTable();
+
+        createLiveGamesTable();
+        createLiveGamesPlayersTable();
+
+        createCancelledGamesHistory();
+        createCancelledGamesPlayersHistory();
+
+        createFinishedGamesHistory();
+        createFinishedGamesPlayersHistory();
     }
 
     /**
@@ -218,7 +230,7 @@ public class DatabaseTables {
     /**
      * Создает таблицу истории передачи прав лидера команд
      */
-    private void createTeamsLeadersTransferHistory() {
+    private void createTeamsLeadersTransferHistoryTable() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_leaders_transfer_history (" +
                     "id serial not null constraint teams_leaders_transfer_history_pk primary key, " +
@@ -237,7 +249,7 @@ public class DatabaseTables {
     /**
      * Создает таблицу истории переименовании команд
      */
-    private void createTeamsNamesRenameHistory() {
+    private void createTeamsNamesRenameHistoryTable() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_names_rename_history (" +
                     "id serial not null constraint teams_names_rename_history_pk primary key, " +
@@ -246,6 +258,144 @@ public class DatabaseTables {
                     "to_name varchar(50) not null, " +
                     "changer_id int not null, " +
                     "changed_at timestamp not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу доступных помощников
+     */
+    private void createAvailableAssistantsTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS available_assistants (" +
+                    "id serial not null constraint available_assistants_pk primary key, " +
+                    "assistant_id int not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу команд в поиске игры
+     */
+    private void createTeamsInGameSearchTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS teams_in_game_search (" +
+                    "id serial not null constraint teams_in_game_search_pk primary key, " +
+                    "team_id int not null, " +
+                    "format varchar(50) not null, " +
+                    "starter_id int not null, " +
+                    "started_at timestamp not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу игр в прямом эфире
+     */
+    private void createLiveGamesTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS live_games (" +
+                    "id serial not null constraint live_games_pk primary key, " +
+                    "first_team_id int not null, " +
+                    "second_team_id int not null, " +
+                    "format varchar(50) not null, " +
+                    "assistant_id int not null, " +
+                    "started_at timestamp not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу игроков матчей в прямом эфире
+     */
+    private void createLiveGamesPlayersTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS live_games_players (" +
+                    "id serial not null constraint live_games_players_pk primary key, " +
+                    "live_game_id int not null, " +
+                    "player_id int not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории отмененных игр
+     */
+    private void createCancelledGamesHistory() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS cancelled_games_history (" +
+                    "id serial not null constraint cancelled_games_history_pk primary key, " +
+                    "first_team_id int not null, " +
+                    "second_team_id int not null, " +
+                    "format varchar(50) not null, " +
+                    "canceller_id int not null, " +
+                    "cancelled_at timestamp not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории игроков отмененных игр
+     */
+    private void createCancelledGamesPlayersHistory() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS cancelled_games_players_history (" +
+                    "id serial not null constraint cancelled_games_players_history_pk primary key, " +
+                    "cancelled_game_id int not null, " +
+                    "player_id int not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории завершенных игр
+     */
+    private void createFinishedGamesHistory() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS finished_games_history (" +
+                    "id serial not null constraint finished_games_history_pk primary key, " +
+                    "first_team_id int not null, " +
+                    "second_team_id int not null, " +
+                    "format varchar(50) not null, " +
+                    "finisher_id int not null, " +
+                    "finished_at timestamp not null);");
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории игроков завершенных игр
+     */
+    private void createFinishedGamesPlayersHistory() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS finished_games_players_history (" +
+                    "id serial not null constraint finished_games_players_history_pk primary key, " +
+                    "finished_game_id int not null, " +
+                    "player_id int not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (SQLException e) {

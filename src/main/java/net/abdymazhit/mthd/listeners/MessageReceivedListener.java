@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Очищает сообщения канала
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -24,16 +24,23 @@ public class MessageReceivedListener extends ListenerAdapter {
         Message message = event.getMessage();
         MessageChannel messageChannel = event.getChannel();
 
-        if(messageChannel.equals(MTHD.getInstance().authChannel.channel) ||
+        if(messageChannel.equals(MTHD.getInstance().adminChannel.channel) ||
                 messageChannel.equals(MTHD.getInstance().myTeamChannel.channel) ||
-                        messageChannel.equals(MTHD.getInstance().adminChannel.channel)
-                ) {
+                messageChannel.equals(MTHD.getInstance().staffChannel.channel) ||
+                messageChannel.equals(MTHD.getInstance().teamsChannel.channel) ||
+                messageChannel.equals(MTHD.getInstance().topTeamsChannel.channel)) {
+            if(!MTHD.getInstance().adminChannel.channelMessage.equals(message) &&
+                    !MTHD.getInstance().myTeamChannel.channelMessage.equals(message) &&
+                    !MTHD.getInstance().staffChannel.channelMessage.equals(message) &&
+                    !MTHD.getInstance().teamsChannel.channelMessage.equals(message) &&
+                    !MTHD.getInstance().topTeamsChannel.channelMessage.equals(message)) {
+                message.delete().submitAfter(30, TimeUnit.SECONDS);
+            }
+        }
+
+        if(messageChannel.equals(MTHD.getInstance().authChannel.channel)) {
             if(!MTHD.getInstance().authChannel.channelMessage.equals(message)) {
-                message.delete().queue();
-            } else if(!MTHD.getInstance().myTeamChannel.channelMessage.equals(message)) {
-                message.delete().queueAfter(30, TimeUnit.SECONDS);
-            } else if(!MTHD.getInstance().adminChannel.channelMessage.equals(message)) {
-                message.delete().queueAfter(30, TimeUnit.SECONDS);
+                message.delete().submit();
             }
         }
     }

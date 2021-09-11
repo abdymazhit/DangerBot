@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Канал моя команда
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -24,7 +24,7 @@ public class MyTeamChannel extends Channel {
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
             deleteChannel(category, "my-team");
-            createChannel(category, "my-team", 1);
+            createChannel(category, "my-team", 2);
             sendChannelMessage();
         }
     }

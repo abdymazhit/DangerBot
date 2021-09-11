@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners.commands;
+package net.abdymazhit.mthd.listeners;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Команда авторизации
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -93,13 +93,18 @@ public class AuthCommandListener extends ListenerAdapter {
             return;
         }
 
-        // Изменить пользователю ник
-        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-            member.modifyNickname(username).queue();
-        }
+        try {
+            // Изменить пользователю ник
+            if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
+                member.modifyNickname(username).submit().get();
+            }
 
-        // Изменить роль пользователя
-        MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
+            // Изменить роль пользователя
+            MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            event.reply("Критическая ошибка при выдачи роли! Свяжитесь с разработчиком бота!").setEphemeral(true).queue();
+        }
 
         // Отправить сообщение о успешной авторизации
         event.replyEmbeds(MTHD.getInstance().utils.getAuthInfoMessageEmbed(username, level, percent, rank)).setEphemeral(true).queue();

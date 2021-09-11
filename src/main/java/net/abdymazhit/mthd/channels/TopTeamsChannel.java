@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Канал TOP 100 команд
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
 public class TopTeamsChannel extends Channel {
@@ -30,7 +30,7 @@ public class TopTeamsChannel extends Channel {
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
             deleteChannel(category, "top");
-            createChannel(category, "top", 2);
+            createChannel(category, "top", 1);
         }
         updateTop();
     }

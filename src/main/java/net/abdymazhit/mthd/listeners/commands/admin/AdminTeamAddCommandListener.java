@@ -5,12 +5,13 @@ import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -18,26 +19,21 @@ import java.util.concurrent.ExecutionException;
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   09.09.2021
+ * @version   11.09.2021
  * @author    Islam Abdymazhit
  */
-public class AdminTeamAddCommandListener extends ListenerAdapter {
+public class AdminTeamAddCommandListener {
 
     /**
-     * Событие получения сообщения
+     * Событие получения команды
      */
-    @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
+    public void onCommandReceived(MessageReceivedEvent event) {
         Message message = event.getMessage();
-        String contentRaw = message.getContentRaw();
-        MessageChannel messageChannel = event.getChannel();
         Member adder = event.getMember();
 
-        if(!contentRaw.startsWith("!adminteam add")) return;
-        if(!messageChannel.equals(MTHD.getInstance().adminChannel.channel)) return;
         if(adder == null) return;
 
-        String[] command = contentRaw.split(" ");
+        String[] command = message.getContentRaw().split(" ");
 
         if(command.length == 2) {
             message.reply("Ошибка! Укажите название команды!").queue();
