@@ -1,15 +1,12 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
-import net.abdymazhit.mthd.channels.AuthChannel;
-import net.abdymazhit.mthd.channels.AdminChannel;
-import net.abdymazhit.mthd.channels.StaffChannel;
-import net.abdymazhit.mthd.channels.MyTeamChannel;
-import net.abdymazhit.mthd.channels.TeamsChannel;
+import net.abdymazhit.mthd.channels.*;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.AuthCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
+import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
@@ -62,6 +59,9 @@ public class MTHD {
     /** Канал команды */
     public final TeamsChannel teamsChannel;
 
+    /** Канал поиска игры */
+    public final FindGameChannel findGameChannel;
+
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
 
@@ -102,6 +102,7 @@ public class MTHD {
         adminChannel = new AdminChannel();
         staffChannel = new StaffChannel();
         teamsChannel = new TeamsChannel();
+        findGameChannel = new FindGameChannel();
         myTeamChannel = new MyTeamChannel();
         utils = new Utils();
 
@@ -158,6 +159,7 @@ public class MTHD {
 
         jda.addEventListener(new AdminCommandsListener());
         jda.addEventListener(new TeamCommandsListener());
+        jda.addEventListener(new FindGameCommandListener());
         jda.addEventListener(new StaffCommandListener());
     }
 

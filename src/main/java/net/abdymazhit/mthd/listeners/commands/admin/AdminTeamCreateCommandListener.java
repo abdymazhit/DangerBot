@@ -98,7 +98,7 @@ public class AdminTeamCreateCommandListener {
 
             message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
                     + leaderName + ", роль команды: " + teamRole.getAsMention()).queue();
-            MTHD.getInstance().teamsChannel.updateTop();
+            MTHD.getInstance().teamsChannel.updateTopMessage();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             message.reply("Критическая ошибка при создании роли команды и выдачи лидеру роли лидера! Свяжитесь с разработчиком бота!").queue();

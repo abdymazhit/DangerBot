@@ -80,7 +80,7 @@ public class TeamDisbandCommandListener {
         }
 
         message.reply("Вы успешно удалили команду!").queue();
-        MTHD.getInstance().teamsChannel.updateTop();
+        MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 
     /**

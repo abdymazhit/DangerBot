@@ -50,7 +50,7 @@ public class TeamsChannel extends Channel {
                 e.printStackTrace();
             }
 
-            updateTop();
+            updateTopMessage();
             sendChannelMessage();
         }
     }
@@ -85,7 +85,7 @@ public class TeamsChannel extends Channel {
             }
             embedBuilder.addField("Place", teamsPlaceString.toString(), true);
 
-            if(channelMessage == null) {
+            if(channelTopTeamsMessage == null) {
                 channelTopTeamsMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
             } else {
                 channelTopTeamsMessage.editMessageEmbeds(embedBuilder.build()).queue();
@@ -117,7 +117,7 @@ public class TeamsChannel extends Channel {
     /**
      * Обновляет список лучших игроков
      */
-    public void updateTop() {
+    public void updateTopMessage() {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(

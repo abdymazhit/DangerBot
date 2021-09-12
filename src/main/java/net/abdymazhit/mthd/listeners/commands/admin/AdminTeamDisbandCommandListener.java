@@ -86,7 +86,7 @@ public class AdminTeamDisbandCommandListener {
         }
 
         message.reply("Команда успешно удалена! Название команды: " + teamName).queue();
-        MTHD.getInstance().teamsChannel.updateTop();
+        MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 
     /**

@@ -16,7 +16,7 @@ import java.sql.SQLException;
 /**
  * Команда персонала
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class StaffCommandListener extends ListenerAdapter {
@@ -60,6 +60,7 @@ public class StaffCommandListener extends ListenerAdapter {
                     return;
                 }
                 message.reply("Вы успешно добавлены в таблицу доступных помощников!").queue();
+                MTHD.getInstance().findGameChannel.updateAvailableAssistantsMessage();
             } else if (contentRaw.equals("!unready")) {
                 String errorMessage = setUnready(assistantId);
                 if(errorMessage != null) {
@@ -67,6 +68,7 @@ public class StaffCommandListener extends ListenerAdapter {
                     return;
                 }
                 message.reply("Вы успешно удалены из таблицы доступных помощников!").queue();
+                MTHD.getInstance().findGameChannel.updateAvailableAssistantsMessage();
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
