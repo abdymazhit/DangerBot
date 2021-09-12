@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Администраторская команда удаления команды
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDisbandCommandListener {
@@ -86,7 +86,7 @@ public class AdminTeamDisbandCommandListener {
         }
 
         message.reply("Команда успешно удалена! Название команды: " + teamName).queue();
-        MTHD.getInstance().topTeamsChannel.updateTop();
+        MTHD.getInstance().teamsChannel.updateTop();
     }
 
     /**

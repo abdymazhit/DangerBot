@@ -4,6 +4,7 @@ import net.abdymazhit.mthd.MTHD;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой канал
  *
- * @version   09.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class Channel {
@@ -20,6 +21,7 @@ public class Channel {
     /** Канал */
     public TextChannel channel;
 
+    /** Сообщение канала */
     public Message channelMessage;
 
     /**
@@ -53,12 +55,8 @@ public class Channel {
      * @param channelName Название канала
      * @param position Позиция канала
      */
-    public void createChannel(Category category, String channelName, @Nullable Integer position) {
-        try {
-            channel = category.createTextChannel(channelName).setPosition(position).submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+    public ChannelAction<TextChannel> createChannel(Category category, String channelName, @Nullable Integer position) {
+        return category.createTextChannel(channelName).setPosition(position);
     }
 
     /**

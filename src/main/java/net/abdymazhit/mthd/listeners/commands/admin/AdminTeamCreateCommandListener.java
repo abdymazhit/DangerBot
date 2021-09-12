@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Администраторская команда создания команды
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -98,7 +98,7 @@ public class AdminTeamCreateCommandListener {
 
             message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
                     + leaderName + ", роль команды: " + teamRole.getAsMention()).queue();
-            MTHD.getInstance().topTeamsChannel.updateTop();
+            MTHD.getInstance().teamsChannel.updateTop();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             message.reply("Критическая ошибка при создании роли команды и выдачи лидеру роли лидера! Свяжитесь с разработчиком бота!").queue();

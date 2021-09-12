@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Очищает сообщения канала
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -27,13 +27,12 @@ public class MessageReceivedListener extends ListenerAdapter {
         if(messageChannel.equals(MTHD.getInstance().adminChannel.channel) ||
                 messageChannel.equals(MTHD.getInstance().myTeamChannel.channel) ||
                 messageChannel.equals(MTHD.getInstance().staffChannel.channel) ||
-                messageChannel.equals(MTHD.getInstance().teamsChannel.channel) ||
-                messageChannel.equals(MTHD.getInstance().topTeamsChannel.channel)) {
+                messageChannel.equals(MTHD.getInstance().teamsChannel.channel)) {
             if(!MTHD.getInstance().adminChannel.channelMessage.equals(message) &&
                     !MTHD.getInstance().myTeamChannel.channelMessage.equals(message) &&
                     !MTHD.getInstance().staffChannel.channelMessage.equals(message) &&
                     !MTHD.getInstance().teamsChannel.channelMessage.equals(message) &&
-                    !MTHD.getInstance().topTeamsChannel.channelMessage.equals(message)) {
+                    !MTHD.getInstance().teamsChannel.channelTopTeamsMessage.equals(message)) {
                 message.delete().submitAfter(30, TimeUnit.SECONDS);
             }
         }

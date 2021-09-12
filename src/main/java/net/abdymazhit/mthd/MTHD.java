@@ -6,7 +6,6 @@ import net.abdymazhit.mthd.channels.AdminChannel;
 import net.abdymazhit.mthd.channels.StaffChannel;
 import net.abdymazhit.mthd.channels.MyTeamChannel;
 import net.abdymazhit.mthd.channels.TeamsChannel;
-import net.abdymazhit.mthd.channels.TopTeamsChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.AuthCommandListener;
@@ -34,7 +33,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -65,9 +64,6 @@ public class MTHD {
 
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
-
-    /** Канал TOP 100 лучших команд */
-    public final TopTeamsChannel topTeamsChannel;
 
     /** Инструменты для упрощения работы */
     public final Utils utils;
@@ -107,7 +103,6 @@ public class MTHD {
         staffChannel = new StaffChannel();
         teamsChannel = new TeamsChannel();
         myTeamChannel = new MyTeamChannel();
-        topTeamsChannel = new TopTeamsChannel();
         utils = new Utils();
 
 //        Обновить команды, только при изменении/добавлении команды

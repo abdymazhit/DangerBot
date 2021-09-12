@@ -2,16 +2,21 @@ package net.abdymazhit.mthd.channels;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
+import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
  * Канал моя команда
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -24,7 +29,18 @@ public class MyTeamChannel extends Channel {
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
             deleteChannel(category, "my-team");
-            createChannel(category, "my-team", 2);
+
+            try {
+                ChannelAction<TextChannel> createAction = createChannel(category, "my-team", 2);
+                createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+                createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+                createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+                channel = createAction.submit().get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+
             sendChannelMessage();
         }
     }

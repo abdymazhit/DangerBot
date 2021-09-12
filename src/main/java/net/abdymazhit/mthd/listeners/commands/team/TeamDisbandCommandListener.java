@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Команда удалить команду
  *
- * @version   11.09.2021
+ * @version   12.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamDisbandCommandListener {
@@ -80,7 +80,7 @@ public class TeamDisbandCommandListener {
         }
 
         message.reply("Вы успешно удалили команду!").queue();
-        MTHD.getInstance().topTeamsChannel.updateTop();
+        MTHD.getInstance().teamsChannel.updateTop();
     }
 
     /**
