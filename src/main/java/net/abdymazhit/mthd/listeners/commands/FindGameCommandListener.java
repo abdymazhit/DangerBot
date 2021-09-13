@@ -1,6 +1,8 @@
 package net.abdymazhit.mthd.listeners.commands;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -8,13 +10,17 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.sql.*;
-import java.time.Instant;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Команда поиск игры
  *
- * @version   12.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameCommandListener extends ListenerAdapter {
@@ -35,7 +41,7 @@ public class FindGameCommandListener extends ListenerAdapter {
         String contentRaw = message.getContentRaw();
         String[] command = contentRaw.split(" ");
 
-        if (contentRaw.startsWith("!find")) {
+        if(contentRaw.startsWith("!find")) {
             if(!member.getRoles().contains(UserRole.LEADER.getRole()) &&
                     !member.getRoles().contains(UserRole.MEMBER.getRole()) ) {
                 message.reply("Ошибка! У вас нет прав для этого действия!").queue();
@@ -77,6 +83,41 @@ public class FindGameCommandListener extends ListenerAdapter {
                     return;
                 }
 
+                Team team = new Team(teamId);
+                team.getTeamInfoByDatabase();
+                List<UserAccount> members = new ArrayList<>(team.members);
+                members.add(team.leader);
+
+                int onlinePlayers = 0;
+                for(UserAccount player : members) {
+                    if(player.isDiscordOnline() && player.isVimeOnline()) {
+                        onlinePlayers++;
+                    }
+                }
+
+                if(format.equals("4x2")) {
+                    if(onlinePlayers < 4) {
+                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
+                        return;
+                    }
+                } else {
+                    if(onlinePlayers < 6) {
+                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
+                        return;
+                    }
+                }
+
+                List<Integer> teamsInLiveGames = getTeamsInLiveGames();
+                if(teamsInLiveGames == null) {
+                    message.reply("Ошибка! Не удалось получить список команд в активных играх!").queue();
+                    return;
+                }
+
+                if(teamsInLiveGames.contains(teamId)) {
+                    message.reply("Ошибка! Ваша команда уже участвует в игре!").queue();
+                    return;
+                }
+
                 String errorMessage = addTeamToTeamsInGameSearch(teamId, format, memberId);
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();
@@ -84,8 +125,9 @@ public class FindGameCommandListener extends ListenerAdapter {
                 }
 
                 message.reply("Ваша команда успешно добавлена в поиск игры!").queue();
-                MTHD.getInstance().findGameChannel.updateTeamsInGameSearchMessage();
-            } else if (contentRaw.equals("!find leave")) {
+                MTHD.getInstance().findGameChannel.updateTeamsInGameSearchCountMessage();
+                MTHD.getInstance().gameManager.tryStartGame();
+            } else if(contentRaw.equals("!find leave")) {
                 int memberId = MTHD.getInstance().database.getUserId(member.getId());
                 if(memberId < 0) {
                     message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
@@ -105,7 +147,8 @@ public class FindGameCommandListener extends ListenerAdapter {
                 }
 
                 message.reply("Ваша команда успешно удалена из поиска игры!").queue();
-                MTHD.getInstance().findGameChannel.updateTeamsInGameSearchMessage();
+                MTHD.getInstance().findGameChannel.updateTeamsInGameSearchCountMessage();
+                MTHD.getInstance().gameManager.tryStartGame();
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
@@ -125,14 +168,13 @@ public class FindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "INSERT INTO teams_in_game_search (team_id, format, starter_id, started_at) SELECT ?, ?, ?, ? " +
+                    "INSERT INTO teams_in_game_search (team_id, format, starter_id) SELECT ?, ?, ? " +
                             "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?) " +
                             "RETURNING id;");
             preparedStatement.setInt(1, teamId);
             preparedStatement.setString(2, format);
             preparedStatement.setInt(3, starterId);
-            preparedStatement.setTimestamp(4, Timestamp.from(Instant.now()));
-            preparedStatement.setInt(5, teamId);
+            preparedStatement.setInt(4, teamId);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
@@ -171,6 +213,32 @@ public class FindGameCommandListener extends ListenerAdapter {
         } catch (SQLException e) {
             e.printStackTrace();
             return "Критическая ошибка при удалении вашей команды из поиска игры! Свяжитесь с разработчиком бота!";
+        }
+    }
+
+    /**
+     * Получает список команд в активных играх
+     * @return Список команд в активных играх
+     */
+    private List<Integer> getTeamsInLiveGames() {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT first_team_id, second_team_id FROM live_games;");
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            List<Integer> teamsInLiveGames = new ArrayList<>();
+
+            while(resultSet.next()) {
+                teamsInLiveGames.add(resultSet.getInt("first_team_id"));
+                teamsInLiveGames.add(resultSet.getInt("second_team_id"));
+            }
+
+            return teamsInLiveGames;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

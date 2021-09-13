@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Канал моя команда
  *
- * @version   12.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -31,7 +31,7 @@ public class MyTeamChannel extends Channel {
             deleteChannel(category, "my-team");
 
             try {
-                ChannelAction<TextChannel> createAction = createChannel(category, "my-team", 2);
+                ChannelAction<TextChannel> createAction = createChannel(category, "my-team", 3);
                 createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
                 createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
                 createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);

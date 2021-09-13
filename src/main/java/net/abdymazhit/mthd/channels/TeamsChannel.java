@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Канал команды
  *
- * @version   12.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -127,7 +127,7 @@ public class TeamsChannel extends Channel {
             preparedStatement.close();
 
             List<Team> teams = new ArrayList<>();
-            while (resultSet.next()) {
+            while(resultSet.next()) {
                 Team team = new Team(resultSet.getInt("id"));
                 team.name = resultSet.getString("name");
                 team.points = resultSet.getInt("points");

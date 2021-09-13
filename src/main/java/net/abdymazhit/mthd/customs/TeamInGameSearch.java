@@ -3,29 +3,29 @@ package net.abdymazhit.mthd.customs;
 /**
  * Представляет собой команду в поиске игры
  *
- * @version   12.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamInGameSearch {
 
-    /** Название команды */
-    public String teamName;
+    /** Id команды */
+    public int id;
 
     /** Формат игры */
     public String format;
 
-    /** Имя начавшего */
-    public String starterUsername;
+    /** Id начавшего поиск игры */
+    public int starterId;
 
     /**
      * Инициализирует команду в поиске игры
-     * @param teamName Название команды
+     * @param id Id команды
      * @param format Формат игры
-     * @param starterUsername Имя начавшего
+     * @param starterId Id начавшего поиск игры
      */
-    public TeamInGameSearch(String teamName, String format, String starterUsername) {
-        this.teamName = teamName;
+    public TeamInGameSearch(int id, String format, int starterId) {
+        this.id = id;
         this.format = format;
-        this.starterUsername = starterUsername;
+        this.starterId = starterId;
     }
 }

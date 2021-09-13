@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   11.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class DatabaseTables {
@@ -289,8 +289,7 @@ public class DatabaseTables {
                     "id serial not null constraint teams_in_game_search_pk primary key, " +
                     "team_id int not null, " +
                     "format varchar(50) not null, " +
-                    "starter_id int not null, " +
-                    "started_at timestamp not null);");
+                    "starter_id int not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (SQLException e) {
@@ -306,10 +305,14 @@ public class DatabaseTables {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS live_games (" +
                     "id serial not null constraint live_games_pk primary key, " +
                     "first_team_id int not null, " +
+                    "first_team_starter_id int not null, " +
                     "second_team_id int not null, " +
+                    "second_team_starter_id int not null, " +
                     "format varchar(50) not null, " +
+                    "map_name varchar(50), " +
                     "assistant_id int not null, " +
-                    "started_at timestamp not null);");
+                    "started_at timestamp not null, " +
+                    "game_state int not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (SQLException e) {
@@ -324,7 +327,7 @@ public class DatabaseTables {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS live_games_players (" +
                     "id serial not null constraint live_games_players_pk primary key, " +
-                    "live_game_id int not null, " +
+                    "team_id int not null, " +
                     "player_id int not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -341,8 +344,11 @@ public class DatabaseTables {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS cancelled_games_history (" +
                     "id serial not null constraint cancelled_games_history_pk primary key, " +
                     "first_team_id int not null, " +
+                    "first_team_starter_id int not null, " +
                     "second_team_id int not null, " +
+                    "second_team_starter_id int not null, " +
                     "format varchar(50) not null, " +
+                    "map_name varchar(50) not null, " +
                     "canceller_id int not null, " +
                     "cancelled_at timestamp not null);");
             preparedStatement.executeUpdate();
@@ -360,6 +366,7 @@ public class DatabaseTables {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS cancelled_games_players_history (" +
                     "id serial not null constraint cancelled_games_players_history_pk primary key, " +
                     "cancelled_game_id int not null, " +
+                    "team_id int not null, " +
                     "player_id int not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -376,8 +383,11 @@ public class DatabaseTables {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS finished_games_history (" +
                     "id serial not null constraint finished_games_history_pk primary key, " +
                     "first_team_id int not null, " +
+                    "first_team_starter_id int not null, " +
                     "second_team_id int not null, " +
+                    "second_team_starter_id int not null, " +
                     "format varchar(50) not null, " +
+                    "map_name varchar(50) not null, " +
                     "finisher_id int not null, " +
                     "finished_at timestamp not null);");
             preparedStatement.executeUpdate();
@@ -395,6 +405,7 @@ public class DatabaseTables {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS finished_games_players_history (" +
                     "id serial not null constraint finished_games_players_history_pk primary key, " +
                     "finished_game_id int not null, " +
+                    "team_id int not null, " +
                     "player_id int not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();

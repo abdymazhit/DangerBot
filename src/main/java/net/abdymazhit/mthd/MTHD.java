@@ -4,11 +4,13 @@ import com.google.gson.Gson;
 import net.abdymazhit.mthd.channels.*;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
+import net.abdymazhit.mthd.game.GameManager;
 import net.abdymazhit.mthd.listeners.AuthCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
+import net.abdymazhit.mthd.listeners.commands.game.PlayersChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -30,7 +32,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   12.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -59,11 +61,17 @@ public class MTHD {
     /** Канал команды */
     public final TeamsChannel teamsChannel;
 
+    /** Канал активных игр */
+    public final LiveGamesChannel liveGamesChannel;
+
     /** Канал поиска игры */
     public final FindGameChannel findGameChannel;
 
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
+
+    /** Менеджер игры */
+    public final GameManager gameManager;
 
     /** Инструменты для упрощения работы */
     public final Utils utils;
@@ -102,8 +110,10 @@ public class MTHD {
         adminChannel = new AdminChannel();
         staffChannel = new StaffChannel();
         teamsChannel = new TeamsChannel();
+        liveGamesChannel = new LiveGamesChannel();
         findGameChannel = new FindGameChannel();
         myTeamChannel = new MyTeamChannel();
+        gameManager = new GameManager();
         utils = new Utils();
 
 //        Обновить команды, только при изменении/добавлении команды
@@ -161,6 +171,7 @@ public class MTHD {
         jda.addEventListener(new TeamCommandsListener());
         jda.addEventListener(new FindGameCommandListener());
         jda.addEventListener(new StaffCommandListener());
+        jda.addEventListener(new PlayersChoiceCommandListener());
     }
 
     /**

@@ -1,6 +1,7 @@
 package net.abdymazhit.mthd.listeners;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.game.GameCategory;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -11,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Очищает сообщения канала
  *
- * @version   12.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -47,9 +48,18 @@ public class MessageReceivedListener extends ListenerAdapter {
             }
         } else if(messageChannel.equals(MTHD.getInstance().findGameChannel.channel)) {
             if(!MTHD.getInstance().findGameChannel.channelMessage.equals(message) &&
-                    !MTHD.getInstance().findGameChannel.channelTeamsInGameSearchMessage.equals(message) &&
                     !MTHD.getInstance().findGameChannel.channelAvailableAssistantsMessage.equals(message)) {
-                message.delete().submitAfter(5, TimeUnit.SECONDS);
+                message.delete().submitAfter(15, TimeUnit.SECONDS);
+            }
+        }
+
+        for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
+            if(messageChannel.equals(gameCategory.playersChoiceChannel.channel)) {
+                if(!gameCategory.playersChoiceChannel.channelMessage.equals(message) &&
+                        !gameCategory.playersChoiceChannel.channelGamePlayersMessage.equals(message)) {
+                    message.delete().submitAfter(7, TimeUnit.SECONDS);
+                    break;
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ import java.sql.*;
 /**
  * Отвечает за работу с базой данных
  *
- * @version   09.09.2021
+ * @version   13.09.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -70,6 +70,29 @@ public class Database {
     }
 
     /**
+     * Получает discord id пользователя
+     * @param userId Id пользователя
+     * @return Discord id пользователя
+     */
+    public String getUserDiscordId(int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT member_id FROM users WHERE id = ?;");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getString("member_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Получает id и discord id пользователя
      * @param username Ник пользователя
      * @return Id и discord id пользователя
@@ -87,6 +110,29 @@ public class Database {
                 UserAccount userAccount = new UserAccount(resultSet.getInt("id"));
                 userAccount.setDiscordId(resultSet.getString("member_id"));
                 return userAccount;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Получает имя пользователя
+     * @param userId Id пользователя
+     * @return Имя пользователя
+     */
+    public String getUserName(int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT username FROM users WHERE id = ?;");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getString("username");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -141,6 +187,29 @@ public class Database {
             e.printStackTrace();
         }
         return -1;
+    }
+
+    /**
+     * Получает название команды
+     * @param teamId Id команды
+     * @return Название команды
+     */
+    public String getTeamName(int teamId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT name FROM teams WHERE id = ?;");
+            preparedStatement.setInt(1, teamId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getString("name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -288,6 +357,59 @@ public class Database {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Добавляет помощника в таблицу доступных помощников
+     * @param assistantId Id помощника
+     * @return Текст ошибки добавления
+     */
+    public String setReady(int assistantId) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "INSERT INTO available_assistants (assistant_id) SELECT ? " +
+                            "WHERE NOT EXISTS (SELECT assistant_id FROM available_assistants WHERE assistant_id = ?) " +
+                            "RETURNING id;");
+            preparedStatement.setInt(1, assistantId);
+            preparedStatement.setInt(2, assistantId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                // Вернуть значение, что помощник успешно добавлен в таблицу доступных помощников
+                return null;
+            } else {
+                return "Ошибка! Вы уже в списке доступных помощников!";
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Критическая ошибка при добавлении в таблицу доступных помощников! Свяжитесь с разработчиком бота!";
+        }
+    }
+
+    /**
+     * Удаляет помощника из таблицы доступных помощников
+     * @param assistantId Id помощника
+     * @return Текст ошибки удаления
+     */
+    public String setUnready(int assistantId) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "DELETE FROM available_assistants WHERE assistant_id = ? RETURNING id;");
+            preparedStatement.setInt(1, assistantId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                // Вернуть значение, что помощник успешно удален из таблицы доступных помощников
+                return null;
+            } else {
+                return "Ошибка! Вас нет в списке доступных помощников!";
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Критическая ошибка при удалении из таблицы доступных помощников! Свяжитесь с разработчиком бота!";
+        }
     }
 
     /**
