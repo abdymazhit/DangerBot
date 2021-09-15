@@ -10,6 +10,7 @@ import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
+import net.abdymazhit.mthd.listeners.commands.game.MapChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.game.PlayersChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
 import net.dv8tion.jda.api.JDA;
@@ -32,7 +33,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -171,7 +172,9 @@ public class MTHD {
         jda.addEventListener(new TeamCommandsListener());
         jda.addEventListener(new FindGameCommandListener());
         jda.addEventListener(new StaffCommandListener());
+
         jda.addEventListener(new PlayersChoiceCommandListener());
+        jda.addEventListener(new MapChoiceCommandListener());
     }
 
     /**

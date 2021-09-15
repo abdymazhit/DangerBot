@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Категория игры
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategory {
@@ -29,20 +29,17 @@ public class GameCategory {
     /** Роль первой команды */
     public Role firstTeamRole;
 
-    /** Роль начавшего первой команды */
-    public Role firstTeamStarterRole;
-
     /** Роль второй команды */
     public Role secondTeamRole;
-
-    /** Роль начавшего второй команды */
-    public Role secondTeamStarterRole;
 
     /** Канал чата */
     private TextChannel chatChannel;
 
     /** Канал выбора игроков */
     public PlayersChoiceChannel playersChoiceChannel;
+
+    /** Канал выбора карты */
+    public MapChoiceChannel mapChoiceChannel;
 
     /** Голосовой канал первой команды */
     private VoiceChannel firstTeamVoiceChannel;
@@ -117,6 +114,22 @@ public class GameCategory {
     private void deletePlayersChoiceChannel() {
         playersChoiceChannel.channel.delete().queue();
         playersChoiceChannel = null;
+    }
+
+    /**
+     * Создает канал выбора карты
+     */
+    public void createMapsChoiceChannel() {
+        deletePlayersChoiceChannel();
+        mapChoiceChannel = new MapChoiceChannel(this);
+    }
+
+    /**
+     * Удаляет канал выбора карты
+     */
+    private void deleteMapChoiceChannel() {
+        mapChoiceChannel.channel.delete().queue();
+        mapChoiceChannel = null;
     }
 
     /**

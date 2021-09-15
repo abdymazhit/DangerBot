@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков на игру
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -66,15 +66,16 @@ public class PlayersChoiceChannel extends Channel {
             e.printStackTrace();
         }
 
-        AtomicInteger time = new AtomicInteger(120);
+        AtomicInteger time = new AtomicInteger(10);
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
+                sendChannelMessage(time.get());
                 if(time.get() <= 0) {
                     cancel();
+                    gameCategory.createMapsChoiceChannel();
                 }
-                sendChannelMessage(time.get());
                 time.getAndDecrement();
             }
         }, 0, 1000);
@@ -156,7 +157,7 @@ public class PlayersChoiceChannel extends Channel {
             firstStatement.close();
 
             List<Integer> firstTeamPlayersId = new ArrayList<>();
-            while (firstResultSet.next()) {
+            while(firstResultSet.next()) {
                 firstTeamPlayersId.add(firstResultSet.getInt("player_id"));
             }
 
@@ -167,7 +168,7 @@ public class PlayersChoiceChannel extends Channel {
             secondStatement.close();
 
             List<Integer> secondTeamPlayersId = new ArrayList<>();
-            while (secondResultSet.next()) {
+            while(secondResultSet.next()) {
                 secondTeamPlayersId.add(secondResultSet.getInt("player_id"));
             }
 

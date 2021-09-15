@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Канал поиска игры
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameChannel extends Channel {
@@ -136,13 +136,21 @@ public class FindGameChannel extends Channel {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT username FROM users WHERE id = (SELECT assistant_id FROM available_assistants);");
+                    "SELECT assistant_id FROM available_assistants;");
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
             List<String> assistants = new ArrayList<>();
             while(resultSet.next()) {
-                assistants.add(resultSet.getString("username"));
+                PreparedStatement usernameStatement = connection.prepareStatement(
+                        "SELECT username FROM users WHERE id = ?;");
+                usernameStatement.setInt(1, resultSet.getInt("assistant_id"));
+                ResultSet usernameResultSet = usernameStatement.executeQuery();
+                usernameStatement.close();
+
+                while(usernameResultSet.next()) {
+                    assistants.add(usernameResultSet.getString("username"));   
+                }
             }
 
             sendAvailableAssistantsMessage(assistants);

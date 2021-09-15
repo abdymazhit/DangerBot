@@ -17,7 +17,7 @@ import java.sql.SQLException;
 /**
  * Команда выбора игроков на игру
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -35,9 +35,11 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         if(event.getAuthor().isBot()) return;
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
+            if(gameCategory.playersChoiceChannel == null) return;
+
             if(gameCategory.playersChoiceChannel.channel.equals(messageChannel)) {
                 String contentRaw = message.getContentRaw();
-                if (contentRaw.startsWith("!add")) {
+                if(contentRaw.startsWith("!add")) {
                     String[] command = contentRaw.split(" ");
 
                     if(command.length == 1) {
@@ -100,7 +102,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
 
                     message.reply("Вы успешно добавили игрока в игру!").queue();
                     gameCategory.playersChoiceChannel.updateGamePlayersMessage();
-                } else if (contentRaw.startsWith("!delete")) {
+                } else if(contentRaw.startsWith("!delete")) {
                     String[] command = contentRaw.split(" ");
 
                     if(command.length == 1) {

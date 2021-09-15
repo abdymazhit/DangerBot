@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameCommandListener extends ListenerAdapter {
@@ -95,17 +95,18 @@ public class FindGameCommandListener extends ListenerAdapter {
                     }
                 }
 
-                if(format.equals("4x2")) {
-                    if(onlinePlayers < 4) {
-                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
-                        return;
-                    }
-                } else {
-                    if(onlinePlayers < 6) {
-                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
-                        return;
-                    }
-                }
+                // Исправить
+//                if(format.equals("4x2")) {
+//                    if(onlinePlayers < 4) {
+//                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
+//                        return;
+//                    }
+//                } else {
+//                    if(onlinePlayers < 6) {
+//                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
+//                        return;
+//                    }
+//                }
 
                 List<Integer> teamsInLiveGames = getTeamsInLiveGames();
                 if(teamsInLiveGames == null) {

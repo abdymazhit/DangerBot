@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Очищает сообщения канала
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -54,11 +54,21 @@ public class MessageReceivedListener extends ListenerAdapter {
         }
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            if(messageChannel.equals(gameCategory.playersChoiceChannel.channel)) {
-                if(!gameCategory.playersChoiceChannel.channelMessage.equals(message) &&
-                        !gameCategory.playersChoiceChannel.channelGamePlayersMessage.equals(message)) {
-                    message.delete().submitAfter(7, TimeUnit.SECONDS);
-                    break;
+            if(gameCategory.playersChoiceChannel != null) {
+                if(messageChannel.equals(gameCategory.playersChoiceChannel.channel)) {
+                    if(!gameCategory.playersChoiceChannel.channelMessage.equals(message) &&
+                            !gameCategory.playersChoiceChannel.channelGamePlayersMessage.equals(message)) {
+                        message.delete().submitAfter(7, TimeUnit.SECONDS);
+                        break;
+                    }
+                }
+            } else if(gameCategory.mapChoiceChannel != null) {
+                if(messageChannel.equals(gameCategory.mapChoiceChannel.channel)) {
+                    if(!gameCategory.mapChoiceChannel.channelMessage.equals(message) &&
+                            !gameCategory.mapChoiceChannel.channelMapsMessageId.equals(message.getId())) {
+                        message.delete().submitAfter(7, TimeUnit.SECONDS);
+                        break;
+                    }
                 }
             }
         }
