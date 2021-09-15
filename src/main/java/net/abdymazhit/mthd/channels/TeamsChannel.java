@@ -7,7 +7,6 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
@@ -18,18 +17,17 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Канал команды
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
 
-    /** Информационное сообщение о лучших командах */
-    public Message channelTopTeamsMessage;
+    /** Id информационного сообщения о лучших командах */
+    public String channelTopTeamsMessageId;
 
     /**
      * Инициализирует канал команды
@@ -40,15 +38,11 @@ public class TeamsChannel extends Channel {
             Category category = categories.get(0);
             deleteChannel(category, "teams");
 
-            try {
-                ChannelAction<TextChannel> createAction = createChannel(category, "teams", 0);
-                createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-                channel = createAction.submit().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "teams", 0);
+            createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+            createAction.queue(textChannel -> channelId = textChannel.getId());
 
             updateTopMessage();
             sendChannelMessage();
@@ -59,59 +53,59 @@ public class TeamsChannel extends Channel {
      * Отправляет информационное сообщение о лучших командах
      */
     private void sendTopTeamsMessage(List<Team> teams) {
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            String title = "```" +
-                    "                      TEAMS RATING                      " +
-                    "```";
-            embedBuilder.setTitle(title);
-            embedBuilder.setColor(3092790);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        String title = "```" +
+                "                      TEAMS RATING                      " +
+                "```";
+        embedBuilder.setTitle(title);
+        embedBuilder.setColor(3092790);
 
-            StringBuilder teamsNamesString = new StringBuilder();
-            for(Team team : teams) {
-                teamsNamesString.append("> ").append(team.name).append("\n");
-            }
-            embedBuilder.addField("Name", teamsNamesString.toString(), true);
-
-            StringBuilder teamsPointsString = new StringBuilder();
-            for(Team team : teams) {
-                teamsPointsString.append(team.points).append("\n");
-            }
-            embedBuilder.addField("Points", teamsPointsString.toString(), true);
-
-            StringBuilder teamsPlaceString = new StringBuilder();
-            for(int i = 1; i <= teams.size(); i++) {
-                teamsPlaceString.append(i).append("\n");
-            }
-            embedBuilder.addField("Place", teamsPlaceString.toString(), true);
-
-            if(channelTopTeamsMessage == null) {
-                channelTopTeamsMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
-            } else {
-                channelTopTeamsMessage.editMessageEmbeds(embedBuilder.build()).queue();
-            }
-
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        StringBuilder teamsNamesString = new StringBuilder();
+        for(Team team : teams) {
+            teamsNamesString.append("> ").append(team.name).append("\n");
         }
+        embedBuilder.addField("Name", teamsNamesString.toString(), true);
+
+        StringBuilder teamsPointsString = new StringBuilder();
+        for(Team team : teams) {
+            teamsPointsString.append(team.points).append("\n");
+        }
+        embedBuilder.addField("Points", teamsPointsString.toString(), true);
+
+        StringBuilder teamsPlaceString = new StringBuilder();
+        for(int i = 1; i <= teams.size(); i++) {
+            teamsPlaceString.append(i).append("\n");
+        }
+        embedBuilder.addField("Place", teamsPlaceString.toString(), true);
+
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            if(channelTopTeamsMessageId == null) {
+                channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelTopTeamsMessageId = message.getId());
+            } else {
+                channel.editMessageEmbedsById(channelTopTeamsMessageId, embedBuilder.build()).queue();
+            }
+        }
+
+        embedBuilder.clear();
     }
 
     /**
      * Отправляет сообщение канала команды
      */
     private void sendChannelMessage() {
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Доступные команды");
-            embedBuilder.setColor(0xFF58B9FF);
-            embedBuilder.addField("Посмотреть информацию о команде",
-                    "`!team info <NAME>`", false);
-            channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Доступные команды");
+        embedBuilder.setColor(0xFF58B9FF);
+        embedBuilder.addField("Посмотреть информацию о команде",
+                "`!team info <NAME>`", false);
+
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         }
+
+        embedBuilder.clear();
     }
 
     /**

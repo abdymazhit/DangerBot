@@ -6,7 +6,6 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
@@ -17,7 +16,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Канал поиска игры
@@ -27,8 +25,8 @@ import java.util.concurrent.ExecutionException;
  */
 public class FindGameChannel extends Channel {
 
-    /** Информационное сообщение о доступных помощниках */
-    public Message channelAvailableAssistantsMessage;
+    /** Id информационного сообщения о доступных помощниках */
+    public String channelAvailableAssistantsMessageId;
 
     /**
      * Инициализирует канал поиска игры
@@ -39,16 +37,12 @@ public class FindGameChannel extends Channel {
             Category category = categories.get(0);
             deleteChannel(category, "find-game");
 
-            try {
-                ChannelAction<TextChannel> createAction = createChannel(category, "find-game", 2);
-                createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-                channel = createAction.submit().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "find-game", 2);
+            createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+            createAction.queue(textChannel -> channelId = textChannel.getId());
 
             updateTeamsInGameSearchCountMessage();
             updateAvailableAssistantsMessage();
@@ -59,25 +53,24 @@ public class FindGameChannel extends Channel {
      * Отправляет сообщение канала поиска игры
      */
     private void sendChannelMessage(int teamsCount) {
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Доступные команды");
-            embedBuilder.setDescription("Доступные форматы игры: 4x2 , 6x2\n" +
-                    "Команд в поиске игры: " + teamsCount + "\n");
-            embedBuilder.setColor(0xFF58B9FF);
-            embedBuilder.addField("Войти в поиск игры", "`!find game <FORMAT>`", false);
-            embedBuilder.addField("Выйти из поиска игры", "`!find leave`", false);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Доступные команды");
+        embedBuilder.setDescription("Доступные форматы игры: 4x2 , 6x2\n" +
+                "Команд в поиске игры: " + teamsCount + "\n");
+        embedBuilder.setColor(0xFF58B9FF);
+        embedBuilder.addField("Войти в поиск игры", "`!find game <FORMAT>`", false);
+        embedBuilder.addField("Выйти из поиска игры", "`!find leave`", false);
 
-            if(channelMessage == null) {
-                channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            if(channelMessageId == null) {
+                channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
             } else {
-                channelMessage.editMessageEmbeds(embedBuilder.build()).queue();
+                channel.editMessageEmbedsById(channelMessageId, embedBuilder.build()).queue();
             }
-
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
         }
+
+        embedBuilder.clear();
     }
 
     /**
@@ -103,30 +96,29 @@ public class FindGameChannel extends Channel {
      * Отправляет информационное сообщение о доступных помощниках
      */
     private void sendAvailableAssistantsMessage(List<String> assistants) {
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            String title = "```" +
-                    "        ДОСТУПНЫЕ ПОМОЩНИКИ        " +
-                    "```";
-            embedBuilder.setTitle(title);
-            embedBuilder.setColor(3092790);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        String title = "```" +
+                "        ДОСТУПНЫЕ ПОМОЩНИКИ        " +
+                "```";
+        embedBuilder.setTitle(title);
+        embedBuilder.setColor(3092790);
 
-            StringBuilder assistantsString = new StringBuilder();
-            for(String assistant : assistants) {
-                assistantsString.append(assistant).append("\n");
-            }
-            embedBuilder.addField("Name", assistantsString.toString(), true);
-
-            if(channelAvailableAssistantsMessage == null) {
-                channelAvailableAssistantsMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
-            } else {
-                channelAvailableAssistantsMessage.editMessageEmbeds(embedBuilder.build()).queue();
-            }
-
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        StringBuilder assistantsString = new StringBuilder();
+        for(String assistant : assistants) {
+            assistantsString.append(assistant).append("\n");
         }
+        embedBuilder.addField("Name", assistantsString.toString(), true);
+
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            if(channelAvailableAssistantsMessageId == null) {
+                channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelAvailableAssistantsMessageId = message.getId());
+            } else {
+                channel.editMessageEmbedsById(channelAvailableAssistantsMessageId, embedBuilder.build()).queue();
+            }
+        }
+
+        embedBuilder.clear();
     }
 
     /**

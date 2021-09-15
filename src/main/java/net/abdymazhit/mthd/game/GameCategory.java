@@ -6,11 +6,9 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Категория игры
@@ -23,8 +21,8 @@ public class GameCategory {
     /** Игра */
     public Game game;
 
-    /** Категория игры */
-    public Category category;
+    /** Id категория игры */
+    public String categoryId;
 
     /** Роль первой команды */
     public Role firstTeamRole;
@@ -32,20 +30,14 @@ public class GameCategory {
     /** Роль второй команды */
     public Role secondTeamRole;
 
-    /** Канал чата */
-    private TextChannel chatChannel;
-
     /** Канал выбора игроков */
     public PlayersChoiceChannel playersChoiceChannel;
 
     /** Канал выбора карты */
     public MapChoiceChannel mapChoiceChannel;
 
-    /** Голосовой канал первой команды */
-    private VoiceChannel firstTeamVoiceChannel;
-
-    /** Голосовой канал второй команды */
-    private VoiceChannel secondTeamVoiceChannel;
+    /** Канал создания серверов */
+    public GameChannel gameChannel;
 
     /**
      * Инициализирует категорию игры
@@ -64,13 +56,9 @@ public class GameCategory {
      * @param categoryName Название категории
      */
     private void createCategory(String categoryName) {
-        try {
-            category = MTHD.getInstance().guild.createCategory(categoryName)
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        MTHD.getInstance().guild.createCategory(categoryName)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(category -> categoryId = category.getId());
     }
 
     /**
@@ -112,7 +100,10 @@ public class GameCategory {
      * Удаляет канал выбора игроков на игру
      */
     private void deletePlayersChoiceChannel() {
-        playersChoiceChannel.channel.delete().queue();
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(playersChoiceChannel.channelId);
+        if(channel != null) {
+            channel.delete().queue();
+        }
         playersChoiceChannel = null;
     }
 
@@ -128,22 +119,32 @@ public class GameCategory {
      * Удаляет канал выбора карты
      */
     private void deleteMapChoiceChannel() {
-        mapChoiceChannel.channel.delete().queue();
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(mapChoiceChannel.channelId);
+        if(channel != null) {
+            channel.delete().queue();
+        }
         mapChoiceChannel = null;
+    }
+
+    /**
+     * Создает канал игры
+     */
+    public void createGameChannel() {
+        deleteMapChoiceChannel();
+        gameChannel = new GameChannel(this);
     }
 
     /**
      * Создает канал чата
      */
     private void createChatChannel() {
-        try {
-            chatChannel = category.createTextChannel("chat").setPosition(0)
+        Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
+        if(category != null) {
+            category.createTextChannel("chat").setPosition(0)
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+                    .queue();
         }
     }
 
@@ -151,14 +152,13 @@ public class GameCategory {
      * Создает голосовой канал первой команды
      */
     private void createFirstTeamVoiceChannel() {
-        try {
-            firstTeamVoiceChannel = category.createVoiceChannel(firstTeamRole.getName()).setPosition(2)
+        Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
+        if(category != null) {
+            category.createVoiceChannel(firstTeamRole.getName()).setPosition(2)
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+                    .queue();
         }
     }
 
@@ -166,14 +166,13 @@ public class GameCategory {
      * Создает голосовой канал второй команды
      */
     private void createSecondTeamVoiceChannel() {
-        try {
-            secondTeamVoiceChannel = category.createVoiceChannel(secondTeamRole.getName()).setPosition(3)
+        Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
+        if(category != null) {
+            category.createVoiceChannel(secondTeamRole.getName()).setPosition(3)
                     .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+                    .queue();
         }
     }
 }

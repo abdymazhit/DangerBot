@@ -7,46 +7,40 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Канал активных игр
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesChannel extends Channel {
 
     /** Сообщения о активных играх */
-    public Map<Game, Message> channelLiveGamesMessages;
+    public Map<Game, String> channelLiveGamesMessagesId;
 
     /**
      * Инициализирует канал активных игр
      */
     public LiveGamesChannel() {
-        channelLiveGamesMessages = new HashMap<>();
+        channelLiveGamesMessagesId = new HashMap<>();
 
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
             deleteChannel(category, "live-games");
 
-            try {
-                ChannelAction<TextChannel> createAction = createChannel(category, "live-games", 1);
-                createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE));
-                channel = createAction.submit().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "live-games", 1);
+            createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+            createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE));
+            createAction.queue(textChannel -> channelId = textChannel.getId());
 
             updateLiveGamesMessages();
         }
@@ -79,7 +73,7 @@ public class LiveGamesChannel extends Channel {
                 games.add(game);
             }
 
-            Map<Game, Message> channelLiveGamesMessages = new HashMap<>(this.channelLiveGamesMessages);
+            Map<Game, String> channelLiveGamesMessages = new HashMap<>(this.channelLiveGamesMessagesId);
 
             for(Game liveGame : games) {
                 boolean isSent = false;
@@ -97,9 +91,12 @@ public class LiveGamesChannel extends Channel {
             }
 
             for(Game game : channelLiveGamesMessages.keySet()) {
-                Message message = this.channelLiveGamesMessages.get(game);
-                this.channelLiveGamesMessages.remove(game);
-                message.delete().queue();
+                String messageId = this.channelLiveGamesMessagesId.get(game);
+                this.channelLiveGamesMessagesId.remove(game);
+                TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+                if(channel != null) {
+                    channel.deleteMessageById(messageId).queue();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -112,23 +109,21 @@ public class LiveGamesChannel extends Channel {
     private void sendLiveGamesMessage(Game game) {
         game.getData();
 
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            String title = "```" +
-                    "        " + game.firstTeamName + "   VS   " + game.secondTeamName + "        " +
-                    "```";
-            embedBuilder.setTitle(title);
-            embedBuilder.setColor(3092790);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        String title = "```" +
+                "        " + game.firstTeamName + "   VS   " + game.secondTeamName + "        " +
+                "```";
+        embedBuilder.setTitle(title);
+        embedBuilder.setColor(3092790);
 
-            embedBuilder.addField("Формат", game.format, true);
-            embedBuilder.addField("Помощник", game.assistantName, true);
+        embedBuilder.addField("Формат", game.format, true);
+        embedBuilder.addField("Помощник", game.assistantName, true);
 
-            Message message = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
-            channelLiveGamesMessages.put(game, message);
-
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(game, message.getId()));
         }
+
+        embedBuilder.clear();
     }
 }

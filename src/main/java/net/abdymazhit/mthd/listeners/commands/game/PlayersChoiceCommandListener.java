@@ -37,7 +37,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
             if(gameCategory.playersChoiceChannel == null) return;
 
-            if(gameCategory.playersChoiceChannel.channel.equals(messageChannel)) {
+            if(gameCategory.playersChoiceChannel.channelId.equals(messageChannel.getId())) {
                 String contentRaw = message.getContentRaw();
                 if(contentRaw.startsWith("!add")) {
                     String[] command = contentRaw.split(" ");

@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Менеджер игры
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -168,7 +168,7 @@ public class GameManager {
 
                 MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
                 MTHD.getInstance().database.setUnready(assistantId);
-                createGame(gameId, firstTeamId, first_team_starter_id, secondTeamId, second_team_starter_id);
+                createGame(gameId, firstTeamId, first_team_starter_id, secondTeamId, second_team_starter_id, format, assistantId);
             }
         } catch (SQLException e) {
             // Критическая ошибка
@@ -179,7 +179,8 @@ public class GameManager {
     /**
      * Создает игру
      */
-    private void createGame(int gameId, int firstTeamId, int firstTeamStarterId, int secondTeamId, int secondTeamStarterId) {
+    private void createGame(int gameId, int firstTeamId, int firstTeamStarterId, int secondTeamId, int secondTeamStarterId,
+                            String format, int assistantId) {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + gameId, true);
 
         if(categories.isEmpty()) {
@@ -193,29 +194,59 @@ public class GameManager {
                 return;
             }
 
-            Game game = new Game(gameId, firstTeamId, firstTeamName, firstTeamStarterId, secondTeamId, secondTeamName, secondTeamStarterId);
+            Game game = new Game(gameId, firstTeamId, firstTeamName, firstTeamStarterId, secondTeamId, secondTeamName,
+                    secondTeamStarterId, format, assistantId);
             gameCategories.add(new GameCategory(game));
+            MTHD.getInstance().findGameChannel.updateTeamsInGameSearchCountMessage();
         }
     }
 
     /**
      * Удаляет игру
-     * @param gameId Id игры
+     * @param game Игра
      */
-    public void deleteGame(int gameId) {
-        List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + gameId, true);
-        if(!categories.isEmpty()) {
-            Category category = categories.get(0);
+    public void deleteGame(Game game) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement gameStatement = connection.prepareStatement(
+                    "DELETE FROM live_games WHERE id = ?;");
+            gameStatement.setInt(1, game.id);
+            gameStatement.executeUpdate();
+            gameStatement.close();
+
+            PreparedStatement firstTeamStatement = connection.prepareStatement(
+                    "DELETE FROM live_games_players WHERE team_id = ?;");
+            firstTeamStatement.setInt(1, game.firstTeamId);
+            firstTeamStatement.executeUpdate();
+            firstTeamStatement.close();
+
+            PreparedStatement secondTeamStatement = connection.prepareStatement(
+                    "DELETE FROM live_games_players WHERE team_id = ?;");
+            secondTeamStatement.setInt(1, game.secondTeamId);
+            secondTeamStatement.executeUpdate();
+            secondTeamStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Удаляет игру
+     * @param categoryId Id категория игры
+     */
+    public void deleteGame(String categoryId) {
+        Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
+        if(category != null) {
             for(TextChannel textChannel : category.getTextChannels()) {
                 textChannel.delete().queue();
             }
             category.delete().queue();
-        }
 
-        for(GameCategory gameCategory : gameCategories) {
-            if(gameCategory.category.getName().equals("Game-" + gameId)) {
-                gameCategories.remove(gameCategory);
-                break;
+            for(GameCategory gameCategory : gameCategories) {
+                if(gameCategory.categoryId.equals(category.getId())) {
+                    gameCategories.remove(gameCategory);
+                    break;
+                }
             }
         }
     }

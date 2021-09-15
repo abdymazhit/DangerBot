@@ -11,12 +11,11 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import java.sql.*;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Команда удалить команду
  *
- * @version   12.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamDisbandCommandListener {
@@ -71,13 +70,7 @@ public class TeamDisbandCommandListener {
             return;
         }
 
-        try {
-            teamRoles.get(0).delete().submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            message.reply("Критическая ошибка при удалении роли команды! Свяжитесь с разработчиком бота!").queue();
-            return;
-        }
+        teamRoles.get(0).delete().queue();
 
         message.reply("Вы успешно удалили команду!").queue();
         MTHD.getInstance().teamsChannel.updateTopMessage();
@@ -98,12 +91,7 @@ public class TeamDisbandCommandListener {
             ResultSet updateResultSet = updateStatement.executeQuery();
             updateStatement.close();
             if(updateResultSet.next()) {
-                try {
-                    MTHD.getInstance().guild.removeRoleFromMember(updateResultSet.getString("member_id"), UserRole.LEADER.getRole()).submit().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                    return "Критическая ошибка при удалении у лидера команды роли лидера! Свяжитесь с разработчиком бота!";
-                }
+                MTHD.getInstance().guild.removeRoleFromMember(updateResultSet.getString("member_id"), UserRole.LEADER.getRole()).queue();
             }
 
             PreparedStatement membersStatement = connection.prepareStatement(
@@ -112,12 +100,7 @@ public class TeamDisbandCommandListener {
             ResultSet membersResultSet = membersStatement.executeQuery();
             membersStatement.close();
             while(membersResultSet.next()) {
-                try {
-                    MTHD.getInstance().guild.removeRoleFromMember(membersResultSet.getString("member_id"), UserRole.MEMBER.getRole()).submit().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                    return "Критическая ошибка при удалении у участников команды роли участника! Свяжитесь с разработчиком бота!";
-                }
+                MTHD.getInstance().guild.removeRoleFromMember(membersResultSet.getString("member_id"), UserRole.MEMBER.getRole()).queue();
             }
 
             PreparedStatement historyStatement = connection.prepareStatement(

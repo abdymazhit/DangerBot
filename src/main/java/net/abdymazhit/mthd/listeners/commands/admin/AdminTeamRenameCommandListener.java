@@ -13,12 +13,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда переименования команды
  *
- * @version   11.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamRenameCommandListener {
@@ -86,13 +85,7 @@ public class AdminTeamRenameCommandListener {
             return;
         }
 
-        try {
-            teamRoles.get(0).getManager().setName(newTeamName).submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            message.reply("Критическая ошибка при переименовании роли команды! Свяжитесь с разработчиком бота!").queue();
-            return;
-        }
+        teamRoles.get(0).getManager().setName(newTeamName).queue();
 
         message.reply("Команда успешно переименована! Новое название команды: " + newTeamName).queue();
     }

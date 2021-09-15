@@ -5,17 +5,15 @@ import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.sql.*;
 import java.time.Instant;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда создания команды
  *
- * @version   12.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -90,19 +88,15 @@ public class AdminTeamCreateCommandListener {
             return;
         }
 
-        try {
-            Role teamRole = MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
-                    .setColor(10070709).submit().get();
-            MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), teamRole).queue();
-            MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
+                .setColor(10070709).queue(role -> {
+                    MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), role).queue();
+                    message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
+                            + leaderName + ", роль команды: " + role.getAsMention()).queue();
+                });
 
-            message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
-                    + leaderName + ", роль команды: " + teamRole.getAsMention()).queue();
-            MTHD.getInstance().teamsChannel.updateTopMessage();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            message.reply("Критическая ошибка при создании роли команды и выдачи лидеру роли лидера! Свяжитесь с разработчиком бота!").queue();
-        }
+        MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 
     /**

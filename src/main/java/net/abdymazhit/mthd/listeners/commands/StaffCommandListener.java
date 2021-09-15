@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Команда персонала
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class StaffCommandListener extends ListenerAdapter {
@@ -28,7 +28,7 @@ public class StaffCommandListener extends ListenerAdapter {
         if(assistant == null) return;
         if(event.getAuthor().isBot()) return;
 
-        if(MTHD.getInstance().staffChannel.channel.equals(messageChannel)) {
+        if(MTHD.getInstance().staffChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
 
             if(!assistant.getRoles().contains(UserRole.ASSISTANT.getRole()) &&

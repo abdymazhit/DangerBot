@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Администраторские команды
  *
- * @version   11.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminCommandsListener extends ListenerAdapter {
@@ -54,7 +54,7 @@ public class AdminCommandsListener extends ListenerAdapter {
 
         if(event.getAuthor().isBot()) return;
 
-        if(MTHD.getInstance().adminChannel.channel.equals(messageChannel)) {
+        if(MTHD.getInstance().adminChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.startsWith("!adminteam add")) {
                 adminTeamAddCommandListener.onCommandReceived(event);

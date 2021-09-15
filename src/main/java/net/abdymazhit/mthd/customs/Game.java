@@ -1,8 +1,10 @@
 package net.abdymazhit.mthd.customs;
 
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.enums.GameMap;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * Представляет собой матч
@@ -39,17 +41,29 @@ public class Game {
     /** Discord id начавшего второй команды */
     public String secondTeamStarterDiscordId;
 
-    /** Формат матча */
-    public String format;
-
     /** Id помощника */
     public int assistantId;
 
     /** Имя помощника */
     public String assistantName;
 
+    /** Discord id ассистента */
+    public String assistantDiscordId;
+
     /** Время начала матча */
     public Timestamp startedAt;
+
+    /** Формат матча */
+    public String format;
+
+    /** Выбранная карта */
+    public GameMap gameMap;
+
+    /** Игроки первой команды */
+    public List<String> firstTeamPlayers;
+
+    /** Игроки второй команды */
+    public List<String> secondTeamPlayers;
 
     /**
      * Инициализирует матч
@@ -85,7 +99,7 @@ public class Game {
      * @param secondTeamStarterId Id начавшего второй команды
      */
     public Game(int id, int firstTeamId, String firstTeamName, int firstTeamStarterId, int secondTeamId,
-                String secondTeamName, int secondTeamStarterId) {
+                String secondTeamName, int secondTeamStarterId, String format, int assistantId) {
         this.id = id;
         this.firstTeamId = firstTeamId;
         this.firstTeamName = firstTeamName;
@@ -93,6 +107,8 @@ public class Game {
         this.secondTeamId = secondTeamId;
         this.secondTeamName = secondTeamName;
         this.secondTeamStarterId = secondTeamStarterId;
+        this.format = format;
+        this.assistantId = assistantId;
     }
 
     /**
@@ -104,5 +120,6 @@ public class Game {
         secondTeamName = MTHD.getInstance().database.getTeamName(secondTeamId);
         secondTeamStarterDiscordId = MTHD.getInstance().database.getUserDiscordId(secondTeamStarterId);
         assistantName = MTHD.getInstance().database.getUserName(assistantId);
+        assistantDiscordId = MTHD.getInstance().database.getUserDiscordId(assistantId);
     }
 }

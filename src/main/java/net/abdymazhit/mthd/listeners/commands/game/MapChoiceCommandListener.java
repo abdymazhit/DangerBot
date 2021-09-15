@@ -37,7 +37,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
             if(gameCategory.mapChoiceChannel == null) return;
 
-            if(gameCategory.mapChoiceChannel.channel.equals(messageChannel)) {
+            if(gameCategory.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
                 String contentRaw = message.getContentRaw();
                 if(contentRaw.startsWith("!ban")) {
                     String[] command = contentRaw.split(" ");
@@ -87,6 +87,11 @@ public class MapChoiceCommandListener extends ListenerAdapter {
 
                     if(!starter.getRoles().contains(gameCategory.mapChoiceChannel.currentBannerTeamRole)) {
                         message.reply("Ошибка! Сейчас не ваша очередь бана!").queue();
+                        return;
+                    }
+
+                    if(gameCategory.mapChoiceChannel.gameMaps.size() == 1) {
+                        message.reply("Ошибка! Все карты забанены!").queue();
                         return;
                     }
 

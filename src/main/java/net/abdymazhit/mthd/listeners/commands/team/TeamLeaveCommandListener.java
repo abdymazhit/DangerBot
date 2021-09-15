@@ -14,12 +14,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Команда покинуть команду
  *
- * @version   11.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLeaveCommandListener {
@@ -79,14 +78,8 @@ public class TeamLeaveCommandListener {
             return;
         }
 
-        try {
-            MTHD.getInstance().guild.removeRoleFromMember(deleter.getId(), teamRoles.get(0)).submit().get();
-            MTHD.getInstance().guild.removeRoleFromMember(deleter.getId(), UserRole.MEMBER.getRole()).submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            message.reply("Критическая ошибка при удалении у Вас роли команды и роли участника! Свяжитесь с разработчиком бота!").queue();
-            return;
-        }
+        MTHD.getInstance().guild.removeRoleFromMember(deleter.getId(), teamRoles.get(0)).queue();
+        MTHD.getInstance().guild.removeRoleFromMember(deleter.getId(), UserRole.MEMBER.getRole()).queue();
 
         message.reply("Вы успешно покинули команду!").queue();
     }

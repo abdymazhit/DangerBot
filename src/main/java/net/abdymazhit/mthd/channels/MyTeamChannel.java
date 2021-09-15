@@ -11,12 +11,11 @@ import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Канал моя команда
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -30,16 +29,12 @@ public class MyTeamChannel extends Channel {
             Category category = categories.get(0);
             deleteChannel(category, "my-team");
 
-            try {
-                ChannelAction<TextChannel> createAction = createChannel(category, "my-team", 3);
-                createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-                channel = createAction.submit().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "my-team", 3);
+            createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
+            createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+            createAction.queue(textChannel -> channelId = textChannel.getId());
 
             sendChannelMessage();
         }
@@ -49,24 +44,23 @@ public class MyTeamChannel extends Channel {
      * Отправляет сообщение канала моя команда
      */
     private void sendChannelMessage() {
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Доступные команды");
-            embedBuilder.setColor(0xFF58B9FF);
-            embedBuilder.addField("Исключить участника из команды",
-                    "`!team kick <NAME>`", false);
-            embedBuilder.addField("Передать права лидера команды",
-                    "`!team transfer <NAME>`", false);
-            embedBuilder.addField("Удалить команду",
-                    "`!team disband`", false);
-            embedBuilder.addField("Посмотреть информацию о команде",
-                    "`!team info`", false);
-            embedBuilder.addField("Покинуть команду",
-                    "`!team leave`", false);
-            channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Доступные команды");
+        embedBuilder.setColor(0xFF58B9FF);
+        embedBuilder.addField("Исключить участника из команды",
+                "`!team kick <NAME>`", false);
+        embedBuilder.addField("Передать права лидера команды",
+                "`!team transfer <NAME>`", false);
+        embedBuilder.addField("Удалить команду",
+                "`!team disband`", false);
+        embedBuilder.addField("Посмотреть информацию о команде",
+                "`!team info`", false);
+        embedBuilder.addField("Покинуть команду",
+                "`!team leave`", false);
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         }
+        embedBuilder.clear();
     }
 }

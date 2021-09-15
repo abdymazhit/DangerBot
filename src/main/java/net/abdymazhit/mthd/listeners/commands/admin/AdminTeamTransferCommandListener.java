@@ -12,12 +12,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   11.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamTransferCommandListener {
@@ -109,17 +108,11 @@ public class AdminTeamTransferCommandListener {
             return;
         }
 
-        try {
-            MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).submit().get();
-            MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
+        MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
 
-            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).submit().get();
-            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            message.reply("Критическая ошибка при передачи ролей между текущим и новым лидером команды! Свяжитесь с разработчиком бота!").queue();
-            return;
-        }
+        MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
 
         message.reply("Права лидера успешно переданы! Название команды: " + teamName + ", новый лидер команды: " + newLeaderName).queue();
     }

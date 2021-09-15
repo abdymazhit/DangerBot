@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.mthd.MTHD;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Member;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,12 +13,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Представляет собой команду
  *
- * @version   09.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
@@ -208,23 +206,17 @@ public class Team {
      * Получает статус онлайна игроков в Discord
      */
     private void getUsersDiscordOnline() {
-        try {
-            Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
-            if(leaderMember == null) return;
-            leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                    leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+        MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).queue(member -> {
+            leader.setDiscordOnline(member.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                    member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                    member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
 
             for(UserAccount user : members) {
-                Member userMember = MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).submit().get();
-                if(userMember == null) return;
-
-                user.setDiscordOnline(userMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                        userMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                        userMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+                MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).queue(member1 ->
+                        user.setDiscordOnline(member1.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                        member1.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                        member1.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)));
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        });
     }
 }

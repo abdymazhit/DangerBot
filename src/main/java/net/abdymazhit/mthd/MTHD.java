@@ -10,6 +10,7 @@ import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
+import net.abdymazhit.mthd.listeners.commands.game.GameCancelCommandListener;
 import net.abdymazhit.mthd.listeners.commands.game.MapChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.game.PlayersChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
@@ -175,6 +176,7 @@ public class MTHD {
 
         jda.addEventListener(new PlayersChoiceCommandListener());
         jda.addEventListener(new MapChoiceCommandListener());
+        jda.addEventListener(new GameCancelCommandListener());
     }
 
     /**

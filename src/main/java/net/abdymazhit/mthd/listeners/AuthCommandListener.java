@@ -14,12 +14,11 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
 import java.sql.*;
 import java.time.Instant;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Команда авторизации
  *
- * @version   13.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -33,7 +32,7 @@ public class AuthCommandListener extends ListenerAdapter {
         Member member = event.getMember();
 
         if(!event.getName().equals("auth")) return;
-        if(!messageChannel.equals(MTHD.getInstance().authChannel.channel)) return;
+        if(!messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) return;
         if(member == null) return;
 
         OptionMapping tokenOption = event.getOption("token");
@@ -93,21 +92,16 @@ public class AuthCommandListener extends ListenerAdapter {
             return;
         }
 
-        try {
-            // Изменить пользователю ник
-            if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-                member.modifyNickname(username).submit().get();
-            }
-
-            // Изменить роль пользователя
-            MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            event.reply("Критическая ошибка при выдачи роли! Свяжитесь с разработчиком бота!").setEphemeral(true).queue();
+        // Изменить пользователю ник
+        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
+            member.modifyNickname(username).queue();
         }
 
+        // Изменить роль пользователя
+        MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
+
         // Отправить сообщение о успешной авторизации
-        event.replyEmbeds(MTHD.getInstance().utils.getAuthInfoMessageEmbed(username, level, percent, rank)).setEphemeral(true).submit();
+        event.replyEmbeds(MTHD.getInstance().utils.getAuthInfoMessageEmbed(username, level, percent, rank)).setEphemeral(true).queue();
     }
 
     /**
@@ -128,9 +122,7 @@ public class AuthCommandListener extends ListenerAdapter {
 
             if(resultSet.next()) {
                 String member_id = resultSet.getString("member_id");
-                Member member = MTHD.getInstance().guild.retrieveMemberById(member_id).submit().get();
-
-                if(member != null) {
+                MTHD.getInstance().guild.retrieveMemberById(member_id).queue(member -> {
                     // Удалить роли старого пользователя
                     if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
                         for(Role role : member.getRoles()) {
@@ -144,7 +136,7 @@ public class AuthCommandListener extends ListenerAdapter {
                     if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
                         member.modifyNickname(member.getId()).queue();
                     }
-                }
+                });
 
                 PreparedStatement statement = connection.prepareStatement("UPDATE users SET member_id = ? WHERE username = ? RETURNING id;");
                 statement.setString(1, memberId);
@@ -176,7 +168,7 @@ public class AuthCommandListener extends ListenerAdapter {
 
             // Вернуть значение, что пользователь добавлен
             return true;
-        } catch (SQLException | ExecutionException | InterruptedException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
 
             // Вернуть значение, что произошла ошибка

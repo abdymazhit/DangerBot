@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Команды команд
  *
- * @version   11.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamCommandsListener extends ListenerAdapter {
@@ -55,7 +55,7 @@ public class TeamCommandsListener extends ListenerAdapter {
 
         if(event.getAuthor().isBot()) return;
 
-        if(MTHD.getInstance().myTeamChannel.channel.equals(messageChannel)) {
+        if(MTHD.getInstance().myTeamChannel.channelId.equals(messageChannel.getId())) {
             if(contentRaw.startsWith("!team disband")) {
                 teamDisbandCommandListener.onCommandReceived(event);
             } else if(contentRaw.startsWith("!team kick")) {
@@ -69,7 +69,7 @@ public class TeamCommandsListener extends ListenerAdapter {
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
-        } else if(MTHD.getInstance().teamsChannel.channel.equals(messageChannel)) {
+        } else if(MTHD.getInstance().teamsChannel.channelId.equals(messageChannel.getId())) {
             if(contentRaw.startsWith("!team info")) {
                 teamNameInfoCommandListener.onCommandReceived(event);
             } else {

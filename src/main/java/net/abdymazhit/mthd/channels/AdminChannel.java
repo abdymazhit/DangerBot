@@ -10,12 +10,11 @@ import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Канал администрации
  *
- * @version   12.09.2021
+ * @version   15.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -29,13 +28,9 @@ public class AdminChannel extends Channel {
             Category category = categories.get(0);
             deleteChannel(category, "admin");
 
-            try {
-                ChannelAction<TextChannel> createAction = createChannel(category, "admin", 0);
-                createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-                channel = createAction.submit().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "admin", 0);
+            createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+            createAction.queue(textChannel -> channelId = textChannel.getId());
 
             sendChannelMessage();
         }
@@ -45,26 +40,25 @@ public class AdminChannel extends Channel {
      * Отправляет сообщение канала администрации
      */
     private void sendChannelMessage() {
-        try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Команды администратора");
-            embedBuilder.setColor(0xFF58B9FF);
-            embedBuilder.addField("Создание команды",
-                    "`!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
-            embedBuilder.addField("Удаление команды",
-                    "`!adminteam disband <TEAM_NAME>`", false);
-            embedBuilder.addField("Добавление участника в команду",
-                    "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
-            embedBuilder.addField("Удаление участника из команды",
-                    "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
-            embedBuilder.addField("Передача прав лидера команды",
-                    "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`", false);
-            embedBuilder.addField("Переименование команды",
-                    "`!adminteam rename <TEAM_NAME> <TO_NAME>`", false);
-            channelMessage = channel.sendMessageEmbeds(embedBuilder.build()).submit().get();
-            embedBuilder.clear();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Команды администратора");
+        embedBuilder.setColor(0xFF58B9FF);
+        embedBuilder.addField("Создание команды",
+                "`!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
+        embedBuilder.addField("Удаление команды",
+                "`!adminteam disband <TEAM_NAME>`", false);
+        embedBuilder.addField("Добавление участника в команду",
+                "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
+        embedBuilder.addField("Удаление участника из команды",
+                "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
+        embedBuilder.addField("Передача прав лидера команды",
+                "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`", false);
+        embedBuilder.addField("Переименование команды",
+                "`!adminteam rename <TEAM_NAME> <TO_NAME>`", false);
+        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(channel != null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         }
+        embedBuilder.clear();
     }
 }

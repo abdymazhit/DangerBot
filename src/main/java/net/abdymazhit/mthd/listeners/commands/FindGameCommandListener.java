@@ -34,7 +34,7 @@ public class FindGameCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         Member member = event.getMember();
 
-        if(!MTHD.getInstance().findGameChannel.channel.equals(messageChannel)) return;
+        if(!MTHD.getInstance().findGameChannel.channelId.equals(messageChannel.getId())) return;
         if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
@@ -95,18 +95,18 @@ public class FindGameCommandListener extends ListenerAdapter {
                     }
                 }
 
-                // Исправить
-//                if(format.equals("4x2")) {
-//                    if(onlinePlayers < 4) {
-//                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
-//                        return;
-//                    }
-//                } else {
-//                    if(onlinePlayers < 6) {
-//                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
-//                        return;
-//                    }
-//                }
+                // Исправить цифру 2
+                if(format.equals("4x2")) {
+                    if(onlinePlayers < 1) {
+                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
+                        return;
+                    }
+                } else {
+                    if(onlinePlayers < 6) {
+                        message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
+                        return;
+                    }
+                }
 
                 List<Integer> teamsInLiveGames = getTeamsInLiveGames();
                 if(teamsInLiveGames == null) {

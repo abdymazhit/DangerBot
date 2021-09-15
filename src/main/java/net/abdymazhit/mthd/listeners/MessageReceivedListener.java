@@ -25,48 +25,62 @@ public class MessageReceivedListener extends ListenerAdapter {
         Message message = event.getMessage();
         MessageChannel messageChannel = event.getChannel();
 
-        if(messageChannel.equals(MTHD.getInstance().adminChannel.channel)) {
-            if(!MTHD.getInstance().adminChannel.channelMessage.equals(message)) {
-                message.delete().submitAfter(30, TimeUnit.SECONDS);
+        if(messageChannel.getId().equals(MTHD.getInstance().adminChannel.channelId)) {
+            if(!MTHD.getInstance().adminChannel.channelMessageId.equals(message.getId())) {
+                message.delete().queueAfter(30, TimeUnit.SECONDS);
             }
-        } else if(messageChannel.equals(MTHD.getInstance().myTeamChannel.channel)) {
-            if(!MTHD.getInstance().myTeamChannel.channelMessage.equals(message)) {
-                message.delete().submitAfter(30, TimeUnit.SECONDS);
+        } else if(messageChannel.getId().equals(MTHD.getInstance().myTeamChannel.channelId)) {
+            if(!MTHD.getInstance().myTeamChannel.channelMessageId.equals(message.getId())) {
+                message.delete().queueAfter(30, TimeUnit.SECONDS);
             }
-        } else if(messageChannel.equals(MTHD.getInstance().staffChannel.channel)) {
-            if(!MTHD.getInstance().staffChannel.channelMessage.equals(message)) {
-                message.delete().submitAfter(30, TimeUnit.SECONDS);
+        } else if(messageChannel.getId().equals(MTHD.getInstance().staffChannel.channelId)) {
+            if(!MTHD.getInstance().staffChannel.channelMessageId.equals(message.getId())) {
+                message.delete().queueAfter(30, TimeUnit.SECONDS);
             }
-        } else if(messageChannel.equals(MTHD.getInstance().teamsChannel.channel)) {
-            if(!MTHD.getInstance().teamsChannel.channelMessage.equals(message) &&
-                    !MTHD.getInstance().teamsChannel.channelTopTeamsMessage.equals(message)) {
-                message.delete().submitAfter(30, TimeUnit.SECONDS);
+        } else if(messageChannel.getId().equals(MTHD.getInstance().teamsChannel.channelId)) {
+            if(!MTHD.getInstance().teamsChannel.channelMessageId.equals(message.getId()) &&
+                    !MTHD.getInstance().teamsChannel.channelTopTeamsMessageId.equals(message.getId())) {
+                message.delete().queueAfter(30, TimeUnit.SECONDS);
             }
-        } else if(messageChannel.equals(MTHD.getInstance().authChannel.channel)) {
-            if(!MTHD.getInstance().authChannel.channelMessage.equals(message)) {
-                message.delete().submit();
+        } else if(messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) {
+            if(!MTHD.getInstance().authChannel.channelMessageId.equals(message.getId())) {
+                message.delete().queue();
             }
-        } else if(messageChannel.equals(MTHD.getInstance().findGameChannel.channel)) {
-            if(!MTHD.getInstance().findGameChannel.channelMessage.equals(message) &&
-                    !MTHD.getInstance().findGameChannel.channelAvailableAssistantsMessage.equals(message)) {
-                message.delete().submitAfter(15, TimeUnit.SECONDS);
+        } else if(messageChannel.getId().equals(MTHD.getInstance().findGameChannel.channelId)) {
+            if(!MTHD.getInstance().findGameChannel.channelMessageId.equals(message.getId()) &&
+                    !MTHD.getInstance().findGameChannel.channelAvailableAssistantsMessageId.equals(message.getId())) {
+                message.delete().queueAfter(15, TimeUnit.SECONDS);
             }
         }
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
             if(gameCategory.playersChoiceChannel != null) {
-                if(messageChannel.equals(gameCategory.playersChoiceChannel.channel)) {
-                    if(!gameCategory.playersChoiceChannel.channelMessage.equals(message) &&
-                            !gameCategory.playersChoiceChannel.channelGamePlayersMessage.equals(message)) {
-                        message.delete().submitAfter(7, TimeUnit.SECONDS);
-                        break;
+                if(messageChannel.getId().equals(gameCategory.playersChoiceChannel.channelId)) {
+                    if(!gameCategory.playersChoiceChannel.channelMessageId.equals(message.getId()) &&
+                            !gameCategory.playersChoiceChannel.channelGamePlayersMessageId.equals(message.getId())) {
+                        if(gameCategory.playersChoiceChannel.channelGameCancelMessageId != null) {
+                            if(!gameCategory.playersChoiceChannel.channelGameCancelMessageId.equals(message.getId())) {
+                                message.delete().queueAfter(7, TimeUnit.SECONDS);
+                                break;
+                            }
+                        } else {
+                            message.delete().queueAfter(7, TimeUnit.SECONDS);
+                            break;
+                        }
                     }
                 }
             } else if(gameCategory.mapChoiceChannel != null) {
-                if(messageChannel.equals(gameCategory.mapChoiceChannel.channel)) {
-                    if(!gameCategory.mapChoiceChannel.channelMessage.equals(message) &&
+                if(messageChannel.getId().equals(gameCategory.mapChoiceChannel.channelId)) {
+                    if(!gameCategory.mapChoiceChannel.channelMessageId.equals(message.getId()) &&
                             !gameCategory.mapChoiceChannel.channelMapsMessageId.equals(message.getId())) {
-                        message.delete().submitAfter(7, TimeUnit.SECONDS);
+                        message.delete().queueAfter(7, TimeUnit.SECONDS);
+                        break;
+                    }
+                }
+            } else if(gameCategory.gameChannel != null) {
+                if(messageChannel.getId().equals(gameCategory.gameChannel.channelId)) {
+                    if(!gameCategory.gameChannel.channelMessageId.equals(message.getId())) {
+                        message.delete().queueAfter(7, TimeUnit.SECONDS);
                         break;
                     }
                 }
