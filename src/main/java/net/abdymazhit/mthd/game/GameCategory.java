@@ -130,15 +130,15 @@ public class GameCategory {
      */
     private void getTeamRoles(String firstTeamName, String secondTeamName) {
         Role firstTeamRole = null;
-        List<Role> firstTeamRoleCategories = MTHD.getInstance().guild.getRolesByName(firstTeamName, true);
-        if(!firstTeamRoleCategories.isEmpty()) {
-            firstTeamRole = firstTeamRoleCategories.get(0);
+        List<Role> firstTeamRoles = MTHD.getInstance().guild.getRolesByName(firstTeamName, true);
+        if(!firstTeamRoles.isEmpty()) {
+            firstTeamRole = firstTeamRoles.get(0);
         }
 
         Role secondTeamRole = null;
-        List<Role> secondTeamRoleCategories = MTHD.getInstance().guild.getRolesByName(secondTeamName, true);
-        if(!secondTeamRoleCategories.isEmpty()) {
-            secondTeamRole = secondTeamRoleCategories.get(0);
+        List<Role> secondTeamRoles = MTHD.getInstance().guild.getRolesByName(secondTeamName, true);
+        if(!secondTeamRoles.isEmpty()) {
+            secondTeamRole = secondTeamRoles.get(0);
         }
 
         if(firstTeamRole == null || secondTeamRole == null) return;

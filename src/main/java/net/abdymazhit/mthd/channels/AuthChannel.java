@@ -32,7 +32,10 @@ public class AuthChannel extends Channel{
                     "\n" +
                     "**Как авторизоваться?**\n" +
                     "1. Получите ваш токен авторизации на сервере **VimeWorld MiniGames**. Для получения токена авторизации введите команду `/api auth` на сервере, Вы получите *ссылку*, которая понадобится в следующем шаге.\n" +
-                    "2. Введите здесь команду `/auth token` для привязки Вашего аккаунта VimeWorld.").queue(message -> channelMessageId = message.getId());
+                    "2. Введите здесь команду `/auth token` для привязки Вашего аккаунта VimeWorld.\n" +
+                    "\n" +
+                    "**Как выйти с аккаунта?**\n" +
+                    "Для выхода с аккаунта используйте команду `/leave`").queue(message -> channelMessageId = message.getId());
         });
     }
 }

@@ -120,13 +120,13 @@ public class Team {
     public void getUsersInfo(UserAccount user) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT member_id, username FROM users WHERE id = ?;");
+                    "SELECT discord_id, username FROM users WHERE id = ?;");
             preparedStatement.setInt(1, user.getId());
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
             if(resultSet.next()) {
-                user.setDiscordId(resultSet.getString("member_id"));
+                user.setDiscordId(resultSet.getString("discord_id"));
                 user.setUsername(resultSet.getString("username"));
             }
         } catch (SQLException e) {

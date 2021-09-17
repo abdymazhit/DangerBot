@@ -7,6 +7,7 @@ import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.game.GameManager;
 import net.abdymazhit.mthd.game.LiveGamesManager;
 import net.abdymazhit.mthd.listeners.AuthCommandListener;
+import net.abdymazhit.mthd.listeners.LeaveCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
@@ -163,6 +164,8 @@ public class MTHD {
         commandsAction = commandsAction.addCommands(new CommandData("auth", "Авторизация")
                 .addOption(OptionType.STRING, "token", "Токен авторизации", true));
 
+        commandsAction = commandsAction.addCommands(new CommandData("leave", "Выход с аккаунта"));
+
         commandsAction.queue();
     }
 
@@ -172,6 +175,7 @@ public class MTHD {
      */
     private void addEventListeners(JDA jda) {
         jda.addEventListener(new AuthCommandListener());
+        jda.addEventListener(new LeaveCommandListener());
         jda.addEventListener(new MessageReceivedListener());
 
         jda.addEventListener(new AdminCommandsListener());

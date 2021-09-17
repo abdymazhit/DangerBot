@@ -57,7 +57,7 @@ public class Database {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM users WHERE member_id = ?;");
+                    "SELECT id FROM users WHERE discord_id = ?;");
             preparedStatement.setString(1, discordId);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
@@ -80,13 +80,13 @@ public class Database {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT member_id FROM users WHERE id = ?;");
+                    "SELECT discord_id FROM users WHERE id = ?;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
             if(resultSet.next()) {
-                return resultSet.getString("member_id");
+                return resultSet.getString("discord_id");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -103,14 +103,14 @@ public class Database {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id, member_id FROM users WHERE username ILIKE ?;");
+                    "SELECT id, discord_id FROM users WHERE username ILIKE ?;");
             preparedStatement.setString(1, username);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
 
             if(resultSet.next()) {
                 UserAccount userAccount = new UserAccount(resultSet.getInt("id"));
-                userAccount.setDiscordId(resultSet.getString("member_id"));
+                userAccount.setDiscordId(resultSet.getString("discord_id"));
                 return userAccount;
             }
         } catch (SQLException e) {

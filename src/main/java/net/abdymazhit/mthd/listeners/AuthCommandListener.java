@@ -14,11 +14,12 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Команда авторизации
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -106,14 +107,14 @@ public class AuthCommandListener extends ListenerAdapter {
 
     /**
      * Добавляет пользователя в базу данных
-     * @param memberId Id пользователя
+     * @param discordId Discord id пользователя
      * @param username Ник пользователя
      * @return Значение, добавлен ли пользователь
      */
-    private boolean addUser(String memberId, String username) {
+    private boolean addUser(String discordId, String username) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT member_id FROM users WHERE username = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE username = ?;");
             preparedStatement.setString(1, username);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
@@ -121,25 +122,27 @@ public class AuthCommandListener extends ListenerAdapter {
             int userId = -1;
 
             if(resultSet.next()) {
-                String member_id = resultSet.getString("member_id");
-                MTHD.getInstance().guild.retrieveMemberById(member_id).queue(member -> {
-                    // Удалить роли старого пользователя
-                    if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-                        for(Role role : member.getRoles()) {
-                            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                String discord_id = resultSet.getString("discord_id");
+                if(discord_id != null) {
+                    MTHD.getInstance().guild.retrieveMemberById(discord_id).queue(member -> {
+                        // Удалить роли старого пользователя
+                        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
+                            for(Role role : member.getRoles()) {
+                                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
+                                    MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                                }
                             }
                         }
-                    }
 
-                    // Изменить ник старого пользователя
-                    if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-                        member.modifyNickname(member.getId()).queue();
-                    }
-                });
+                        // Изменить ник старого пользователя
+                        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
+                            member.modifyNickname(member.getId()).queue();
+                        }
+                    });
+                }
 
-                PreparedStatement statement = connection.prepareStatement("UPDATE users SET member_id = ? WHERE username = ? RETURNING id;");
-                statement.setString(1, memberId);
+                PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = ? WHERE username = ? RETURNING id;");
+                statement.setString(1, discordId);
                 statement.setString(2, username);
                 ResultSet statementResultSet = statement.executeQuery();
                 statement.close();
@@ -148,8 +151,8 @@ public class AuthCommandListener extends ListenerAdapter {
                     userId = statementResultSet.getInt("id");
                 }
             } else {
-                PreparedStatement statement = connection.prepareStatement("INSERT INTO users (member_id, username) VALUES (?, ?) RETURNING id;");
-                statement.setString(1, memberId);
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO users (discord_id, username) VALUES (?, ?) RETURNING id;");
+                statement.setString(1, discordId);
                 statement.setString(2, username);
                 ResultSet statementResultSet = statement.executeQuery();
                 statement.close();
@@ -159,12 +162,15 @@ public class AuthCommandListener extends ListenerAdapter {
                 }
             }
 
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO users_auth_history (member_id, user_id, authorized_at) VALUES (?, ?, ?);");
-            statement.setString(1, memberId);
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO users_auth_history (discord_id, user_id, authorized_at) VALUES (?, ?, ?);");
+            statement.setString(1, discordId);
             statement.setInt(2, userId);
             statement.setTimestamp(3, Timestamp.from(Instant.now()));
             statement.executeUpdate();
             statement.close();
+
+            setUserTeamRoleIsLeader(discordId, userId);
+            setUserTeamRoleIsMember(discordId, userId);
 
             // Вернуть значение, что пользователь добавлен
             return true;
@@ -173,6 +179,58 @@ public class AuthCommandListener extends ListenerAdapter {
 
             // Вернуть значение, что произошла ошибка
             return false;
+        }
+    }
+
+    public void setUserTeamRoleIsLeader(String discordId, int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT name FROM teams WHERE leader_id = ? AND is_deleted is null;");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                Role teamRole = null;
+                List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(resultSet.getString("name"), true);
+                if(!teamRoles.isEmpty()) {
+                    teamRole = teamRoles.get(0);
+                }
+
+                if(teamRole != null) {
+                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
+                    MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.LEADER.getRole()).queue();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setUserTeamRoleIsMember(String discordId, int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                Role teamRole = null;
+                List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(resultSet.getString("name"), true);
+                if(!teamRoles.isEmpty()) {
+                    teamRole = teamRoles.get(0);
+                }
+
+                if(teamRole != null) {
+                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
+                    MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.MEMBER.getRole()).queue();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }

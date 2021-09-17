@@ -60,6 +60,7 @@ public class MessageReceivedListener extends ListenerAdapter {
         if(MTHD.getInstance().authChannel.channelId != null && MTHD.getInstance().authChannel.channelMessageId != null) {
             if(messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) {
                 if(!message.getId().equals(MTHD.getInstance().authChannel.channelMessageId)) {
+                    if(message.isWebhookMessage()) System.out.println("123");
                     message.delete().queue();
                 }
             }

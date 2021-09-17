@@ -56,7 +56,7 @@ public class DatabaseTables {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS users (" +
                     "id serial not null constraint users_pk primary key, " +
-                    "member_id varchar(50) not null, " +
+                    "discord_id varchar(50), " +
                     "username varchar(50) not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -72,7 +72,7 @@ public class DatabaseTables {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS users_auth_history (" +
                     "id serial not null constraint users_auth_history_pk primary key, " +
-                    "member_id varchar(50) not null, " +
+                    "discord_id varchar(50) not null, " +
                     "user_id int not null, " +
                     "authorized_at timestamp not null);");
             preparedStatement.executeUpdate();

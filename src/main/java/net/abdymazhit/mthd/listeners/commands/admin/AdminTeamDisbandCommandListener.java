@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Администраторская команда удаления команды
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDisbandCommandListener {
@@ -92,21 +92,21 @@ public class AdminTeamDisbandCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                    "UPDATE teams SET is_deleted = true WHERE id = ? RETURNING (SELECT member_id FROM users WHERE users.id = teams.leader_id);");
+                    "UPDATE teams SET is_deleted = true WHERE id = ? RETURNING (SELECT discord_id FROM users WHERE users.id = teams.leader_id);");
             updateStatement.setInt(1, teamId);
             ResultSet updateResultSet = updateStatement.executeQuery();
             updateStatement.close();
             if(updateResultSet.next()) {
-                MTHD.getInstance().guild.removeRoleFromMember(updateResultSet.getString("member_id"), UserRole.LEADER.getRole()).queue();
+                MTHD.getInstance().guild.removeRoleFromMember(updateResultSet.getString("discord_id"), UserRole.LEADER.getRole()).queue();
             }
 
             PreparedStatement membersStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ? RETURNING (SELECT member_id FROM users WHERE users.id = teams_members.member_id);");
+                    "DELETE FROM teams_members WHERE team_id = ? RETURNING (SELECT discord_id FROM users WHERE users.id = teams_members.member_id);");
             membersStatement.setInt(1, teamId);
             ResultSet membersResultSet = membersStatement.executeQuery();
             membersStatement.close();
             while(membersResultSet.next()) {
-                MTHD.getInstance().guild.removeRoleFromMember(membersResultSet.getString("member_id"), UserRole.MEMBER.getRole()).queue();
+                MTHD.getInstance().guild.removeRoleFromMember(membersResultSet.getString("discord_id"), UserRole.MEMBER.getRole()).queue();
             }
 
             PreparedStatement historyStatement = connection.prepareStatement(
