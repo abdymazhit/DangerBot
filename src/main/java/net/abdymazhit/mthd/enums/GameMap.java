@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 /**
  * Представляет собой карту
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public enum GameMap {
@@ -16,7 +16,7 @@ public enum GameMap {
     AQUARIUM(2, "Аквариум", "Aquarium"),
     LOCKS(3, "Замки", "Locks"),
     FERNIGAD(4, "Фернигад", "Fernigad"),
-    FROKUS(5, "Фрокус", "Frokus"),
+    FROKUS(5, "Фрокус 2.0", "Frokus"),
     JUNGLIOS(6, "Джунглиос", "Junglios"),
     CRIMENTIS(7, "Криментис", "Crimentis"),
     KRITAZ(8, "Критаз", "Kritaz"),

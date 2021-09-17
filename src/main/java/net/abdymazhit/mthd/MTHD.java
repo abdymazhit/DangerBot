@@ -5,12 +5,13 @@ import net.abdymazhit.mthd.channels.*;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.game.GameManager;
+import net.abdymazhit.mthd.game.LiveGamesManager;
 import net.abdymazhit.mthd.listeners.AuthCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
-import net.abdymazhit.mthd.listeners.commands.game.GameCancelCommandListener;
+import net.abdymazhit.mthd.listeners.commands.game.GameCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.game.MapChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.game.PlayersChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
@@ -34,7 +35,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -71,6 +72,9 @@ public class MTHD {
 
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
+
+    /** Менеджер активных игр */
+    public final LiveGamesManager liveGamesManager;
 
     /** Менеджер игры */
     public final GameManager gameManager;
@@ -115,8 +119,9 @@ public class MTHD {
         liveGamesChannel = new LiveGamesChannel();
         findGameChannel = new FindGameChannel();
         myTeamChannel = new MyTeamChannel();
-        gameManager = new GameManager();
         utils = new Utils();
+        liveGamesManager = new LiveGamesManager();
+        gameManager = new GameManager();
 
 //        Обновить команды, только при изменении/добавлении команды
 //        updateCommands();
@@ -176,7 +181,7 @@ public class MTHD {
 
         jda.addEventListener(new PlayersChoiceCommandListener());
         jda.addEventListener(new MapChoiceCommandListener());
-        jda.addEventListener(new GameCancelCommandListener());
+        jda.addEventListener(new GameCommandsListener());
     }
 
     /**

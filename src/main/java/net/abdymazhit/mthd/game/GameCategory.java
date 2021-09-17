@@ -2,18 +2,23 @@ package net.abdymazhit.mthd.game;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Game;
+import net.abdymazhit.mthd.enums.GameMap;
+import net.abdymazhit.mthd.enums.GameState;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.EnumSet;
 import java.util.List;
 
 /**
  * Категория игры
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategory {
@@ -46,19 +51,76 @@ public class GameCategory {
     public GameCategory(Game game) {
         game.getData();
         this.game = game;
-        createCategory("Game-" + game.id);
-        createChannels(game.firstTeamName, game.secondTeamName);
-        createPlayersChoiceChannel();
+
+        MTHD.getInstance().guild.createCategory("Game-" + game.id)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(category -> {
+                    categoryId = category.getId();
+                    getTeamRoles(game.firstTeamName, game.secondTeamName);
+
+                    createChatChannel();
+                    createFirstTeamVoiceChannel();
+                    createSecondTeamVoiceChannel();
+
+                    createPlayersChoiceChannel();
+                });
     }
 
-    /**
-     * Создает категорию игры
-     * @param categoryName Название категории
-     */
-    private void createCategory(String categoryName) {
-        MTHD.getInstance().guild.createCategory(categoryName)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .queue(category -> categoryId = category.getId());
+    public GameCategory(Game game, Category category) {
+        game.getData();
+        this.game = game;
+        this.categoryId = category.getId();
+
+        getTeamRoles(game.firstTeamName, game.secondTeamName);
+
+        if(game.gameState.equals(GameState.PLAYERS_CHOICE)) {
+            for(TextChannel textChannel : category.getTextChannels()) {
+                if(textChannel.getName().equals("players-choice")) {
+                    textChannel.delete().queue();
+                    break;
+                }
+            }
+
+            try {
+                Connection connection = MTHD.getInstance().database.getConnection();
+                PreparedStatement firstTeamStatement = connection.prepareStatement(
+                        "DELETE FROM live_games_players WHERE team_id = ?;");
+                firstTeamStatement.setInt(1, game.firstTeamId);
+                firstTeamStatement.executeUpdate();
+                firstTeamStatement.close();
+
+                PreparedStatement secondTeamStatement = connection.prepareStatement(
+                        "DELETE FROM live_games_players WHERE team_id = ?;");
+                secondTeamStatement.setInt(1, game.secondTeamId);
+                secondTeamStatement.executeUpdate();
+                secondTeamStatement.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            createPlayersChoiceChannel();
+        } else if(game.gameState.equals(GameState.MAP_CHOICE)) {
+            for(TextChannel textChannel : category.getTextChannels()) {
+                if(textChannel.getName().equals("map-choice")) {
+                    textChannel.delete().queue();
+                    break;
+                }
+            }
+
+            createMapsChoiceChannel();
+        } else if(game.gameState.equals(GameState.GAME_CREATION)) {
+            for(TextChannel textChannel : category.getTextChannels()) {
+                if(textChannel.getName().equals("game")) {
+                    textChannel.delete().queue();
+                    break;
+                }
+            }
+
+            createGameChannel();
+        } else if(game.gameState.equals(GameState.GAME)) {
+            MTHD.getInstance().liveGamesManager.addLiveGame(game);
+            gameChannel = new GameChannel(this, true);
+        }
     }
 
     /**
@@ -66,7 +128,7 @@ public class GameCategory {
      * @param firstTeamName Название первой команды
      * @param secondTeamName Название второй команды
      */
-    private void createChannels(String firstTeamName, String secondTeamName) {
+    private void getTeamRoles(String firstTeamName, String secondTeamName) {
         Role firstTeamRole = null;
         List<Role> firstTeamRoleCategories = MTHD.getInstance().guild.getRolesByName(firstTeamName, true);
         if(!firstTeamRoleCategories.isEmpty()) {
@@ -83,16 +145,13 @@ public class GameCategory {
 
         this.firstTeamRole = firstTeamRole;
         this.secondTeamRole = secondTeamRole;
-
-        createChatChannel();
-        createFirstTeamVoiceChannel();
-        createSecondTeamVoiceChannel();
     }
 
     /**
      * Создает канал выбора игроков на игру
      */
     private void createPlayersChoiceChannel() {
+        setGameState(GameState.PLAYERS_CHOICE);
         playersChoiceChannel = new PlayersChoiceChannel(this);
     }
 
@@ -100,11 +159,13 @@ public class GameCategory {
      * Удаляет канал выбора игроков на игру
      */
     private void deletePlayersChoiceChannel() {
-        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(playersChoiceChannel.channelId);
-        if(channel != null) {
-            channel.delete().queue();
+        if(playersChoiceChannel != null) {
+            TextChannel channel = MTHD.getInstance().guild.getTextChannelById(playersChoiceChannel.channelId);
+            if(channel != null) {
+                channel.delete().queue();
+            }
+            playersChoiceChannel = null;
         }
-        playersChoiceChannel = null;
     }
 
     /**
@@ -119,11 +180,13 @@ public class GameCategory {
      * Удаляет канал выбора карты
      */
     private void deleteMapChoiceChannel() {
-        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(mapChoiceChannel.channelId);
-        if(channel != null) {
-            channel.delete().queue();
+        if(mapChoiceChannel != null) {
+            TextChannel channel = MTHD.getInstance().guild.getTextChannelById(mapChoiceChannel.channelId);
+            if(channel != null) {
+                channel.delete().queue();
+            }
+            mapChoiceChannel = null;
         }
-        mapChoiceChannel = null;
     }
 
     /**
@@ -173,6 +236,43 @@ public class GameCategory {
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                     .queue();
+        }
+    }
+
+    /**
+     * Устанавливает стадию игры
+     * @param gameState Стадия игры
+     */
+    public void setGameState(GameState gameState) {
+        game.gameState = gameState;
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "UPDATE live_games SET game_state = ? WHERE id = ?;");
+            preparedStatement.setInt(1, gameState.getId());
+            preparedStatement.setInt(2, game.id);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Устанавливает стадию игры
+     * @param gameMap Выбранная карта
+     */
+    public void setGameMap(GameMap gameMap) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "UPDATE live_games SET map_name = ? WHERE id = ?;");
+            preparedStatement.setString(1, gameMap.getName());
+            preparedStatement.setInt(2, game.id);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }

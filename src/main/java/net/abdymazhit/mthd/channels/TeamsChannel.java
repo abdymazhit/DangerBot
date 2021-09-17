@@ -7,6 +7,7 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
@@ -21,7 +22,7 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -36,16 +37,35 @@ public class TeamsChannel extends Channel {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
-            deleteChannel(category, "teams");
 
-            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "teams", 0);
+            for(GuildChannel channel : category.getChannels()) {
+                if(channel.getName().equals("teams")) {
+                    channel.delete().queue();
+                }
+            }
+
+            ChannelAction<TextChannel> createAction = category.createTextChannel("teams").setPosition(0);
             createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-            createAction.queue(textChannel -> channelId = textChannel.getId());
+            createAction.queue(textChannel -> {
+                channelId = textChannel.getId();
 
-            updateTopMessage();
-            sendChannelMessage();
+                updateTopMessage();
+
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Доступные команды");
+                embedBuilder.setColor(0xFF58B9FF);
+                embedBuilder.addField("Посмотреть информацию о команде",
+                        "`!team info <NAME>`", false);
+
+                TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+                if(channel != null) {
+                    channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                }
+
+                embedBuilder.clear();
+            });
         }
     }
 
@@ -85,24 +105,6 @@ public class TeamsChannel extends Channel {
             } else {
                 channel.editMessageEmbedsById(channelTopTeamsMessageId, embedBuilder.build()).queue();
             }
-        }
-
-        embedBuilder.clear();
-    }
-
-    /**
-     * Отправляет сообщение канала команды
-     */
-    private void sendChannelMessage() {
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Доступные команды");
-        embedBuilder.setColor(0xFF58B9FF);
-        embedBuilder.addField("Посмотреть информацию о команде",
-                "`!team info <NAME>`", false);
-
-        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(channel != null) {
-            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         }
 
         embedBuilder.clear();

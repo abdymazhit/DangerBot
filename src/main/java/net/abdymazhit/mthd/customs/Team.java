@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.mthd.MTHD;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Member;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,11 +14,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Представляет собой команду
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
@@ -42,12 +44,6 @@ public class Team {
 
     /** Количество побед команды */
     public int wins;
-
-    /** Количество убийств команды */
-    public int kills;
-
-    /** Количество смертей команды */
-    public int deaths;
 
     /** Количество выигранных кроватей команды */
     public int won_beds;
@@ -88,7 +84,7 @@ public class Team {
     private void getTeamInfo() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT name, leader_id, points, games, wins, kills, deaths, won_beds, lost_beds FROM teams WHERE id = ?;");
+                    "SELECT name, leader_id, points, games, wins, won_beds, lost_beds FROM teams WHERE id = ?;");
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             preparedStatement.close();
@@ -99,8 +95,6 @@ public class Team {
                 points = resultSet.getInt("points");
                 games = resultSet.getInt("games");
                 wins = resultSet.getInt("wins");
-                kills = resultSet.getInt("kills");
-                deaths = resultSet.getInt("deaths");
                 won_beds = resultSet.getInt("won_beds");
                 lost_beds = resultSet.getInt("lost_beds");
 
@@ -206,17 +200,21 @@ public class Team {
      * Получает статус онлайна игроков в Discord
      */
     private void getUsersDiscordOnline() {
-        MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).queue(member -> {
-            leader.setDiscordOnline(member.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                    member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                    member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+        try {
+            Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
+
+            leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
 
             for(UserAccount user : members) {
                 MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).queue(member1 ->
                         user.setDiscordOnline(member1.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                        member1.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                        member1.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)));
+                                member1.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                                member1.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)));
             }
-        });
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 }

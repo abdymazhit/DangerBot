@@ -3,23 +3,23 @@ package net.abdymazhit.mthd.enums;
 /**
  * Представляет собой стадию игры
  *
- * @version   13.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public enum GameState {
-    PLAYERS_SELECTION(0, "Выбор игроков на игру");
+    PLAYERS_CHOICE(0),
+    MAP_CHOICE(1),
+    GAME_CREATION(2),
+    GAME(3);
 
     private final int id;
-    private final String name;
 
     /**
      * Инициализирует стадию
      * @param id Id стадии
-     * @param name Название стадии
      */
-    GameState(int id, String name) {
+    GameState(int id) {
         this.id = id;
-        this.name = name;
     }
 
     /**
@@ -28,13 +28,5 @@ public enum GameState {
      */
     public int getId() {
         return id;
-    }
-
-    /**
-     * Получает название стадии
-     * @return Название стадии
-     */
-    public String getName() {
-        return name;
     }
 }

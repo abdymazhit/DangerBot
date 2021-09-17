@@ -2,6 +2,7 @@ package net.abdymazhit.mthd.listeners.commands.game;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
+import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.game.GameCategory;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -17,7 +18,7 @@ import java.sql.SQLException;
 /**
  * Команда выбора игроков на игру
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -89,8 +90,39 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                         return;
                     }
 
+                    if(playerTeamId == gameCategory.game.firstTeamId) {
+                        if(gameCategory.game.format.equals("4x2")) {
+                            if(gameCategory.game.firstTeamPlayers.size() > 1) {
+                                message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
+                                return;
+                            }
+                        } else if(gameCategory.game.format.equals("6x2")) {
+                            if(gameCategory.game.firstTeamPlayers.size() > 5) {
+                                message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
+                                return;
+                            }
+                        }
+                    } else if(playerTeamId == gameCategory.game.secondTeamId) {
+                        if(gameCategory.game.format.equals("4x2")) {
+                            if(gameCategory.game.secondTeamPlayers.size() > 1) {
+                                message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
+                                return;
+                            }
+                        } else if(gameCategory.game.format.equals("6x2")) {
+                            if(gameCategory.game.secondTeamPlayers.size() > 5) {
+                                message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
+                                return;
+                            }
+                        }
+                    }
+
                     if(starterTeamId != playerTeamId) {
                         message.reply("Ошибка! Вы можете добавлять только игроков своей команды!").queue();
+                        return;
+                    }
+
+                    if(!gameCategory.game.gameState.equals(GameState.PLAYERS_CHOICE)) {
+                        message.reply("Ошибка! Стадия выбора игроков закончена!").queue();
                         return;
                     }
 
@@ -157,6 +189,11 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                         return;
                     }
 
+                    if(!gameCategory.game.gameState.equals(GameState.PLAYERS_CHOICE)) {
+                        message.reply("Ошибка! Стадия выбора игроков закончена!").queue();
+                        return;
+                    }
+
                     String errorMessage = removePlayerFromGame(playerTeamId, playerAccount.getId());
                     if(errorMessage != null) {
                         message.reply(errorMessage).queue();
@@ -218,7 +255,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                 // Вернуть значение, что игрок успешно добавлен в список участвующих в игре игроков
                 return null;
             } else {
-                return "Ошибка! Вы уже участвуете в игре!";
+                return "Ошибка! Игрок уже участвует в игре!";
             }
         } catch (SQLException e) {
             e.printStackTrace();

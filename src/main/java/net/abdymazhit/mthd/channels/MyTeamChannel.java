@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
@@ -15,7 +16,7 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -27,40 +28,37 @@ public class MyTeamChannel extends Channel {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
-            deleteChannel(category, "my-team");
 
-            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "my-team", 3);
+            for(GuildChannel channel : category.getChannels()) {
+                if(channel.getName().equals("my-team")) {
+                    channel.delete().queue();
+                }
+            }
+
+            ChannelAction<TextChannel> createAction = category.createTextChannel("my-team").setPosition(3);
             createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-            createAction.queue(textChannel -> channelId = textChannel.getId());
+            createAction.queue(textChannel -> {
+                channelId = textChannel.getId();
 
-            sendChannelMessage();
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Доступные команды");
+                embedBuilder.setColor(0xFF58B9FF);
+                embedBuilder.addField("Исключить участника из команды",
+                        "`!team kick <NAME>`", false);
+                embedBuilder.addField("Передать права лидера команды",
+                        "`!team transfer <NAME>`", false);
+                embedBuilder.addField("Удалить команду",
+                        "`!team disband`", false);
+                embedBuilder.addField("Посмотреть информацию о команде",
+                        "`!team info`", false);
+                embedBuilder.addField("Покинуть команду",
+                        "`!team leave`", false);
+                textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                embedBuilder.clear();
+            });
         }
-    }
-
-    /**
-     * Отправляет сообщение канала моя команда
-     */
-    private void sendChannelMessage() {
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Доступные команды");
-        embedBuilder.setColor(0xFF58B9FF);
-        embedBuilder.addField("Исключить участника из команды",
-                "`!team kick <NAME>`", false);
-        embedBuilder.addField("Передать права лидера команды",
-                "`!team transfer <NAME>`", false);
-        embedBuilder.addField("Удалить команду",
-                "`!team disband`", false);
-        embedBuilder.addField("Посмотреть информацию о команде",
-                "`!team info`", false);
-        embedBuilder.addField("Покинуть команду",
-                "`!team leave`", false);
-        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(channel != null) {
-            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
-        }
-        embedBuilder.clear();
     }
 }

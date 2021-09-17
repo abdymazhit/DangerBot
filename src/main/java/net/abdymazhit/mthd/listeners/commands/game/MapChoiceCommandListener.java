@@ -2,6 +2,7 @@ package net.abdymazhit.mthd.listeners.commands.game;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.GameMap;
+import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.game.GameCategory;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -17,7 +18,7 @@ import java.sql.SQLException;
 /**
  * Команда выбора карты
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -109,6 +110,11 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                     int starterTeamId = MTHD.getInstance().database.getUserTeamId(starterId);
                     if(starterTeamId < 0) {
                         message.reply("Ошибка! Вы не являетесь участником или лидером какой-либо команды!").queue();
+                        return;
+                    }
+
+                    if(!gameCategory.game.gameState.equals(GameState.MAP_CHOICE)) {
+                        message.reply("Ошибка! Стадия выбора карты закончена!").queue();
                         return;
                     }
 

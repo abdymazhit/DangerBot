@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
@@ -20,7 +21,7 @@ import java.util.List;
 /**
  * Канал поиска игры
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameChannel extends Channel {
@@ -35,17 +36,23 @@ public class FindGameChannel extends Channel {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
-            deleteChannel(category, "find-game");
 
-            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "find-game", 2);
+            for(GuildChannel channel : category.getChannels()) {
+                if(channel.getName().equals("find-game")) {
+                    channel.delete().queue();
+                }
+            }
+
+            ChannelAction<TextChannel> createAction = category.createTextChannel("find-game").setPosition(2);
             createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-            createAction.queue(textChannel -> channelId = textChannel.getId());
-
-            updateTeamsInGameSearchCountMessage();
-            updateAvailableAssistantsMessage();
+            createAction.queue(textChannel -> {
+                channelId = textChannel.getId();
+                updateTeamsInGameSearchCountMessage();
+                updateAvailableAssistantsMessage();
+            });
         }
     }
 

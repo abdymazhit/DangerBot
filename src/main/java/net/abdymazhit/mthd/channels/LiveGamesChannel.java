@@ -7,6 +7,7 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
@@ -16,7 +17,7 @@ import java.util.*;
 /**
  * Канал активных игр
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesChannel extends Channel {
@@ -33,16 +34,22 @@ public class LiveGamesChannel extends Channel {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
         if(!categories.isEmpty()) {
             Category category = categories.get(0);
-            deleteChannel(category, "live-games");
 
-            ChannelAction<TextChannel> createAction = createChannel(category.getId(), "live-games", 1);
+            for(GuildChannel channel : category.getChannels()) {
+                if(channel.getName().equals("live-games")) {
+                    channel.delete().queue();
+                }
+            }
+
+            ChannelAction<TextChannel> createAction = category.createTextChannel("live-games").setPosition(1);
             createAction = createAction.addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null);
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE));
-            createAction.queue(textChannel -> channelId = textChannel.getId());
-
-            updateLiveGamesMessages();
+            createAction.queue(textChannel -> {
+                channelId = textChannel.getId();
+                updateLiveGamesMessages();
+            });
         }
     }
 

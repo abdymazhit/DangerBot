@@ -6,11 +6,13 @@ import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Отвечает за работу с базой данных
  *
- * @version   13.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -118,6 +120,29 @@ public class Database {
     }
 
     /**
+     * Получает id пользователя
+     * @param username Имя пользователя
+     * @return Id пользователя
+     */
+    public int getUserIdByUsername(String username) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT id FROM users WHERE username ILIKE ?;");
+            preparedStatement.setString(1, username);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
      * Получает имя пользователя
      * @param userId Id пользователя
      * @return Имя пользователя
@@ -182,6 +207,24 @@ public class Database {
 
             if(resultSet.next()) {
                 return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public int getTeamPoints(int teamId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT points FROM teams WHERE id = ? AND is_deleted is null;");
+            preparedStatement.setInt(1, teamId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+
+            if(resultSet.next()) {
+                return resultSet.getInt("points");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -410,6 +453,19 @@ public class Database {
             e.printStackTrace();
             return "Критическая ошибка при удалении из таблицы доступных помощников! Свяжитесь с разработчиком бота!";
         }
+    }
+
+    /**
+     * Получает названий игроков команды
+     * @param teamPlayersId Список игроков по id
+     * @return Список названий игроков команды
+     */
+    public List<String> getTeamPlayersNames(List<Integer> teamPlayersId) {
+        List<String> teamPlayersNames = new ArrayList<>();
+        for(int userId : teamPlayersId) {
+            teamPlayersNames.add(MTHD.getInstance().database.getUserName(userId));
+        }
+        return teamPlayersNames;
     }
 
     /**

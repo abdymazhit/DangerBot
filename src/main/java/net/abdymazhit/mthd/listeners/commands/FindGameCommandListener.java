@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameCommandListener extends ListenerAdapter {
@@ -34,7 +34,7 @@ public class FindGameCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         Member member = event.getMember();
 
-        if(!MTHD.getInstance().findGameChannel.channelId.equals(messageChannel.getId())) return;
+        if(!messageChannel.getId().equals(MTHD.getInstance().findGameChannel.channelId)) return;
         if(member == null) return;
         if(event.getAuthor().isBot()) return;
 

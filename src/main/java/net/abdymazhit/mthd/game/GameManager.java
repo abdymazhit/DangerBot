@@ -4,8 +4,11 @@ import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Game;
 import net.abdymazhit.mthd.customs.TeamInGameSearch;
 import net.abdymazhit.mthd.customs.UserAccount;
+import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.*;
@@ -16,7 +19,7 @@ import java.util.List;
 /**
  * Менеджер игры
  *
- * @version   15.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -29,6 +32,90 @@ public class GameManager {
      */
     public GameManager() {
         gameCategories = new ArrayList<>();
+
+        for(Category category : MTHD.getInstance().guild.getCategories()) {
+            if(category.getName().contains("Game-")) {
+                int id = Integer.parseInt(category.getName().replace("Game-", ""));
+
+                try {
+                    Connection connection = MTHD.getInstance().database.getConnection();
+                    PreparedStatement preparedStatement = connection.prepareStatement(
+                            "SELECT * FROM live_games WHERE id = ?;");
+                    preparedStatement.setInt(1, id);
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    preparedStatement.close();
+
+                    if(resultSet.next()) {
+                        int firstTeamId = resultSet.getInt("first_team_id");
+                        int firstTeamStarterId = resultSet.getInt("first_team_starter_id");
+                        int secondTeamId = resultSet.getInt("second_team_id");
+                        int secondTeamStarterId = resultSet.getInt("second_team_starter_id");
+                        String format = resultSet.getString("format");
+                        String mapName = resultSet.getString("map_name");
+                        int assistantId = resultSet.getInt("assistant_id");
+                        Timestamp startedAt = resultSet.getTimestamp("started_at");
+                        int gameStateId = resultSet.getInt("game_state");
+
+                        String firstTeamName = MTHD.getInstance().database.getTeamName(firstTeamId);
+                        if(firstTeamName == null) {
+                            return;
+                        }
+
+                        String secondTeamName = MTHD.getInstance().database.getTeamName(secondTeamId);
+                        if(secondTeamName == null) {
+                            return;
+                        }
+
+                        GameMap selectedMap = null;
+                        for(GameMap gameMap : GameMap.values()) {
+                            if(gameMap.getName().equals(mapName)) {
+                                selectedMap = gameMap;
+                            }
+                        }
+
+                        GameState state = null;
+                        for(GameState gameState : GameState.values()) {
+                            if(gameState.getId() == gameStateId) {
+                                state = gameState;
+                            }
+                        }
+
+                        PreparedStatement firstStatement = connection.prepareStatement(
+                                "SELECT player_id FROM live_games_players WHERE team_id = ?;");
+                        firstStatement.setInt(1, firstTeamId);
+                        ResultSet firstResultSet = firstStatement.executeQuery();
+                        firstStatement.close();
+
+                        List<Integer> firstTeamPlayersId = new ArrayList<>();
+                        while(firstResultSet.next()) {
+                            firstTeamPlayersId.add(firstResultSet.getInt("player_id"));
+                        }
+
+                        PreparedStatement secondStatement = connection.prepareStatement(
+                                "SELECT player_id FROM live_games_players WHERE team_id = ?;");
+                        secondStatement.setInt(1, secondTeamId);
+                        ResultSet secondResultSet = secondStatement.executeQuery();
+                        secondStatement.close();
+
+                        List<Integer> secondTeamPlayersId = new ArrayList<>();
+                        while(secondResultSet.next()) {
+                            secondTeamPlayersId.add(secondResultSet.getInt("player_id"));
+                        }
+
+                        Game game = new Game(id, firstTeamId, firstTeamStarterId, secondTeamId,
+                                secondTeamStarterId, format, selectedMap, state, assistantId, startedAt);
+                        game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(firstTeamPlayersId);
+                        game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(secondTeamPlayersId);
+
+                        gameCategories.add(new GameCategory(game, category));
+                    } else {
+                        deleteGame(category.getId());
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     /**
@@ -135,7 +222,7 @@ public class GameManager {
             preparedStatement.setString(5, format);
             preparedStatement.setInt(6, assistantId);
             preparedStatement.setTimestamp(7, Timestamp.from(Instant.now()));
-            preparedStatement.setInt(8, GameState.PLAYERS_SELECTION.getId());
+            preparedStatement.setInt(8, GameState.PLAYERS_CHOICE.getId());
             preparedStatement.setInt(9, firstTeamId);
             preparedStatement.setInt(10, secondTeamId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -184,20 +271,10 @@ public class GameManager {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + gameId, true);
 
         if(categories.isEmpty()) {
-            String firstTeamName = MTHD.getInstance().database.getTeamName(firstTeamId);
-            if(firstTeamName == null) {
-                return;
-            }
-
-            String secondTeamName = MTHD.getInstance().database.getTeamName(secondTeamId);
-            if(secondTeamName == null) {
-                return;
-            }
-
-            Game game = new Game(gameId, firstTeamId, firstTeamName, firstTeamStarterId, secondTeamId, secondTeamName,
-                    secondTeamStarterId, format, assistantId);
+            Game game = new Game(gameId, firstTeamId, firstTeamStarterId, secondTeamId, secondTeamStarterId, format, assistantId);
             gameCategories.add(new GameCategory(game));
             MTHD.getInstance().findGameChannel.updateTeamsInGameSearchCountMessage();
+            MTHD.getInstance().findGameChannel.updateAvailableAssistantsMessage();
         }
     }
 
@@ -225,6 +302,8 @@ public class GameManager {
             secondTeamStatement.setInt(1, game.secondTeamId);
             secondTeamStatement.executeUpdate();
             secondTeamStatement.close();
+
+            MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -237,8 +316,8 @@ public class GameManager {
     public void deleteGame(String categoryId) {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
         if(category != null) {
-            for(TextChannel textChannel : category.getTextChannels()) {
-                textChannel.delete().queue();
+            for(GuildChannel channel : category.getChannels()) {
+                channel.delete().queue();
             }
             category.delete().queue();
 
@@ -248,6 +327,103 @@ public class GameManager {
                     break;
                 }
             }
+        }
+    }
+
+    public void finishGame(Game game, String matchId, int winnerTeamId, int firstTeamRatingChanges, int secondTeamRatingChanges) {
+        for(GameCategory gameCategory : gameCategories) {
+            if(gameCategory.game.equals(game)) {
+                if(gameCategory.gameChannel.channelId != null && gameCategory.gameChannel.channelMessageId != null) {
+                    TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(gameCategory.gameChannel.channelId);
+                    if(textChannel != null) {
+                        EmbedBuilder embedBuilder = new EmbedBuilder();
+                        if(game.firstTeamId == winnerTeamId) {
+                            embedBuilder.setTitle("Побидетель: " + game.firstTeamName);
+                        } else if(game.secondTeamId == winnerTeamId) {
+                            embedBuilder.setTitle("Побидетель: " + game.secondTeamName);
+                        }
+
+                        embedBuilder.setColor(3092790);
+
+                        embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + firstTeamRatingChanges + "\n" +
+                                "Рейтинг проигравшего: " + secondTeamRatingChanges, true);
+                        embedBuilder.addField("Помощник", game.assistantName, true);
+
+                        textChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
+
+                        embedBuilder.clear();
+                    }
+                }
+            }
+        }
+
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement finishStatement = connection.prepareStatement(
+                    "INSERT INTO finished_games_history (first_team_id, first_team_starter_id, second_team_id, " +
+                            "second_team_starter_id, format, map_name, match_id, winner_team_id, first_team_rating_changes, " +
+                            "second_team_rating_changes, assistant_id, finished_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? " +
+                            "RETURNING id;");
+            finishStatement.setInt(1, game.firstTeamId);
+            finishStatement.setInt(2, game.firstTeamStarterId);
+            finishStatement.setInt(3, game.secondTeamId);
+            finishStatement.setInt(4, game.secondTeamStarterId);
+            finishStatement.setString(5, game.format);
+            finishStatement.setString(6, game.gameMap.getName());
+            finishStatement.setString(7, matchId);
+            finishStatement.setInt(8, winnerTeamId);
+            finishStatement.setInt(9, firstTeamRatingChanges);
+            finishStatement.setInt(10, secondTeamRatingChanges);
+            finishStatement.setInt(11, game.assistantId);
+            finishStatement.setTimestamp(12, Timestamp.from(Instant.now()));
+
+            ResultSet createResultSet = finishStatement.executeQuery();
+            finishStatement.close();
+
+            if(createResultSet.next()) {
+                int finishedGameId = createResultSet.getInt("id");
+
+                for(int playerId : game.firstTeamPlayersId) {
+                    PreparedStatement playersStatement = connection.prepareStatement(
+                            "INSERT INTO finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
+                    playersStatement.setInt(1, finishedGameId);
+                    playersStatement.setInt(2, game.firstTeamId);
+                    playersStatement.setInt(3, playerId);
+                    playersStatement.executeUpdate();
+                    playersStatement.close();
+                }
+
+                for(int playerId : game.secondTeamPlayersId) {
+                    PreparedStatement playersStatement = connection.prepareStatement(
+                            "INSERT INTO finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
+                    playersStatement.setInt(1, finishedGameId);
+                    playersStatement.setInt(2, game.firstTeamId);
+                    playersStatement.setInt(3, playerId);
+                    playersStatement.executeUpdate();
+                    playersStatement.close();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void finishGameTeam(int points, int games, int wins, int wonBeds, int lostBeds, int id) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement playersStatement = connection.prepareStatement(
+                    "UPDATE teams SET points = points + ?, games = games + ?, wins = wins + ?, won_beds = won_beds + ?, " +
+                            "lost_beds = lost_beds + ? WHERE id = ?;");
+            playersStatement.setInt(1, points);
+            playersStatement.setInt(2, games);
+            playersStatement.setInt(3, wins);
+            playersStatement.setInt(4, wonBeds);
+            playersStatement.setInt(5, lostBeds);
+            playersStatement.setInt(6, id);
+            playersStatement.executeUpdate();
+            playersStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

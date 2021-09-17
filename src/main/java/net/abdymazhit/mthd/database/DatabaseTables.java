@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   13.09.2021
+ * @version   17.09.2021
  * @author    Islam Abdymazhit
  */
 public class DatabaseTables {
@@ -44,9 +44,6 @@ public class DatabaseTables {
 
         createLiveGamesTable();
         createLiveGamesPlayersTable();
-
-        createCancelledGamesHistory();
-        createCancelledGamesPlayersHistory();
 
         createFinishedGamesHistory();
         createFinishedGamesPlayersHistory();
@@ -127,8 +124,6 @@ public class DatabaseTables {
                     "points int default 0 not null, " +
                     "games int default 0 not null, " +
                     "wins int default 0 not null, " +
-                    "kills int default 0 not null, " +
-                    "deaths int default 0 not null, " +
                     "won_beds int default 0 not null, " +
                     "lost_beds int default 0 not null, " +
                     "is_deleted boolean);");
@@ -337,45 +332,6 @@ public class DatabaseTables {
     }
 
     /**
-     * Создает таблицу истории отмененных игр
-     */
-    private void createCancelledGamesHistory() {
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS cancelled_games_history (" +
-                    "id serial not null constraint cancelled_games_history_pk primary key, " +
-                    "first_team_id int not null, " +
-                    "first_team_starter_id int not null, " +
-                    "second_team_id int not null, " +
-                    "second_team_starter_id int not null, " +
-                    "format varchar(50) not null, " +
-                    "map_name varchar(50) not null, " +
-                    "canceller_id int not null, " +
-                    "cancelled_at timestamp not null);");
-            preparedStatement.executeUpdate();
-            preparedStatement.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Создает таблицу истории игроков отмененных игр
-     */
-    private void createCancelledGamesPlayersHistory() {
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS cancelled_games_players_history (" +
-                    "id serial not null constraint cancelled_games_players_history_pk primary key, " +
-                    "cancelled_game_id int not null, " +
-                    "team_id int not null, " +
-                    "player_id int not null);");
-            preparedStatement.executeUpdate();
-            preparedStatement.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Создает таблицу истории завершенных игр
      */
     private void createFinishedGamesHistory() {
@@ -388,7 +344,11 @@ public class DatabaseTables {
                     "second_team_starter_id int not null, " +
                     "format varchar(50) not null, " +
                     "map_name varchar(50) not null, " +
-                    "finisher_id int not null, " +
+                    "match_id varchar(50) not null, " +
+                    "winner_team_id int not null, " +
+                    "first_team_rating_changes int not null, " +
+                    "second_team_rating_changes int not null, " +
+                    "assistant_id int not null, " +
                     "finished_at timestamp not null);");
             preparedStatement.executeUpdate();
             preparedStatement.close();
