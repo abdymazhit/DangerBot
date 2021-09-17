@@ -15,6 +15,8 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Менеджер игры
@@ -330,7 +332,7 @@ public class GameManager {
         }
     }
 
-    public void finishGame(Game game, String matchId, int winnerTeamId, int firstTeamRatingChanges, int secondTeamRatingChanges) {
+    public void finishGame(Game game, String matchId, int winnerTeamId, int firstTeamRating, int secondTeamRating) {
         for(GameCategory gameCategory : gameCategories) {
             if(gameCategory.game.equals(game)) {
                 if(gameCategory.gameChannel.channelId != null && gameCategory.gameChannel.channelMessageId != null) {
@@ -339,19 +341,29 @@ public class GameManager {
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         if(game.firstTeamId == winnerTeamId) {
                             embedBuilder.setTitle("Побидетель: " + game.firstTeamName);
+                            embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + firstTeamRating + " (+" + (firstTeamRating - game.firstTeamPoints)
+                                    +")\n" + "Рейтинг проигравшего: " + (secondTeamRating - game.secondTeamPoints), true);
                         } else if(game.secondTeamId == winnerTeamId) {
                             embedBuilder.setTitle("Побидетель: " + game.secondTeamName);
+                            embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + secondTeamRating + " (-" + (secondTeamRating - game.secondTeamPoints)
+                                    +")\n" + "Рейтинг проигравшего: " + (firstTeamRating - game.firstTeamPoints), true);
                         }
 
                         embedBuilder.setColor(3092790);
-
-                        embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + firstTeamRatingChanges + "\n" +
-                                "Рейтинг проигравшего: " + secondTeamRatingChanges, true);
-                        embedBuilder.addField("Помощник", game.assistantName, true);
+                        embedBuilder.addField("Помощник", game.assistantName, false);
 
                         textChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
-
                         embedBuilder.clear();
+
+                        new Timer().schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
+                                if(category != null) {
+                                    MTHD.getInstance().gameManager.deleteGame(category.getId());
+                                }
+                            }
+                        }, 30000);
                     }
                 }
             }
@@ -372,8 +384,8 @@ public class GameManager {
             finishStatement.setString(6, game.gameMap.getName());
             finishStatement.setString(7, matchId);
             finishStatement.setInt(8, winnerTeamId);
-            finishStatement.setInt(9, firstTeamRatingChanges);
-            finishStatement.setInt(10, secondTeamRatingChanges);
+            finishStatement.setInt(9, firstTeamRating - game.firstTeamPoints);
+            finishStatement.setInt(10, secondTeamRating - game.secondTeamPoints);
             finishStatement.setInt(11, game.assistantId);
             finishStatement.setTimestamp(12, Timestamp.from(Instant.now()));
 
@@ -406,13 +418,16 @@ public class GameManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        MTHD.getInstance().teamsChannel.updateTopMessage();
+        MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
     }
 
     public void finishGameTeam(int points, int games, int wins, int wonBeds, int lostBeds, int id) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement playersStatement = connection.prepareStatement(
-                    "UPDATE teams SET points = points + ?, games = games + ?, wins = wins + ?, won_beds = won_beds + ?, " +
+                    "UPDATE teams SET points = ?, games = games + ?, wins = wins + ?, won_beds = won_beds + ?, " +
                             "lost_beds = lost_beds + ? WHERE id = ?;");
             playersStatement.setInt(1, points);
             playersStatement.setInt(2, games);

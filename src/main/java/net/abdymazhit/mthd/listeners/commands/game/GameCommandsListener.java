@@ -82,6 +82,8 @@ public class GameCommandsListener extends ListenerAdapter {
                     embedBuilder.addField("Команда " + gameCategory.game.secondTeamName, String.valueOf(secondTeamPlayersStrings), true);
                     embedBuilder.addField("Отмены игры", "Данная команда доступна только для администрации. " +
                             "Для отмены игры введите `!cancel`", false);
+                    embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча администратор " +
+                            "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
 
                     messageChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
                     embedBuilder.clear();
@@ -111,6 +113,42 @@ public class GameCommandsListener extends ListenerAdapter {
                             MTHD.getInstance().gameManager.deleteGame(gameCategory.categoryId);
                         }
                     }, 7000);
+                } else if(contentRaw.startsWith("!finish")) {
+                    String[] command = message.getContentRaw().split(" ");
+
+                    if(command.length == 1) {
+                        message.reply("Ошибка! Укажите id матча!").queue();
+                        return;
+                    }
+
+                    if(command.length > 2) {
+                        message.reply("Ошибка! Неверная команда!").queue();
+                        return;
+                    }
+
+                    if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
+                        message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                        return;
+                    }
+
+                    String matchId = command[1];
+
+                    int finisherId = MTHD.getInstance().database.getUserId(canceller.getId());
+                    if(finisherId < 0) {
+                        message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                        return;
+                    }
+
+                    String errorMessage = MTHD.getInstance().liveGamesManager.finishMatch(matchId);
+                    if(errorMessage != null) {
+                        message.reply(errorMessage).queue();
+                        return;
+                    }
+
+                    if(gameCategory.gameChannel.timer != null) {
+                        gameCategory.gameChannel.timer.cancel();
+                    }
+                    MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
                 } else {
                     message.reply("Ошибка! Неверная команда!").queue();
                 }
