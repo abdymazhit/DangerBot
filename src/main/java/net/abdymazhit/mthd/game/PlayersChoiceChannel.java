@@ -78,11 +78,10 @@ public class PlayersChoiceChannel extends Channel {
                     if(time.get() <= 0) {
                         TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
                         if(channel != null) {
-                            // Исправить цифру 2
                             boolean isCancelling = false;
                             if(gameCategory.game.format.equals("4x2")) {
-                                if(gameCategory.game.firstTeamPlayers.size() < 1 ||
-                                        gameCategory.game.secondTeamPlayers.size() < 1) {
+                                if(gameCategory.game.firstTeamPlayers.size() < 4 ||
+                                        gameCategory.game.secondTeamPlayers.size() < 4) {
                                     isCancelling = true;
                                     channel.sendMessage("Недостаточно игроков для начала игры! Игра отменяется...")
                                             .queue(message -> channelGameCancelMessageId = message.getId());

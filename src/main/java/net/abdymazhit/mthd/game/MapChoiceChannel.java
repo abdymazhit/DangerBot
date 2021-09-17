@@ -49,7 +49,12 @@ public class MapChoiceChannel extends Channel {
     public MapChoiceChannel(GameCategory gameCategory) {
         this.gameCategory = gameCategory;
         gameMaps = new ArrayList<>();
-        Collections.addAll(gameMaps, GameMap.values());
+
+        if(gameCategory.game.format.equals("4x2")) {
+            Collections.addAll(gameMaps, GameMap.values4x2());
+        } else if(gameCategory.game.format.equals("6x2")) {
+            Collections.addAll(gameMaps, GameMap.values6x2());
+        }
 
         Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
         if(category != null) {
@@ -119,59 +124,98 @@ public class MapChoiceChannel extends Channel {
 
         if(gameMaps.size() == 1) {
             images.put(gameMaps.get(0), gameMaps.get(0).getPickImage());
-
-            for(GameMap gameMap : GameMap.values()) {
-                if(!images.containsKey(gameMap)) {
-                    images.put(gameMap, gameMap.getBanImage());
+            if(gameCategory.game.format.equals("4x2")) {
+                for(GameMap gameMap : GameMap.values4x2()) {
+                    if(!images.containsKey(gameMap)) {
+                        images.put(gameMap, gameMap.getBanImage());
+                    }
+                }
+            } else if(gameCategory.game.format.equals("6x2")) {
+                for(GameMap gameMap : GameMap.values6x2()) {
+                    if(!images.containsKey(gameMap)) {
+                        images.put(gameMap, gameMap.getBanImage());
+                    }
                 }
             }
         } else {
-            for(GameMap gameMap : GameMap.values()) {
-                if(gameMaps.contains(gameMap)) {
-                    images.put(gameMap, gameMap.getNormalImage());
-                } else {
-                    images.put(gameMap, gameMap.getBanImage());
+            if(gameCategory.game.format.equals("4x2")) {
+                for(GameMap gameMap : GameMap.values4x2()) {
+                    if(gameMaps.contains(gameMap)) {
+                        images.put(gameMap, gameMap.getNormalImage());
+                    } else {
+                        images.put(gameMap, gameMap.getBanImage());
+                    }
+                }
+            } else if(gameCategory.game.format.equals("6x2")) {
+                for(GameMap gameMap : GameMap.values6x2()) {
+                    if(gameMaps.contains(gameMap)) {
+                        images.put(gameMap, gameMap.getNormalImage());
+                    } else {
+                        images.put(gameMap, gameMap.getBanImage());
+                    }
                 }
             }
         }
+        BufferedImage image = null;
 
-        BufferedImage image = new BufferedImage(((GameMap.values().length / 2) + 1) * 710,624 * 2, BufferedImage.TYPE_INT_ARGB);
-        int x = 0;
-        boolean isSecondLine = false;
-        for(int i = 0; i < GameMap.values().length; i++) {
-            int index = (GameMap.values().length / 2) + 1;
-            if(i < index) {
-                image.getGraphics().drawImage(images.get(GameMap.values()[i]), x, 0, null);
-            } else {
-                if(!isSecondLine) {
-                    x = 315;
+        if(gameCategory.game.format.equals("4x2")) {
+            image = new BufferedImage(((GameMap.values4x2().length / 2) + 1) * 710,624 * 2, BufferedImage.TYPE_INT_ARGB);
+            int x = 0;
+            boolean isSecondLine = false;
+            for(int i = 0; i < GameMap.values4x2().length; i++) {
+                int index = (GameMap.values4x2().length / 2) + 1;
+                if(i < index) {
+                    image.getGraphics().drawImage(images.get(GameMap.values4x2()[i]), x, 0, null);
+                } else {
+                    if(!isSecondLine) {
+                        x = 315;
+                    }
+                    isSecondLine = true;
+                    image.getGraphics().drawImage(images.get(GameMap.values4x2()[i]), x, 624, null);
                 }
-                isSecondLine = true;
-                image.getGraphics().drawImage(images.get(GameMap.values()[i]), x, 624, null);
+                x += 710;
             }
-            x += 710;
+        } else if(gameCategory.game.format.equals("6x2")) {
+            image = new BufferedImage(((GameMap.values6x2().length / 2) + 1) * 710,624 * 2, BufferedImage.TYPE_INT_ARGB);
+            int x = 0;
+            boolean isSecondLine = false;
+            for(int i = 0; i < GameMap.values6x2().length; i++) {
+                int index = (GameMap.values6x2().length / 2) + 1;
+                if(i < index) {
+                    image.getGraphics().drawImage(images.get(GameMap.values6x2()[i]), x, 0, null);
+                } else {
+                    if(!isSecondLine) {
+                        x = 315;
+                    }
+                    isSecondLine = true;
+                    image.getGraphics().drawImage(images.get(GameMap.values6x2()[i]), x, 624, null);
+                }
+                x += 710;
+            }
         }
 
         try {
             File file = new File("./maps/image.png");
-            ImageIO.write(image, "png", file);
+            if(image != null) {
+                ImageIO.write(image, "png", file);
 
-            if(timer != null) {
-                timer.cancel();
-            }
-
-            if(channelMapsMessageId == null) {
-                TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
-                if(channel != null) {
-                    channel.sendMessage("Команда " + currentBannerTeamRole.getAsMention() +
-                            " должна забанить карту! " + "Оставшееся время для бана карты: " + 20)
-                            .addFile(file).queue(message -> {
-                        channelMapsMessageId = message.getId();
-                        createCountdownTask(file);
-                    });   
+                if(timer != null) {
+                    timer.cancel();
                 }
-            } else {
-                createCountdownTask(file);
+
+                if(channelMapsMessageId == null) {
+                    TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
+                    if(channel != null) {
+                        channel.sendMessage("Команда " + currentBannerTeamRole.getAsMention() +
+                                " должна забанить карту! " + "Оставшееся время для бана карты: " + 20)
+                                .addFile(file).queue(message -> {
+                            channelMapsMessageId = message.getId();
+                            createCountdownTask(file);
+                        });
+                    }
+                } else {
+                    createCountdownTask(file);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

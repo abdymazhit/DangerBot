@@ -95,9 +95,8 @@ public class FindGameCommandListener extends ListenerAdapter {
                     }
                 }
 
-                // Исправить цифру 2
                 if(format.equals("4x2")) {
-                    if(onlinePlayers < 1) {
+                    if(onlinePlayers < 4) {
                         message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
                         return;
                     }

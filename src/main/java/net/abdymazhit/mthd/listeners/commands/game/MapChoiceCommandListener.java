@@ -56,17 +56,33 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                     String mapName = command[1];
 
                     GameMap banningGameMap = null;
-                    for(GameMap gameMap : GameMap.values()) {
-                        if(gameMap.getName().equalsIgnoreCase(mapName)) {
-                            banningGameMap = gameMap;
-                            break;
-                        } else {
-                            try{
-                                if(gameMap.getId() == Integer.parseInt(mapName)) {
-                                    banningGameMap = gameMap;
-                                    break;
-                                }
-                            } catch(NumberFormatException ignored) { }
+                    if(gameCategory.game.format.equals("4x2")) {
+                        for(GameMap gameMap : GameMap.values4x2()) {
+                            if(gameMap.getName().equalsIgnoreCase(mapName)) {
+                                banningGameMap = gameMap;
+                                break;
+                            } else {
+                                try{
+                                    if(gameMap.getId() == Integer.parseInt(mapName)) {
+                                        banningGameMap = gameMap;
+                                        break;
+                                    }
+                                } catch(NumberFormatException ignored) { }
+                            }
+                        }
+                    } else if(gameCategory.game.format.equals("6x2")) {
+                        for(GameMap gameMap : GameMap.values6x2()) {
+                            if(gameMap.getName().equalsIgnoreCase(mapName)) {
+                                banningGameMap = gameMap;
+                                break;
+                            } else {
+                                try{
+                                    if(gameMap.getId() == Integer.parseInt(mapName)) {
+                                        banningGameMap = gameMap;
+                                        break;
+                                    }
+                                } catch(NumberFormatException ignored) { }
+                            }
                         }
                     }
 

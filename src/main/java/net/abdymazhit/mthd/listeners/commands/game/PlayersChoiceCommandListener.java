@@ -92,7 +92,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
 
                     if(playerTeamId == gameCategory.game.firstTeamId) {
                         if(gameCategory.game.format.equals("4x2")) {
-                            if(gameCategory.game.firstTeamPlayers.size() > 1) {
+                            if(gameCategory.game.firstTeamPlayers.size() > 3) {
                                 message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                                 return;
                             }
@@ -104,7 +104,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                         }
                     } else if(playerTeamId == gameCategory.game.secondTeamId) {
                         if(gameCategory.game.format.equals("4x2")) {
-                            if(gameCategory.game.secondTeamPlayers.size() > 1) {
+                            if(gameCategory.game.secondTeamPlayers.size() > 3) {
                                 message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                                 return;
                             }
