@@ -21,7 +21,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   11.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -106,6 +106,8 @@ public class Utils {
      */
     public MessageEmbed getTeamInfoMessageEmbed(Team team) {
         StringBuilder membersString = new StringBuilder();
+        StringBuilder members2String = new StringBuilder();
+
         if(team.leader.isVimeOnline()) {
             membersString.append("<:emote:884826184729366538> ");
         } else {
@@ -119,23 +121,64 @@ public class Utils {
         }
         membersString.append("`").append(team.leader.getUsername()).append("`").append("\n");
 
-        for(UserAccount user : team.members) {
-            if(user.isVimeOnline()) {
-                membersString.append("<:emote:884826184729366538> ");
-            } else {
-                membersString.append("<:emote:884826184641294346> ");
+        if(team.members.size() > 7) {
+            for(int i = 0; i < 7; i++) {
+                UserAccount user = team.members.get(i);
+
+                if(user.isVimeOnline()) {
+                    membersString.append("<:emote:884826184729366538> ");
+                } else {
+                    membersString.append("<:emote:884826184641294346> ");
+                }
+
+                if(user.isDiscordOnline()) {
+                    membersString.append("<:emote:884825784857010196> ");
+                } else {
+                    membersString.append("<:emote:884825362863910962> ");
+                }
+                membersString.append("`").append(user.getUsername()).append("`").append("\n");
             }
 
-            if(user.isDiscordOnline()) {
-                membersString.append("<:emote:884825784857010196> ");
-            } else {
-                membersString.append("<:emote:884825362863910962> ");
+            for(int i = 7; i < team.members.size(); i++) {
+                UserAccount user = team.members.get(i);
+
+                if(user.isVimeOnline()) {
+                    members2String.append("<:emote:884826184729366538> ");
+                } else {
+                    members2String.append("<:emote:884826184641294346> ");
+                }
+
+                if(user.isDiscordOnline()) {
+                    members2String.append("<:emote:884825784857010196> ");
+                } else {
+                    members2String.append("<:emote:884825362863910962> ");
+                }
+                members2String.append("`").append(user.getUsername()).append("`").append("\n");
             }
-            membersString.append("`").append(user.getUsername()).append("`").append("\n");
+        } else {
+            for(UserAccount user : team.members) {
+                if(user.isVimeOnline()) {
+                    membersString.append("<:emote:884826184729366538> ");
+                } else {
+                    membersString.append("<:emote:884826184641294346> ");
+                }
+
+                if(user.isDiscordOnline()) {
+                    membersString.append("<:emote:884825784857010196> ");
+                } else {
+                    membersString.append("<:emote:884825362863910962> ");
+                }
+                membersString.append("`").append(user.getUsername()).append("`").append("\n");
+            }
         }
 
         embedBuilder.setColor(3092790);
+
         embedBuilder.addField("Игроки", ">>> " + membersString, false);
+
+        if(team.members.size() > 7) {
+            embedBuilder.addField("Игроки", ">>> " + members2String, false);
+        }
 
         String rating = ">>> ```\n" +
                 "%points%\n" +

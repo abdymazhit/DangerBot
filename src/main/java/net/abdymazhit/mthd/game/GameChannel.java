@@ -13,12 +13,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал игры
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
@@ -42,17 +43,34 @@ public class GameChannel extends Channel {
             Member firstTeamStarter = members.get(0);
             Member secondTeamStarter = members.get(1);
 
+            Member assistant = null;
+            try {
+                assistant = MTHD.getInstance().guild.retrieveMemberById(gameCategory.game.assistantDiscordId).submit().get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+
             if(firstTeamStarter == null || secondTeamStarter == null) {
                 return;
             }
 
             ChannelAction<TextChannel> createAction = category.createTextChannel("game").setPosition(2);
+
             createAction = createAction.addPermissionOverride(gameCategory.firstTeamRole,
                     EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
             createAction = createAction.addPermissionOverride(gameCategory.secondTeamRole,
                     EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
+
+            System.out.println(assistant);
+            if(assistant != null) {
+                createAction = createAction.addPermissionOverride(assistant,
+                        EnumSet.of(Permission.VIEW_CHANNEL), null);
+                createAction = createAction.addPermissionOverride(assistant,
+                        EnumSet.of(Permission.MESSAGE_WRITE), null);
+            }
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(),
                     null, EnumSet.of(Permission.VIEW_CHANNEL));
+
             createAction.queue(textChannel -> {
                 channelId = textChannel.getId();
 

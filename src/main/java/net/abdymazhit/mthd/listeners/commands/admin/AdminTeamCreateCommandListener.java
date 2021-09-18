@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * Администраторская команда создания команды
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -90,12 +90,20 @@ public class AdminTeamCreateCommandListener {
 
         MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
                 .setColor(10070709).queue(role -> {
-                    MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), role).queue();
-                    message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
-                            + leaderName + ", роль команды: " + role.getAsMention()).queue();
+                    if(leaderAccount.getDiscordId() != null) {
+                        MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), role).queue();
+                        message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
+                                + leaderName + ", роль команды: " + role.getAsMention()).queue();
+                    } else {
+                        message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
+                                + leaderName + ", роль команды: " + role.getAsMention()).queue();
+                    }
                 });
 
-        MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        if(leaderAccount.getDiscordId() != null) {
+            MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        }
+
         MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 
@@ -111,16 +119,15 @@ public class AdminTeamCreateCommandListener {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement createStatement = connection.prepareStatement(
                             "INSERT INTO teams (name, leader_id) SELECT ?, ? " +
-                            "WHERE NOT EXISTS (SELECT leader_id FROM teams WHERE name ILIKE ? AND is_deleted is null)" +
-                            "RETURNING id;");
+                            "WHERE NOT EXISTS (SELECT leader_id FROM teams WHERE name LIKE ? AND is_deleted is null);", Statement.RETURN_GENERATED_KEYS);
             createStatement.setString(1, teamName);
             createStatement.setInt(2, leaderId);
             createStatement.setString(3, teamName);
-            ResultSet createResultSet = createStatement.executeQuery();
-            createStatement.close();
+            createStatement.executeUpdate();
+            ResultSet createResultSet = createStatement.getGeneratedKeys();
 
             if(createResultSet.next()) {
-                int teamId = createResultSet.getInt("id");
+                int teamId = createResultSet.getInt(1);
 
                 PreparedStatement historyStatement = connection.prepareStatement(
                         "INSERT INTO teams_creation_history (team_id, name, leader_id, creator_id, created_at) VALUES (?, ?, ?, ?, ?);");
@@ -130,7 +137,7 @@ public class AdminTeamCreateCommandListener {
                 historyStatement.setInt(4, creatorId);
                 historyStatement.setTimestamp(5, Timestamp.from(Instant.now()));
                 historyStatement.executeUpdate();
-                historyStatement.close();
+                
 
                 // Вернуть значение, что команда успешно создана
                 return null;

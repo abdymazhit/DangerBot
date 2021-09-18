@@ -17,7 +17,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -35,124 +35,126 @@ public class GameCommandsListener extends ListenerAdapter {
         if(event.getAuthor().isBot()) return;
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            if(gameCategory.gameChannel == null) return;
+            game(gameCategory, messageChannel, canceller, message);
+        }
+    }
 
-            if(gameCategory.gameChannel.channelId.equals(messageChannel.getId())) {
-                String contentRaw = message.getContentRaw();
-                if(contentRaw.equals("!start")) {
-                    if(!canceller.getRoles().contains(UserRole.ADMIN.getRole()) &&
-                            canceller.getRoles().contains(UserRole.ASSISTANT.getRole())) {
-                        message.reply("Ошибка! У вас нет прав для этого действия!").queue();
-                        return;
-                    }
-
-                    int cancellerId = MTHD.getInstance().database.getUserId(canceller.getId());
-                    if(cancellerId < 0) {
-                        message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
-                        return;
-                    }
-
-                    if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
-                        if(cancellerId == gameCategory.game.assistantId) {
-                            message.reply("Ошибка! Только помощник этой игры может начать игру!").queue();
-                            return;
-                        }
-                    }
-
-                    message.reply("Вы успешно начали игру!").queue();
-                    gameCategory.setGameState(GameState.GAME);
-                    gameCategory.gameChannel.timer.cancel();
-                    MTHD.getInstance().liveGamesManager.addLiveGame(gameCategory.game);
-
-                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                    embedBuilder.setTitle(gameCategory.game.firstTeamName + " vs " + gameCategory.game.secondTeamName);
-
-                    StringBuilder firstTeamPlayersStrings = new StringBuilder();
-                    for(String username : gameCategory.game.firstTeamPlayers) {
-                        firstTeamPlayersStrings.append(username).append("\n");
-                    }
-
-                    StringBuilder secondTeamPlayersStrings = new StringBuilder();
-                    for(String username : gameCategory.game.secondTeamPlayers) {
-                        secondTeamPlayersStrings.append(username).append("\n");
-                    }
-
-                    embedBuilder.setColor(0xFF58B9FF);
-                    embedBuilder.addField("Команда " + gameCategory.game.firstTeamName, String.valueOf(firstTeamPlayersStrings), true);
-                    embedBuilder.addField("Команда " + gameCategory.game.secondTeamName, String.valueOf(secondTeamPlayersStrings), true);
-                    embedBuilder.addField("Отмены игры", "Данная команда доступна только для администрации. " +
-                            "Для отмены игры введите `!cancel`", false);
-                    embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча администратор " +
-                            "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
-
-                    messageChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
-                    embedBuilder.clear();
-                } else if(contentRaw.equals("!cancel")) {
-                    if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
-                        message.reply("Ошибка! У вас нет прав для этого действия!").queue();
-                        return;
-                    }
-
-                    int cancellerId = MTHD.getInstance().database.getUserId(canceller.getId());
-                    if(cancellerId < 0) {
-                        message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
-                        return;
-                    }
-
-                    message.reply("Вы успешно отменили игру!").queue();
-                    MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
-
-                    if(gameCategory.gameChannel.timer != null) {
-                        gameCategory.gameChannel.timer.cancel();
-                    }
-                    MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
-
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            MTHD.getInstance().gameManager.deleteGame(gameCategory.categoryId);
-                        }
-                    }, 7000);
-                } else if(contentRaw.startsWith("!finish")) {
-                    String[] command = message.getContentRaw().split(" ");
-
-                    if(command.length == 1) {
-                        message.reply("Ошибка! Укажите id матча!").queue();
-                        return;
-                    }
-
-                    if(command.length > 2) {
-                        message.reply("Ошибка! Неверная команда!").queue();
-                        return;
-                    }
-
-                    if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
-                        message.reply("Ошибка! У вас нет прав для этого действия!").queue();
-                        return;
-                    }
-
-                    String matchId = command[1];
-
-                    int finisherId = MTHD.getInstance().database.getUserId(canceller.getId());
-                    if(finisherId < 0) {
-                        message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
-                        return;
-                    }
-
-                    String errorMessage = MTHD.getInstance().liveGamesManager.finishMatch(matchId);
-                    if(errorMessage != null) {
-                        message.reply(errorMessage).queue();
-                        return;
-                    }
-
-                    if(gameCategory.gameChannel.timer != null) {
-                        gameCategory.gameChannel.timer.cancel();
-                    }
-                    MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
-                } else {
-                    message.reply("Ошибка! Неверная команда!").queue();
+    private void game(GameCategory gameCategory, MessageChannel messageChannel, Member canceller, Message message) {
+        if(gameCategory.gameChannel == null) return;
+        if(gameCategory.gameChannel.channelId.equals(messageChannel.getId())) {
+            String contentRaw = message.getContentRaw();
+            if(contentRaw.equals("!start")) {
+                if(!canceller.getRoles().contains(UserRole.ADMIN.getRole()) &&
+                        !canceller.getRoles().contains(UserRole.ASSISTANT.getRole())) {
+                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                    return;
                 }
-                break;
+
+                int cancellerId = MTHD.getInstance().database.getUserId(canceller.getId());
+                if(cancellerId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
+                    if(cancellerId != gameCategory.game.assistantId) {
+                        message.reply("Ошибка! Только помощник этой игры может начать игру!").queue();
+                        return;
+                    }
+                }
+
+                message.reply("Вы успешно начали игру!").queue();
+                gameCategory.setGameState(GameState.GAME);
+                gameCategory.gameChannel.timer.cancel();
+                MTHD.getInstance().liveGamesManager.addLiveGame(gameCategory.game);
+
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle(gameCategory.game.firstTeamName + " vs " + gameCategory.game.secondTeamName);
+
+                StringBuilder firstTeamPlayersStrings = new StringBuilder();
+                for(String username : gameCategory.game.firstTeamPlayers) {
+                    firstTeamPlayersStrings.append(username).append("\n");
+                }
+
+                StringBuilder secondTeamPlayersStrings = new StringBuilder();
+                for(String username : gameCategory.game.secondTeamPlayers) {
+                    secondTeamPlayersStrings.append(username).append("\n");
+                }
+
+                embedBuilder.setColor(0xFF58B9FF);
+                embedBuilder.addField("Команда " + gameCategory.game.firstTeamName, String.valueOf(firstTeamPlayersStrings), true);
+                embedBuilder.addField("Команда " + gameCategory.game.secondTeamName, String.valueOf(secondTeamPlayersStrings), true);
+                embedBuilder.addField("Отмены игры", "Данная команда доступна только для администрации. " +
+                        "Для отмены игры введите `!cancel`", false);
+                embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча администратор " +
+                        "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
+
+                messageChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
+                embedBuilder.clear();
+            } else if(contentRaw.equals("!cancel")) {
+                if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
+                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                    return;
+                }
+
+                int cancellerId = MTHD.getInstance().database.getUserId(canceller.getId());
+                if(cancellerId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                message.reply("Вы успешно отменили игру!").queue();
+                MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
+
+                if(gameCategory.gameChannel.timer != null) {
+                    gameCategory.gameChannel.timer.cancel();
+                }
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
+
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        MTHD.getInstance().gameManager.deleteGame(gameCategory.categoryId);
+                    }
+                }, 7000);
+            } else if(contentRaw.startsWith("!finish")) {
+                String[] command = message.getContentRaw().split(" ");
+
+                if(command.length == 1) {
+                    message.reply("Ошибка! Укажите id матча!").queue();
+                    return;
+                }
+
+                if(command.length > 2) {
+                    message.reply("Ошибка! Неверная команда!").queue();
+                    return;
+                }
+
+                if(!canceller.getRoles().contains(UserRole.ADMIN.getRole())) {
+                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                    return;
+                }
+
+                String matchId = command[1];
+
+                int finisherId = MTHD.getInstance().database.getUserId(canceller.getId());
+                if(finisherId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                String errorMessage = MTHD.getInstance().liveGamesManager.finishMatch(matchId);
+                if(errorMessage != null) {
+                    message.reply(errorMessage).queue();
+                    return;
+                }
+
+                if(gameCategory.gameChannel.timer != null) {
+                    gameCategory.gameChannel.timer.cancel();
+                }
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
+            } else {
+                message.reply("Ошибка! Неверная команда!").queue();
             }
         }
     }

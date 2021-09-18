@@ -3,7 +3,7 @@ package net.abdymazhit.mthd.customs;
 /**
  * Представляет собой файл конфигурации
  *
- * @version   05.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class Config {
@@ -15,11 +15,11 @@ public class Config {
     public String vimeApiToken  = "VIMEWORLD_API_TOKEN";
 
     /** Параметры базы данных */
-    public PostgreSQL postgreSQL = new PostgreSQL();
+    public MySQL mySQL = new MySQL();
 
     /** Параметры базы данных */
-    public static class PostgreSQL {
-        public String url = "jdbc:postgresql://host:port/database";
+    public static class MySQL {
+        public String url = "jdbc:mysql://host:port/database";
         public String username = "username";
         public String password = "password";
     }

@@ -63,7 +63,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>4.3.0_315</version>
+            <version>4.3.0_324</version>
             <exclusions>
                 <exclusion>
                     <groupId>club.minnced</groupId>
@@ -72,9 +72,9 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.2.16</version>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.26</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

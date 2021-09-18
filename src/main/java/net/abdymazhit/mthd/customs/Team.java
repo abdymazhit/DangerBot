@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой команду
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
@@ -87,7 +87,6 @@ public class Team {
                     "SELECT name, leader_id, points, games, wins, won_beds, lost_beds FROM teams WHERE id = ?;");
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
 
             if(resultSet.next()) {
                 name = resultSet.getString("name");
@@ -102,7 +101,6 @@ public class Team {
                         "SELECT member_id FROM teams_members WHERE team_id = ?;");
                 membersStatement.setInt(1, id);
                 ResultSet membersResultSet = membersStatement.executeQuery();
-                membersStatement.close();
 
                 while(membersResultSet.next()) {
                     members.add(new UserAccount(membersResultSet.getInt("member_id")));
@@ -123,7 +121,7 @@ public class Team {
                     "SELECT discord_id, username FROM users WHERE id = ?;");
             preparedStatement.setInt(1, user.getId());
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
 
             if(resultSet.next()) {
                 user.setDiscordId(resultSet.getString("discord_id"));
@@ -139,11 +137,16 @@ public class Team {
      */
     private void getUsersVimeIds() {
         StringBuilder names = new StringBuilder(leader.getUsername());
-        for(UserAccount user : members) {
-            names.append(",").append(user.getUsername());
+        for(int i = 0; i < members.size(); i++) {
+            if(i == 0) {
+                names.append(members.get(i).getUsername());
+            } else {
+                names.append(",").append(members.get(i).getUsername());
+            }
         }
 
-        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names);
+        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
+                "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -201,17 +204,21 @@ public class Team {
      */
     private void getUsersDiscordOnline() {
         try {
-            Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
+            if(leader.getDiscordId() != null) {
+                Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
 
-            leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                    leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+                leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                        leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                        leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+            }
 
             for(UserAccount user : members) {
-                MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).queue(member1 ->
-                        user.setDiscordOnline(member1.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                                member1.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                                member1.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)));
+                if(user.getDiscordId() != null) {
+                    MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).queue(member1 ->
+                            user.setDiscordOnline(member1.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                                    member1.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                                    member1.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB)));
+                }
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();

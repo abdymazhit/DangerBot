@@ -17,7 +17,7 @@ import java.time.Instant;
 /**
  * Команда передать права лидера
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener {
@@ -88,8 +88,10 @@ public class TeamTransferCommandListener {
         MTHD.getInstance().guild.removeRoleFromMember(changer.getId(), UserRole.LEADER.getRole()).queue();
         MTHD.getInstance().guild.addRoleToMember(changer.getId(), UserRole.MEMBER.getRole()).queue();
 
-        MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
-        MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        if(newLeaderAccount.getDiscordId() != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        }
 
         message.reply("Вы успешно передали права лидера! Новый лидер команды: " + newLeaderName).queue();
     }
@@ -110,21 +112,18 @@ public class TeamTransferCommandListener {
             updateStatement.setInt(1, toId);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();
-            updateStatement.close();
 
             PreparedStatement deleteStatement = connection.prepareStatement(
                     "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, toId);
             deleteStatement.executeUpdate();
-            deleteStatement.close();
 
             PreparedStatement createStatement = connection.prepareStatement(
                     "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, fromId);
             createStatement.executeUpdate();
-            createStatement.close();
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
@@ -134,7 +133,6 @@ public class TeamTransferCommandListener {
             historyStatement.setInt(4, changerId);
             historyStatement.setTimestamp(5, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            historyStatement.close();
 
             // Вернуть значение, что права лидера успешно переданы
             return true;

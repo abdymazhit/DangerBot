@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Канал активных игр
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesChannel extends Channel {
@@ -62,11 +62,11 @@ public class LiveGamesChannel extends Channel {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT * FROM live_games;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
 
             List<Game> games = new ArrayList<>();
             while(resultSet.next()) {
-                int id = resultSet.getInt("id");
+                int id = resultSet.getInt(1);
                 int firstTeamId = resultSet.getInt("first_team_id");
                 int firstTeamStarterId = resultSet.getInt("first_team_starter_id");
                 int secondTeamId = resultSet.getInt("second_team_id");
@@ -81,14 +81,14 @@ public class LiveGamesChannel extends Channel {
             }
 
             Map<Game, String> channelLiveGamesMessages = new HashMap<>(this.channelLiveGamesMessagesId);
+            Map<Game, String> liveGamesMessages = new HashMap<>(this.channelLiveGamesMessagesId);
 
             for(Game liveGame : games) {
                 boolean isSent = false;
                 for(Game game : channelLiveGamesMessages.keySet()) {
                     if(liveGame.id == game.id) {
                         isSent = true;
-                        channelLiveGamesMessages.remove(game);
-                        break;
+                        liveGamesMessages.remove(game);
                     }
                 }
 
@@ -97,7 +97,7 @@ public class LiveGamesChannel extends Channel {
                 }
             }
 
-            for(Game game : channelLiveGamesMessages.keySet()) {
+            for(Game game : liveGamesMessages.keySet()) {
                 String messageId = this.channelLiveGamesMessagesId.get(game);
                 this.channelLiveGamesMessagesId.remove(game);
                 TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);

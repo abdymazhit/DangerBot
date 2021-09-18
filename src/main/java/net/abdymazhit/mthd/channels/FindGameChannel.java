@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Канал поиска игры
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameChannel extends Channel {
@@ -89,7 +89,7 @@ public class FindGameChannel extends Channel {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT COUNT(*) as count FROM teams_in_game_search;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
 
             if(resultSet.next()) {
                 sendChannelMessage(resultSet.getInt("count"));
@@ -137,7 +137,7 @@ public class FindGameChannel extends Channel {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT assistant_id FROM available_assistants;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
 
             List<String> assistants = new ArrayList<>();
             while(resultSet.next()) {
@@ -145,7 +145,6 @@ public class FindGameChannel extends Channel {
                         "SELECT username FROM users WHERE id = ?;");
                 usernameStatement.setInt(1, resultSet.getInt("assistant_id"));
                 ResultSet usernameResultSet = usernameStatement.executeQuery();
-                usernameStatement.close();
 
                 while(usernameResultSet.next()) {
                     assistants.add(usernameResultSet.getString("username"));   

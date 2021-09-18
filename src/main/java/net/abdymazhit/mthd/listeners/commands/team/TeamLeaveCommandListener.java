@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда покинуть команду
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLeaveCommandListener {
@@ -99,7 +99,6 @@ public class TeamLeaveCommandListener {
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, memberId);
             deleteStatement.executeUpdate();
-            deleteStatement.close();
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
@@ -108,7 +107,6 @@ public class TeamLeaveCommandListener {
             historyStatement.setInt(3, deleterId);
             historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            historyStatement.close();
 
             // Вернуть значение, что участник успешно удален
             return true;

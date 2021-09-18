@@ -6,8 +6,8 @@ import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.game.GameManager;
 import net.abdymazhit.mthd.game.LiveGamesManager;
-import net.abdymazhit.mthd.listeners.AuthCommandListener;
-import net.abdymazhit.mthd.listeners.LeaveCommandListener;
+import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
+import net.abdymazhit.mthd.listeners.commands.LeaveCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
@@ -36,7 +36,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -111,6 +111,8 @@ public class MTHD {
         builder.setCompression(Compression.ZLIB);
         JDA jda = builder.build().awaitReady();
         guild = jda.getGuilds().get(0);
+
+        System.out.println("Удачное подключение к Discord API!");
 
         database = new Database();
         authChannel = new AuthChannel();

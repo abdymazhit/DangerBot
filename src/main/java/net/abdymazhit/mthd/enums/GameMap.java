@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 /**
  * Представляет собой карту
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public enum GameMap {
@@ -25,11 +25,11 @@ public enum GameMap {
     JUNO(11, "Юнона", "Juno", "4x2"),
     ZELNES(12, "Зелнес", "Zelnes", "4x2"),
     REKLAS(13, "Реклас", "Reklas", "4x2"),
-    FORTIS_XL(14, "Фортис XL", "FortisXL", "6x2"),
-    CRIMENTIS_XL(15, "Криментис XL", "CrimentisXL", "6x2"),
-    ZIMPERIA_XL(16, "Зимперия XL", "ZimperiaXL", "6x2"),
-    MERBES_XL(17, "Мэрбес", "MerbesXL", "6x2"),
-    FERNIGAD_XL(18, "Фернигад XL", "FernigadXL", "6x2");
+    FORTIS_XL(1, "Фортис XL", "FortisXL", "6x2"),
+    CRIMENTIS_XL(2, "Криментис XL", "CrimentisXL", "6x2"),
+    ZIMPERIA_XL(3, "Зимперия XL", "ZimperiaXL", "6x2"),
+    MERBES_XL(4, "Мэрбес", "MerbesXL", "6x2"),
+    FERNIGAD_XL(5, "Фернигад XL", "FernigadXL", "6x2");
 
     private final int id;
     private final String name;

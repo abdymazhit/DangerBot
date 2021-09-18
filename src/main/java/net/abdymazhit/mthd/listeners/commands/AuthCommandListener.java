@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners;
+package net.abdymazhit.mthd.listeners.commands;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -114,10 +114,9 @@ public class AuthCommandListener extends ListenerAdapter {
     private boolean addUser(String discordId, String username) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE username = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
 
             int userId = -1;
 
@@ -136,29 +135,31 @@ public class AuthCommandListener extends ListenerAdapter {
 
                         // Изменить ник старого пользователя
                         if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-                            member.modifyNickname(member.getId()).queue();
+                            member.modifyNickname(member.getUser().getName()).queue();
                         }
                     });
                 }
 
-                PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = ? WHERE username = ? RETURNING id;");
+                PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = ?, username = ? WHERE username LIKE ?;", Statement.RETURN_GENERATED_KEYS);
                 statement.setString(1, discordId);
                 statement.setString(2, username);
-                ResultSet statementResultSet = statement.executeQuery();
-                statement.close();
+                statement.setString(3, username);
+                statement.executeUpdate();
 
+                PreparedStatement idStatement = connection.prepareStatement("SELECT id FROM users WHERE username = ?;");
+                idStatement.setString(1, username);
+                ResultSet statementResultSet = idStatement.executeQuery();
                 if(statementResultSet.next()) {
-                    userId = statementResultSet.getInt("id");
+                    userId = statementResultSet.getInt(1);
                 }
             } else {
-                PreparedStatement statement = connection.prepareStatement("INSERT INTO users (discord_id, username) VALUES (?, ?) RETURNING id;");
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO users (discord_id, username) VALUES (?, ?);", Statement.RETURN_GENERATED_KEYS);
                 statement.setString(1, discordId);
                 statement.setString(2, username);
-                ResultSet statementResultSet = statement.executeQuery();
-                statement.close();
-
+                statement.executeUpdate();
+                ResultSet statementResultSet = statement.getGeneratedKeys();
                 if(statementResultSet.next()) {
-                    userId = statementResultSet.getInt("id");
+                    userId = statementResultSet.getInt(1);
                 }
             }
 
@@ -167,7 +168,6 @@ public class AuthCommandListener extends ListenerAdapter {
             statement.setInt(2, userId);
             statement.setTimestamp(3, Timestamp.from(Instant.now()));
             statement.executeUpdate();
-            statement.close();
 
             setUserTeamRoleIsLeader(discordId, userId);
             setUserTeamRoleIsMember(discordId, userId);
@@ -189,7 +189,6 @@ public class AuthCommandListener extends ListenerAdapter {
                     "SELECT name FROM teams WHERE leader_id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
 
             if(resultSet.next()) {
                 Role teamRole = null;
@@ -199,8 +198,8 @@ public class AuthCommandListener extends ListenerAdapter {
                 }
 
                 if(teamRole != null) {
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
                     MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.LEADER.getRole()).queue();
+                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
                 }
             }
         } catch (SQLException e) {
@@ -215,7 +214,6 @@ public class AuthCommandListener extends ListenerAdapter {
                     "SELECT name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
 
             if(resultSet.next()) {
                 Role teamRole = null;
@@ -225,8 +223,8 @@ public class AuthCommandListener extends ListenerAdapter {
                 }
 
                 if(teamRole != null) {
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
                     MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.MEMBER.getRole()).queue();
+                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
                 }
             }
         } catch (SQLException e) {

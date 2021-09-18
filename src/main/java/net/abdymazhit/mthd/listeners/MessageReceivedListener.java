@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Очищает сообщения канала
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -60,7 +60,9 @@ public class MessageReceivedListener extends ListenerAdapter {
         if(MTHD.getInstance().authChannel.channelId != null && MTHD.getInstance().authChannel.channelMessageId != null) {
             if(messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) {
                 if(!message.getId().equals(MTHD.getInstance().authChannel.channelMessageId)) {
-                    message.delete().queue();
+                    if(!message.isEphemeral()) {
+                        message.delete().queue();
+                    }
                 }
             }
         }
@@ -86,7 +88,6 @@ public class MessageReceivedListener extends ListenerAdapter {
                                 if(gameCategory.playersChoiceChannel.channelGameCancelMessageId != null) {
                                     if(!message.getId().equals(gameCategory.playersChoiceChannel.channelGameCancelMessageId)) {
                                         message.delete().queueAfter(7, TimeUnit.SECONDS);
-                                        break;
                                     }
                                 } else {
                                     message.delete().queueAfter(7, TimeUnit.SECONDS);

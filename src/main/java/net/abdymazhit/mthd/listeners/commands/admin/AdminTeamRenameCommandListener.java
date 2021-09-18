@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Администраторская команда переименования команды
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamRenameCommandListener {
@@ -106,7 +106,7 @@ public class AdminTeamRenameCommandListener {
             updateStatement.setString(1, toName);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();
-            updateStatement.close();
+            
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_names_rename_history (team_id, from_name, to_name, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
@@ -116,7 +116,7 @@ public class AdminTeamRenameCommandListener {
             historyStatement.setInt(4, changerId);
             historyStatement.setTimestamp(5, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            historyStatement.close();
+            
 
             // Вернуть значение, что команда успешно переименована
             return true;

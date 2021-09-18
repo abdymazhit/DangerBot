@@ -16,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -128,10 +128,6 @@ public class LiveGamesManager {
                 if(player.getId().equals(liveGame.secondTeamPlayersVimeId.get(0))) {
                     hasSecondTeamPlayer = true;
                 }
-
-                if(hasFirstTeamPlayer && hasSecondTeamPlayer) {
-                    break;
-                }
             }
 
             if(hasFirstTeamPlayer && hasSecondTeamPlayer) {
@@ -183,8 +179,6 @@ public class LiveGamesManager {
                         MTHD.getInstance().liveGamesManager.removeLiveGame(liveGame);
                     }
                 }
-            } else {
-                return "Ошибка! Вы пытаетесь установить id матча в которой не участвовали эти команды!";
             }
         }
 
@@ -203,6 +197,8 @@ public class LiveGamesManager {
 
     private void cancelChecking() {
         isStartedChecking = false;
-        timer.cancel();
+        if(timer != null) {
+            timer.cancel();
+        }
     }
 }

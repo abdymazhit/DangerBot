@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamTransferCommandListener {
@@ -108,11 +108,15 @@ public class AdminTeamTransferCommandListener {
             return;
         }
 
-        MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
-        MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(currentLeaderAccount.getDiscordId() != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+            MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        }
 
-        MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
-        MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        if(newLeaderAccount.getDiscordId() != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        }
 
         message.reply("Права лидера успешно переданы! Название команды: " + teamName + ", новый лидер команды: " + newLeaderName).queue();
     }
@@ -133,21 +137,18 @@ public class AdminTeamTransferCommandListener {
             updateStatement.setInt(1, toId);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();
-            updateStatement.close();
 
             PreparedStatement deleteStatement = connection.prepareStatement(
                     "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, toId);
             deleteStatement.executeUpdate();
-            deleteStatement.close();
 
             PreparedStatement createStatement = connection.prepareStatement(
                     "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, fromId);
             createStatement.executeUpdate();
-            createStatement.close();
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
@@ -157,7 +158,6 @@ public class AdminTeamTransferCommandListener {
             historyStatement.setInt(4, changerId);
             historyStatement.setTimestamp(5, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            historyStatement.close();
 
             // Вернуть значение, что права лидера успешно переданы
             return true;

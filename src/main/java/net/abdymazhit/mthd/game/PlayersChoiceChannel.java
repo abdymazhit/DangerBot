@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков на игру
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -210,7 +210,7 @@ public class PlayersChoiceChannel extends Channel {
                     "SELECT player_id FROM live_games_players WHERE team_id = ?;");
             firstStatement.setInt(1, gameCategory.game.firstTeamId);
             ResultSet firstResultSet = firstStatement.executeQuery();
-            firstStatement.close();
+
 
             List<Integer> firstTeamPlayersId = new ArrayList<>();
             while(firstResultSet.next()) {
@@ -221,7 +221,6 @@ public class PlayersChoiceChannel extends Channel {
                     "SELECT player_id FROM live_games_players WHERE team_id = ?;");
             secondStatement.setInt(1, gameCategory.game.secondTeamId);
             ResultSet secondResultSet = secondStatement.executeQuery();
-            secondStatement.close();
 
             List<Integer> secondTeamPlayersId = new ArrayList<>();
             while(secondResultSet.next()) {

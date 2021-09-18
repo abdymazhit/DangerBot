@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -120,11 +120,11 @@ public class TeamsChannel extends Channel {
                     "WITH TEAMS AS(SELECT *, RANK() OVER(ORDER BY points DESC) RATING FROM teams)" +
                             " SELECT id, name, points FROM TEAMS WHERE RATING <= 20 AND is_deleted IS NULL;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
 
             List<Team> teams = new ArrayList<>();
             while(resultSet.next()) {
-                Team team = new Team(resultSet.getInt("id"));
+                Team team = new Team(resultSet.getInt(1));
                 team.name = resultSet.getString("name");
                 team.points = resultSet.getInt("points");
                 teams.add(team);

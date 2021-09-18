@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора карты
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -80,6 +80,7 @@ public class MapChoiceChannel extends Channel {
                     EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(),
                     null, EnumSet.of(Permission.VIEW_CHANNEL));
+
             createAction.queue(textChannel -> {
                 channelId = textChannel.getId();
 

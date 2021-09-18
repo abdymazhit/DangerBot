@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners;
+package net.abdymazhit.mthd.listeners.commands;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.UserRole;
@@ -15,7 +15,7 @@ import java.sql.SQLException;
 /**
  * Команда выхода
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class LeaveCommandListener extends ListenerAdapter {
@@ -51,8 +51,9 @@ public class LeaveCommandListener extends ListenerAdapter {
             }
         }
 
+        // Изменить пользователю ник
         if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-            member.modifyNickname(member.getId()).queue();
+            member.modifyNickname(member.getUser().getName()).queue();
         }
 
         // Отправить сообщение о успешной авторизации
@@ -65,7 +66,6 @@ public class LeaveCommandListener extends ListenerAdapter {
             PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = null WHERE discord_id = ?;");
             statement.setString(1, discordId);
             statement.executeUpdate();
-            statement.close();
 
             return true;
         } catch (SQLException e) {

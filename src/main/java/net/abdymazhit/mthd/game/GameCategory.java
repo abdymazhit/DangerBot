@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategory {
@@ -87,13 +87,11 @@ public class GameCategory {
                         "DELETE FROM live_games_players WHERE team_id = ?;");
                 firstTeamStatement.setInt(1, game.firstTeamId);
                 firstTeamStatement.executeUpdate();
-                firstTeamStatement.close();
 
                 PreparedStatement secondTeamStatement = connection.prepareStatement(
                         "DELETE FROM live_games_players WHERE team_id = ?;");
                 secondTeamStatement.setInt(1, game.secondTeamId);
                 secondTeamStatement.executeUpdate();
-                secondTeamStatement.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -252,7 +250,7 @@ public class GameCategory {
             preparedStatement.setInt(1, gameState.getId());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();
-            preparedStatement.close();
+            
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -270,7 +268,7 @@ public class GameCategory {
             preparedStatement.setString(1, gameMap.getName());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();
-            preparedStatement.close();
+            
         } catch (SQLException e) {
             e.printStackTrace();
         }

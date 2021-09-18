@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда исключить участника из команды
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamKickCommandListener {
@@ -93,8 +93,10 @@ public class TeamKickCommandListener {
             return;
         }
 
-        MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
-        MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(memberAccount.getDiscordId() != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        }
 
         message.reply("Вы успешно выгнали участника из команды!").queue();
     }
@@ -114,7 +116,6 @@ public class TeamKickCommandListener {
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, memberId);
             deleteStatement.executeUpdate();
-            deleteStatement.close();
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
@@ -123,7 +124,6 @@ public class TeamKickCommandListener {
             historyStatement.setInt(3, deleterId);
             historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            historyStatement.close();
 
             // Вернуть значение, что участник успешно удален
             return true;

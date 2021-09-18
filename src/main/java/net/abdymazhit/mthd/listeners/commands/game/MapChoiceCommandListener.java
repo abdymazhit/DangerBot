@@ -18,7 +18,7 @@ import java.sql.SQLException;
 /**
  * Команда выбора карты
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -36,110 +36,113 @@ public class MapChoiceCommandListener extends ListenerAdapter {
         if(event.getAuthor().isBot()) return;
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            if(gameCategory.mapChoiceChannel == null) return;
+            game(gameCategory, messageChannel, message, starter);
+        }
+    }
 
-            if(gameCategory.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
-                String contentRaw = message.getContentRaw();
-                if(contentRaw.startsWith("!ban")) {
-                    String[] command = contentRaw.split(" ");
+    private void game(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member starter) {
+        if(gameCategory.mapChoiceChannel == null) return;
 
-                    if(command.length == 1) {
-                        message.reply("Ошибка! Укажите имя игрока!").queue();
-                        return;
-                    }
+        if(gameCategory.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
+            String contentRaw = message.getContentRaw();
+            if(contentRaw.startsWith("!ban")) {
+                String[] command = contentRaw.split(" ");
 
-                    if(command.length > 2) {
-                        message.reply("Ошибка! Неверная команда!").queue();
-                        return;
-                    }
-
-                    String mapName = command[1];
-
-                    GameMap banningGameMap = null;
-                    if(gameCategory.game.format.equals("4x2")) {
-                        for(GameMap gameMap : GameMap.values4x2()) {
-                            if(gameMap.getName().equalsIgnoreCase(mapName)) {
-                                banningGameMap = gameMap;
-                                break;
-                            } else {
-                                try{
-                                    if(gameMap.getId() == Integer.parseInt(mapName)) {
-                                        banningGameMap = gameMap;
-                                        break;
-                                    }
-                                } catch(NumberFormatException ignored) { }
-                            }
-                        }
-                    } else if(gameCategory.game.format.equals("6x2")) {
-                        for(GameMap gameMap : GameMap.values6x2()) {
-                            if(gameMap.getName().equalsIgnoreCase(mapName)) {
-                                banningGameMap = gameMap;
-                                break;
-                            } else {
-                                try{
-                                    if(gameMap.getId() == Integer.parseInt(mapName)) {
-                                        banningGameMap = gameMap;
-                                        break;
-                                    }
-                                } catch(NumberFormatException ignored) { }
-                            }
-                        }
-                    }
-
-                    if(banningGameMap == null) {
-                        message.reply("Ошибка! Такой карты не существует!").queue();
-                        return;
-                    }
-
-                    if(!gameCategory.mapChoiceChannel.gameMaps.contains(banningGameMap)) {
-                        message.reply("Ошибка! Карта уже забанена!").queue();
-                        return;
-                    }
-
-                    if(!starter.getRoles().contains(gameCategory.firstTeamRole) &&
-                            !starter.getRoles().contains(gameCategory.secondTeamRole)) {
-                        message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
-                        return;
-                    }
-
-                    if(!starter.getRoles().contains(gameCategory.mapChoiceChannel.currentBannerTeamRole)) {
-                        message.reply("Ошибка! Сейчас не ваша очередь бана!").queue();
-                        return;
-                    }
-
-                    if(gameCategory.mapChoiceChannel.gameMaps.size() == 1) {
-                        message.reply("Ошибка! Все карты забанены!").queue();
-                        return;
-                    }
-
-                    int starterId = MTHD.getInstance().database.getUserId(starter.getId());
-                    if(starterId < 0) {
-                        message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
-                        return;
-                    }
-
-                    if(isNotStarter(starterId)) {
-                        message.reply("Ошибка! Только начавший игру может банить карты!").queue();
-                        return;
-                    }
-
-                    int starterTeamId = MTHD.getInstance().database.getUserTeamId(starterId);
-                    if(starterTeamId < 0) {
-                        message.reply("Ошибка! Вы не являетесь участником или лидером какой-либо команды!").queue();
-                        return;
-                    }
-
-                    if(!gameCategory.game.gameState.equals(GameState.MAP_CHOICE)) {
-                        message.reply("Ошибка! Стадия выбора карты закончена!").queue();
-                        return;
-                    }
-
-                    gameCategory.mapChoiceChannel.banMap(banningGameMap);
-                    message.reply("Вы успешно забанили карту!").queue();
-                } else {
-                    message.reply("Ошибка! Неверная команда!").queue();
+                if(command.length == 1) {
+                    message.reply("Ошибка! Укажите имя игрока!").queue();
+                    return;
                 }
-                break;
+
+                if(command.length > 2) {
+                    message.reply("Ошибка! Неверная команда!").queue();
+                    return;
+                }
+
+                String mapName = command[1];
+
+                GameMap banningGameMap = null;
+                if(gameCategory.game.format.equals("4x2")) {
+                    for(GameMap gameMap : GameMap.values4x2()) {
+                        if(gameMap.getName().equalsIgnoreCase(mapName)) {
+                            banningGameMap = gameMap;
+                            break;
+                        } else {
+                            try{
+                                if(gameMap.getId() == Integer.parseInt(mapName)) {
+                                    banningGameMap = gameMap;
+                                    break;
+                                }
+                            } catch(NumberFormatException ignored) { }
+                        }
+                    }
+                } else if(gameCategory.game.format.equals("6x2")) {
+                    for(GameMap gameMap : GameMap.values6x2()) {
+                        if(gameMap.getName().equalsIgnoreCase(mapName)) {
+                            banningGameMap = gameMap;
+                            break;
+                        } else {
+                            try{
+                                if(gameMap.getId() == Integer.parseInt(mapName)) {
+                                    banningGameMap = gameMap;
+                                    break;
+                                }
+                            } catch(NumberFormatException ignored) { }
+                        }
+                    }
+                }
+
+                if(banningGameMap == null) {
+                    message.reply("Ошибка! Такой карты не существует!").queue();
+                    return;
+                }
+
+                if(!gameCategory.mapChoiceChannel.gameMaps.contains(banningGameMap)) {
+                    message.reply("Ошибка! Карта уже забанена!").queue();
+                    return;
+                }
+
+                if(!starter.getRoles().contains(gameCategory.firstTeamRole) &&
+                        !starter.getRoles().contains(gameCategory.secondTeamRole)) {
+                    message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
+                    return;
+                }
+
+                if(!starter.getRoles().contains(gameCategory.mapChoiceChannel.currentBannerTeamRole)) {
+                    message.reply("Ошибка! Сейчас не ваша очередь бана!").queue();
+                    return;
+                }
+
+                if(gameCategory.mapChoiceChannel.gameMaps.size() == 1) {
+                    message.reply("Ошибка! Все карты забанены!").queue();
+                    return;
+                }
+
+                int starterId = MTHD.getInstance().database.getUserId(starter.getId());
+                if(starterId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                if(isNotStarter(starterId)) {
+                    message.reply("Ошибка! Только начавший игру может банить карты!").queue();
+                    return;
+                }
+
+                int starterTeamId = MTHD.getInstance().database.getUserTeamId(starterId);
+                if(starterTeamId < 0) {
+                    message.reply("Ошибка! Вы не являетесь участником или лидером какой-либо команды!").queue();
+                    return;
+                }
+
+                if(!gameCategory.game.gameState.equals(GameState.MAP_CHOICE)) {
+                    message.reply("Ошибка! Стадия выбора карты закончена!").queue();
+                    return;
+                }
+
+                gameCategory.mapChoiceChannel.banMap(banningGameMap);
+                message.reply("Вы успешно забанили карту!").queue();
+            } else {
+                message.reply("Ошибка! Неверная команда!").queue();
             }
         }
     }
@@ -157,7 +160,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
             preparedStatement.setInt(1, starterId);
             preparedStatement.setInt(2, starterId);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
             return !resultSet.next();
         } catch (SQLException e) {
             e.printStackTrace();

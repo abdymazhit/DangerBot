@@ -10,17 +10,14 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Команда поиск игры
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameCommandListener extends ListenerAdapter {
@@ -85,12 +82,13 @@ public class FindGameCommandListener extends ListenerAdapter {
 
                 Team team = new Team(teamId);
                 team.getTeamInfoByDatabase();
-                List<UserAccount> members = new ArrayList<>(team.members);
+                List<UserAccount> members = new ArrayList<>();
                 members.add(team.leader);
+                members.addAll(team.members);
 
                 int onlinePlayers = 0;
                 for(UserAccount player : members) {
-                    if(player.isDiscordOnline() && player.isVimeOnline()) {
+                    if(player.isDiscordOnline() || player.isVimeOnline()) {
                         onlinePlayers++;
                     }
                 }
@@ -169,14 +167,13 @@ public class FindGameCommandListener extends ListenerAdapter {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "INSERT INTO teams_in_game_search (team_id, format, starter_id) SELECT ?, ?, ? " +
-                            "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?) " +
-                            "RETURNING id;");
+                            "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.setString(2, format);
             preparedStatement.setInt(3, starterId);
             preparedStatement.setInt(4, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
 
             if(resultSet.next()) {
                 // Вернуть значение, что команда успешно добавлена в поиск игры
@@ -199,17 +196,11 @@ public class FindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "DELETE FROM teams_in_game_search WHERE team_id = ? RETURNING id");
+                    "DELETE FROM teams_in_game_search WHERE team_id = ?", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            preparedStatement.executeUpdate();
 
-            if(resultSet.next()) {
-                // Вернуть значение, что команда успешно удалена из поиска игры
-                return null;
-            } else {
-                return "Ошибка! Ваша команда не находится в поиске игры!";
-            }
+            return null;
         } catch (SQLException e) {
             e.printStackTrace();
             return "Критическая ошибка при удалении вашей команды из поиска игры! Свяжитесь с разработчиком бота!";
@@ -226,10 +217,8 @@ public class FindGameCommandListener extends ListenerAdapter {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT first_team_id, second_team_id FROM live_games;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
 
             List<Integer> teamsInLiveGames = new ArrayList<>();
-
             while(resultSet.next()) {
                 teamsInLiveGames.add(resultSet.getInt("first_team_id"));
                 teamsInLiveGames.add(resultSet.getInt("second_team_id"));

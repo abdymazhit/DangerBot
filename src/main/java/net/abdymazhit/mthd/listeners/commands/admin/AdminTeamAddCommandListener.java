@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   15.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -98,8 +98,10 @@ public class AdminTeamAddCommandListener {
             return;
         }
 
-        MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
-        MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(memberAccount.getDiscordId() != null) {
+            MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
+            MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        }
 
         message.reply("Участник успешно добавлен в команду! Название команды: " + teamName + ", ник участника: " + memberName).queue();
     }
@@ -119,7 +121,6 @@ public class AdminTeamAddCommandListener {
             addStatement.setInt(1, teamId);
             addStatement.setInt(2, memberId);
             addStatement.executeUpdate();
-            addStatement.close();
 
             PreparedStatement historyStatement = connection.prepareStatement(
                     "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
@@ -128,7 +129,7 @@ public class AdminTeamAddCommandListener {
             historyStatement.setInt(3, adderId);
             historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            historyStatement.close();
+            
 
             // Вернуть значение, что участник успешно добавлен
             return true;

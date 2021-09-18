@@ -21,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Менеджер игры
  *
- * @version   17.09.2021
+ * @version   18.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -45,7 +45,7 @@ public class GameManager {
                             "SELECT * FROM live_games WHERE id = ?;");
                     preparedStatement.setInt(1, id);
                     ResultSet resultSet = preparedStatement.executeQuery();
-                    preparedStatement.close();
+                    
 
                     if(resultSet.next()) {
                         int firstTeamId = resultSet.getInt("first_team_id");
@@ -86,7 +86,7 @@ public class GameManager {
                                 "SELECT player_id FROM live_games_players WHERE team_id = ?;");
                         firstStatement.setInt(1, firstTeamId);
                         ResultSet firstResultSet = firstStatement.executeQuery();
-                        firstStatement.close();
+                        
 
                         List<Integer> firstTeamPlayersId = new ArrayList<>();
                         while(firstResultSet.next()) {
@@ -97,7 +97,6 @@ public class GameManager {
                                 "SELECT player_id FROM live_games_players WHERE team_id = ?;");
                         secondStatement.setInt(1, secondTeamId);
                         ResultSet secondResultSet = secondStatement.executeQuery();
-                        secondStatement.close();
 
                         List<Integer> secondTeamPlayersId = new ArrayList<>();
                         while(secondResultSet.next()) {
@@ -129,7 +128,7 @@ public class GameManager {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT team_id, format, starter_id FROM teams_in_game_search;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            
 
             List<TeamInGameSearch> teams = new ArrayList<>();
             while(resultSet.next()) {
@@ -188,7 +187,7 @@ public class GameManager {
             PreparedStatement assistantsStatement = connection.prepareStatement(
                     "SELECT assistant_id FROM available_assistants;");
             ResultSet assistantsResultSet = assistantsStatement.executeQuery();
-            assistantsStatement.close();
+
 
             if(assistantsResultSet.next()) {
                 UserAccount assistant = new UserAccount(assistantsResultSet.getInt("assistant_id"));
@@ -215,8 +214,7 @@ public class GameManager {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "INSERT INTO live_games (first_team_id, first_team_starter_id, second_team_id, second_team_starter_id, " +
                             "format, assistant_id, started_at, game_state) SELECT ?, ?, ?, ?, ?, ?, ?, ? " +
-                            "WHERE NOT EXISTS (SELECT 1 FROM live_games WHERE first_team_id = ? AND second_team_id = ?) " +
-                            "RETURNING id;");
+                            "WHERE NOT EXISTS (SELECT 1 FROM live_games WHERE first_team_id = ? AND second_team_id = ?)", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, firstTeamId);
             preparedStatement.setInt(2, first_team_starter_id);
             preparedStatement.setInt(3, secondTeamId);
@@ -227,33 +225,21 @@ public class GameManager {
             preparedStatement.setInt(8, GameState.PLAYERS_CHOICE.getId());
             preparedStatement.setInt(9, firstTeamId);
             preparedStatement.setInt(10, secondTeamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
 
             if(resultSet.next()) {
-                int gameId = resultSet.getInt("id");
+                int gameId = resultSet.getInt(1);
 
                 PreparedStatement deleteFirstTeamStatement = connection.prepareStatement(
-                        "DELETE FROM teams_in_game_search WHERE team_id = ? RETURNING id;");
+                        "DELETE FROM teams_in_game_search WHERE team_id = ?;");
                 deleteFirstTeamStatement.setInt(1, firstTeamId);
-                ResultSet deleteFirstTeamResultSet = deleteFirstTeamStatement.executeQuery();
-                deleteFirstTeamStatement.close();
-
-                if(!deleteFirstTeamResultSet.next()) {
-                    // Критическая ошибка при удалении первой команды из поиска игры! Свяжитесь с разработчиком бота!
-                    return;
-                }
+                deleteFirstTeamStatement.executeUpdate();
 
                 PreparedStatement deleteSecondTeamStatement = connection.prepareStatement(
-                        "DELETE FROM teams_in_game_search WHERE team_id = ? RETURNING  id;");
+                        "DELETE FROM teams_in_game_search WHERE team_id = ?;", Statement.RETURN_GENERATED_KEYS);
                 deleteSecondTeamStatement.setInt(1, secondTeamId);
-                ResultSet deleteSecondTeamResultSet = deleteSecondTeamStatement.executeQuery();
-                deleteSecondTeamStatement.close();
-
-                if(!deleteSecondTeamResultSet.next()) {
-                    // Критическая ошибка при удалении второй команды из поиска игры! Свяжитесь с разработчиком бота!
-                    return;
-                }
+                deleteSecondTeamStatement.executeUpdate();
 
                 MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
                 MTHD.getInstance().database.setUnready(assistantId);
@@ -291,19 +277,16 @@ public class GameManager {
                     "DELETE FROM live_games WHERE id = ?;");
             gameStatement.setInt(1, game.id);
             gameStatement.executeUpdate();
-            gameStatement.close();
 
             PreparedStatement firstTeamStatement = connection.prepareStatement(
                     "DELETE FROM live_games_players WHERE team_id = ?;");
             firstTeamStatement.setInt(1, game.firstTeamId);
             firstTeamStatement.executeUpdate();
-            firstTeamStatement.close();
 
             PreparedStatement secondTeamStatement = connection.prepareStatement(
                     "DELETE FROM live_games_players WHERE team_id = ?;");
             secondTeamStatement.setInt(1, game.secondTeamId);
             secondTeamStatement.executeUpdate();
-            secondTeamStatement.close();
 
             MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
         } catch (SQLException e) {
@@ -342,11 +325,11 @@ public class GameManager {
                         if(game.firstTeamId == winnerTeamId) {
                             embedBuilder.setTitle("Побидетель: " + game.firstTeamName);
                             embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + firstTeamRating + " (+" + (firstTeamRating - game.firstTeamPoints)
-                                    +")\n" + "Рейтинг проигравшего: " + (secondTeamRating - game.secondTeamPoints), true);
+                                    +")\n" + "Рейтинг проигравшего: " + secondTeamRating + " (" + (secondTeamRating - game.secondTeamPoints) + ")", true);
                         } else if(game.secondTeamId == winnerTeamId) {
                             embedBuilder.setTitle("Побидетель: " + game.secondTeamName);
-                            embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + secondTeamRating + " (-" + (secondTeamRating - game.secondTeamPoints)
-                                    +")\n" + "Рейтинг проигравшего: " + (firstTeamRating - game.firstTeamPoints), true);
+                            embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + secondTeamRating + " (+" + (secondTeamRating - game.secondTeamPoints)
+                                    +")\n" + "Рейтинг проигравшего: " + firstTeamRating + "(" + (firstTeamRating - game.firstTeamPoints) + ")", true);
                         }
 
                         embedBuilder.setColor(3092790);
@@ -360,6 +343,7 @@ public class GameManager {
                             public void run() {
                                 Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
                                 if(category != null) {
+                                    MTHD.getInstance().gameManager.deleteGame(game);
                                     MTHD.getInstance().gameManager.deleteGame(category.getId());
                                 }
                             }
@@ -374,8 +358,8 @@ public class GameManager {
             PreparedStatement finishStatement = connection.prepareStatement(
                     "INSERT INTO finished_games_history (first_team_id, first_team_starter_id, second_team_id, " +
                             "second_team_starter_id, format, map_name, match_id, winner_team_id, first_team_rating_changes, " +
-                            "second_team_rating_changes, assistant_id, finished_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? " +
-                            "RETURNING id;");
+                            "second_team_rating_changes, assistant_id, finished_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                    Statement.RETURN_GENERATED_KEYS);
             finishStatement.setInt(1, game.firstTeamId);
             finishStatement.setInt(2, game.firstTeamStarterId);
             finishStatement.setInt(3, game.secondTeamId);
@@ -388,12 +372,13 @@ public class GameManager {
             finishStatement.setInt(10, secondTeamRating - game.secondTeamPoints);
             finishStatement.setInt(11, game.assistantId);
             finishStatement.setTimestamp(12, Timestamp.from(Instant.now()));
-
-            ResultSet createResultSet = finishStatement.executeQuery();
-            finishStatement.close();
+            finishStatement.executeUpdate();
+            ResultSet createResultSet = finishStatement.getGeneratedKeys();
 
             if(createResultSet.next()) {
-                int finishedGameId = createResultSet.getInt("id");
+                int finishedGameId = createResultSet.getInt(1);
+
+                System.out.println(game.firstTeamPlayersId);
 
                 for(int playerId : game.firstTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
@@ -402,8 +387,9 @@ public class GameManager {
                     playersStatement.setInt(2, game.firstTeamId);
                     playersStatement.setInt(3, playerId);
                     playersStatement.executeUpdate();
-                    playersStatement.close();
                 }
+
+                System.out.println(game.secondTeamPlayersId);
 
                 for(int playerId : game.secondTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
@@ -412,15 +398,11 @@ public class GameManager {
                     playersStatement.setInt(2, game.firstTeamId);
                     playersStatement.setInt(3, playerId);
                     playersStatement.executeUpdate();
-                    playersStatement.close();
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        MTHD.getInstance().teamsChannel.updateTopMessage();
-        MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
     }
 
     public void finishGameTeam(int points, int games, int wins, int wonBeds, int lostBeds, int id) {
@@ -436,7 +418,9 @@ public class GameManager {
             playersStatement.setInt(5, lostBeds);
             playersStatement.setInt(6, id);
             playersStatement.executeUpdate();
-            playersStatement.close();
+
+            MTHD.getInstance().teamsChannel.updateTopMessage();
+            MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
         } catch (SQLException e) {
             e.printStackTrace();
         }
