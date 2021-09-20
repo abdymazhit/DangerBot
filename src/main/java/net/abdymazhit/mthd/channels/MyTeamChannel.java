@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   17.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -45,17 +45,25 @@ public class MyTeamChannel extends Channel {
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Доступные команды");
-                embedBuilder.setColor(0xFF58B9FF);
-                embedBuilder.addField("Исключить участника из команды",
-                        "`!team kick <NAME>`", false);
-                embedBuilder.addField("Передать права лидера команды",
-                        "`!team transfer <NAME>`", false);
-                embedBuilder.addField("Удалить команду",
-                        "`!team disband`", false);
-                embedBuilder.addField("Посмотреть информацию о команде",
-                        "`!team info`", false);
-                embedBuilder.addField("Покинуть команду",
-                        "`!team leave`", false);
+                embedBuilder.setColor(3092790);
+
+                embedBuilder.setDescription(
+                        "Исключить участника из команды\n" +
+                        "`!team kick <NAME>`\n" +
+                        "\n" +
+                        "Передать права лидера команды\n" +
+                        "`!team transfer <NAME>`\n" +
+                        "\n" +
+                        "Удалить команду\n" +
+                        "`!team disband`\n" +
+                        "\n" +
+                        "Посмотреть информацию о команде\n" +
+                        "`!team info`\n" +
+                        "\n" +
+                        "Покинуть команду\n" +
+                        "`!team leave`"
+                );
+
                 textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
                 embedBuilder.clear();
             });

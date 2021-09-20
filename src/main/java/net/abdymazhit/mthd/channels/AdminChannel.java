@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   17.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -42,19 +42,27 @@ public class AdminChannel extends Channel {
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Команды администратора");
-                embedBuilder.setColor(0xFF58B9FF);
-                embedBuilder.addField("Создание команды",
-                        "`!adminteam create <TEAM_NAME> <LEADER_NAME>`", false);
-                embedBuilder.addField("Удаление команды",
-                        "`!adminteam disband <TEAM_NAME>`", false);
-                embedBuilder.addField("Добавление участника в команду",
-                        "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`", false);
-                embedBuilder.addField("Удаление участника из команды",
-                        "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`", false);
-                embedBuilder.addField("Передача прав лидера команды",
-                        "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`", false);
-                embedBuilder.addField("Переименование команды",
-                        "`!adminteam rename <TEAM_NAME> <TO_NAME>`", false);
+                embedBuilder.setColor(3092790);
+
+                embedBuilder.setDescription(
+                        "Создание команды\n" +
+                        "`!adminteam create <TEAM_NAME> <LEADER_NAME>`\n" +
+                        "\n" +
+                        "Удаление команды\n" +
+                        "`!adminteam disband <TEAM_NAME>`\n" +
+                        "\n" +
+                        "Добавление участника в команду\n" +
+                        "`!adminteam add <TEAM_NAME> <MEMBER_NAME>`\n" +
+                        "\n" +
+                        "Удаление участника из команды\n" +
+                        "`!adminteam delete <TEAM_NAME> <MEMBER_NAME>`\n" +
+                        "\n" +
+                        "Передача прав лидера команды\n" +
+                        "`!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`\n" +
+                        "\n" +
+                        "Переименование команды\n" +
+                         "`!adminteam rename <TEAM_NAME> <TO_NAME>`\n"
+                );
                 textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
                 embedBuilder.clear();
             });

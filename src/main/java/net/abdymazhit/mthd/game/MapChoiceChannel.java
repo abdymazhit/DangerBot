@@ -17,12 +17,13 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал выбора карты
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -64,6 +65,13 @@ public class MapChoiceChannel extends Channel {
             Member firstTeamStarter = members.get(0);
             Member secondTeamStarter = members.get(1);
 
+            Member assistant = null;
+            try {
+                assistant = MTHD.getInstance().guild.retrieveMemberById(gameCategory.game.assistantDiscordId).submit().get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+
             if(firstTeamStarter == null || secondTeamStarter == null) {
                 return;
             }
@@ -73,6 +81,11 @@ public class MapChoiceChannel extends Channel {
                     EnumSet.of(Permission.MESSAGE_WRITE), null);
             createAction = createAction.addPermissionOverride(secondTeamStarter,
                     EnumSet.of(Permission.MESSAGE_WRITE), null);
+
+            if(assistant != null) {
+                createAction = createAction.addPermissionOverride(assistant,
+                        EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
+            }
 
             createAction = createAction.addPermissionOverride(gameCategory.firstTeamRole,
                     EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
@@ -86,10 +99,14 @@ public class MapChoiceChannel extends Channel {
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Вторая стадия игры - Выбор карты");
-                embedBuilder.setDescription("Начавшие поиск игры команд (" + gameCategory.firstTeamRole.getAsMention() + " и "
-                        + gameCategory.secondTeamRole.getAsMention() + ") должны решить какую карту будут играть!");
-                embedBuilder.setColor(0xFF58B9FF);
-                embedBuilder.addField("Заблокировать карту", "`!ban <NAME>`", false);
+                embedBuilder.setDescription(
+                        "Начавшие поиск игры команд (" + gameCategory.firstTeamRole.getAsMention() + " и "
+                        + gameCategory.secondTeamRole.getAsMention() + ") должны решить какую карту будут играть!\n" +
+                        "\n" +
+                        "Заблокировать карту\n" +
+                        "`!ban <ПОРЯДКОВЫЙ НОМЕР> или <НАЗВАНИЕ КАРТЫ>`");
+
+                embedBuilder.setColor(3092790);
 
                 TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
                 if(channel != null) {

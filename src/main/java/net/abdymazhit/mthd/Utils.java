@@ -21,7 +21,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -203,7 +203,6 @@ public class Utils {
                 "```";
         name = name.replace("%team_name%", team.name);
         embedBuilder.setDescription(name);
-        embedBuilder.setImage("https://media.discordapp.net/attachments/880669658116673606/884176299562762300/line.gif?width=324&height=4");
 
         MessageEmbed messageEmbed = embedBuilder.build();
         embedBuilder.clear();

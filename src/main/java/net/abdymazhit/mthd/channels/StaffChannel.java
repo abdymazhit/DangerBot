@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Канал персонала
  *
- * @version   17.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class StaffChannel extends Channel {
@@ -43,12 +43,14 @@ public class StaffChannel extends Channel {
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Доступные команды");
-                embedBuilder.setColor(0xFF58B9FF);
-                embedBuilder.addField("Стать готовым для проведения игры",
-                        "`!ready`", false);
-                embedBuilder.addField("Стать недоступным для проведения игры",
-                        "`!unready`", false);
-
+                embedBuilder.setColor(3092790);
+                embedBuilder.setDescription(
+                        "Стать готовым для проведения игры\n" +
+                        "`!ready`\n" +
+                        "\n" +
+                        "Стать недоступным для проведения игры\n" +
+                        "`!unready`"
+                );
                 TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
                 if(channel != null) {
                     channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());

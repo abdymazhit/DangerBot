@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Представляет собой матч
  *
- * @version   17.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -190,7 +190,8 @@ public class Game {
             names.append(name).append(",");
         }
 
-        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names);
+        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
+                "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -217,7 +218,8 @@ public class Game {
             names.append(name).append(",");
         }
 
-        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names);
+        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
+                "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();

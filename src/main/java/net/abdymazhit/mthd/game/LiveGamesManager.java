@@ -16,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -39,7 +39,7 @@ public class LiveGamesManager {
     public LiveGamesManager() {
         liveGames = new ArrayList<>();
         isStartedChecking = false;
-        gson = new Gson();
+        gson = new GsonBuilder().setLenient().create();
     }
 
     public void addLiveGame(Game game) {
@@ -74,7 +74,6 @@ public class LiveGamesManager {
 
                 String latestGamesString = MTHD.getInstance().utils.sendGetRequest(
                         "https://api.vimeworld.ru/match/latest?count=100&token=" + MTHD.getInstance().config.vimeApiToken);
-
                 JsonArray infoArray = JsonParser.parseString(latestGamesString).getAsJsonArray();
                 for(JsonElement infoElement : infoArray) {
                     JsonObject infoObject = infoElement.getAsJsonObject();
@@ -108,15 +107,15 @@ public class LiveGamesManager {
      */
     public String finishMatch(String matchId) {
         String matchString = MTHD.getInstance().utils.sendGetRequest(
-                "https://api.vimeworld.ru/match/" + matchId +
-                        "?token=" + MTHD.getInstance().config.vimeApiToken);
-
+                "https://api.vimeworld.ru/match/" + matchId + "?token=" + MTHD.getInstance().config.vimeApiToken);
         Match match = gson.fromJson(matchString, Match.class);
         if(match == null) {
             return "Ошибка! Не удалось найти матч!";
         }
 
-        for(Game liveGame : liveGames) {
+        List<Game> games = new ArrayList<>(liveGames);
+        for(Game liveGame : games) {
+            System.out.println(123);
             boolean hasFirstTeamPlayer = false;
             boolean hasSecondTeamPlayer = false;
 

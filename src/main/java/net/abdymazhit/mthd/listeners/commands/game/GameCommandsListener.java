@@ -17,7 +17,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -81,7 +81,7 @@ public class GameCommandsListener extends ListenerAdapter {
                     secondTeamPlayersStrings.append(username).append("\n");
                 }
 
-                embedBuilder.setColor(0xFF58B9FF);
+                embedBuilder.setColor(3092790);
                 embedBuilder.addField("Команда " + gameCategory.game.firstTeamName, String.valueOf(firstTeamPlayersStrings), true);
                 embedBuilder.addField("Команда " + gameCategory.game.secondTeamName, String.valueOf(secondTeamPlayersStrings), true);
                 embedBuilder.addField("Отмены игры", "Данная команда доступна только для администрации. " +

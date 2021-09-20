@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Канал поиска игры
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameChannel extends Channel {
@@ -59,14 +59,22 @@ public class FindGameChannel extends Channel {
     /**
      * Отправляет сообщение канала поиска игры
      */
-    private void sendChannelMessage(int teamsCount) {
+    private void sendChannelMessage(int teams4x2Count, int teams6x2Count) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Доступные команды");
-        embedBuilder.setDescription("Доступные форматы игры: 4x2 , 6x2\n" +
-                "Команд в поиске игры: " + teamsCount + "\n");
-        embedBuilder.setColor(0xFF58B9FF);
-        embedBuilder.addField("Войти в поиск игры", "`!find game <FORMAT>`", false);
-        embedBuilder.addField("Выйти из поиска игры", "`!find leave`", false);
+        embedBuilder.setTitle("Поиск игры");
+        embedBuilder.setDescription(
+                "Доступные форматы игры: 4x2 , 6x2\n" +
+                "\n" +
+                "Команд в поиске игры 4x2: `" + teams4x2Count + "`\n" +
+                "Команд в поиске игры 6x2: `" + teams6x2Count + "`\n" +
+                "\n" +
+                "Войти в поиск игры\n" +
+                "`!find game <FORMAT>`\n" +
+                "\n" +
+                "Выйти из поиска игры\n" +
+                "`!find leave`\n"
+        );
+        embedBuilder.setColor(3092790);
 
         TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(channel != null) {
@@ -86,14 +94,25 @@ public class FindGameChannel extends Channel {
     public void updateTeamsInGameSearchCountMessage() {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT COUNT(*) as count FROM teams_in_game_search;");
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
-            if(resultSet.next()) {
-                sendChannelMessage(resultSet.getInt("count"));
+            int count4x2 = 0;
+            int count6x2 = 0;
+
+            PreparedStatement prepared4x2Statement = connection.prepareStatement(
+                    "SELECT COUNT(*) as count FROM teams_in_game_search WHERE format = '4x2';");
+            ResultSet result4x2Set = prepared4x2Statement.executeQuery();
+            if(result4x2Set.next()) {
+                count4x2 = result4x2Set.getInt("count");
             }
+
+            PreparedStatement prepared6x2Statement = connection.prepareStatement(
+                    "SELECT COUNT(*) as count FROM teams_in_game_search WHERE format = '6x2';");
+            ResultSet result6x2Set = prepared6x2Statement.executeQuery();
+            if(result6x2Set.next()) {
+                count6x2 = result6x2Set.getInt("count");
+            }
+
+            sendChannelMessage(count4x2, count6x2);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -104,17 +123,19 @@ public class FindGameChannel extends Channel {
      */
     private void sendAvailableAssistantsMessage(List<String> assistants) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        String title = "```" +
-                "        ДОСТУПНЫЕ ПОМОЩНИКИ        " +
-                "```";
+        String title = "Доступные помощники";
         embedBuilder.setTitle(title);
         embedBuilder.setColor(3092790);
 
         StringBuilder assistantsString = new StringBuilder();
-        for(String assistant : assistants) {
-            assistantsString.append(assistant).append("\n");
+        if(assistants.isEmpty()) {
+            assistantsString.append("Сейчас нет доступных помощников");
+        } else {
+            for(String assistant : assistants) {
+                assistantsString.append("> ").append(assistant).append("\n");
+            }
         }
-        embedBuilder.addField("Name", assistantsString.toString(), true);
+        embedBuilder.setDescription(assistantsString);
 
         TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(channel != null) {

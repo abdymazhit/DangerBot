@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал игры
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
@@ -39,7 +39,6 @@ public class GameChannel extends Channel {
         if(category != null) {
             List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategory.game.firstTeamStarterDiscordId,
                     gameCategory.game.secondTeamStarterDiscordId).get();
-
             Member firstTeamStarter = members.get(0);
             Member secondTeamStarter = members.get(1);
 
@@ -61,12 +60,9 @@ public class GameChannel extends Channel {
             createAction = createAction.addPermissionOverride(gameCategory.secondTeamRole,
                     EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
 
-            System.out.println(assistant);
             if(assistant != null) {
                 createAction = createAction.addPermissionOverride(assistant,
-                        EnumSet.of(Permission.VIEW_CHANNEL), null);
-                createAction = createAction.addPermissionOverride(assistant,
-                        EnumSet.of(Permission.MESSAGE_WRITE), null);
+                        EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null);
             }
             createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(),
                     null, EnumSet.of(Permission.VIEW_CHANNEL));
@@ -155,7 +151,7 @@ public class GameChannel extends Channel {
                                 secondTeamInviteStrings
                         );
 
-                        embedBuilder.setColor(0xFF58B9FF);
+                        embedBuilder.setColor(3092790);
                         embedBuilder.addField("Начать игру", "Обратите внимание, вы должны ввести команду только после начала игры в самом VimeWorld!" +
                                 " Введите `!start` для начала игры", false);
 
@@ -199,7 +195,7 @@ public class GameChannel extends Channel {
                                     secondTeamInviteStrings
                             );
 
-                            embedBuilder.setColor(0xFF58B9FF);
+                            embedBuilder.setColor(3092790);
                             embedBuilder.addField("Начать игру", "Обратите внимание, вы должны ввести команду только после начала игры в самом VimeWorld!" +
                                     " Введите `!start` для начала игры", false);
 

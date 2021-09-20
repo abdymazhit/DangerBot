@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -55,9 +55,11 @@ public class TeamsChannel extends Channel {
 
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Доступные команды");
-                embedBuilder.setColor(0xFF58B9FF);
-                embedBuilder.addField("Посмотреть информацию о команде",
-                        "`!team info <NAME>`", false);
+                embedBuilder.setColor(3092790);
+                embedBuilder.setDescription(
+                        "Посмотреть информацию о команде\n" +
+                        "`!team info <NAME>`"
+                );
 
                 TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
                 if(channel != null) {
@@ -74,15 +76,19 @@ public class TeamsChannel extends Channel {
      */
     private void sendTopTeamsMessage(List<Team> teams) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        String title = "```" +
-                "                      TEAMS RATING                      " +
-                "```";
+        String title = "Топ 20 команд";
         embedBuilder.setTitle(title);
         embedBuilder.setColor(3092790);
 
+        StringBuilder teamsPlaceString = new StringBuilder();
+        for(int i = 1; i <= teams.size(); i++) {
+            teamsPlaceString.append("> ").append(i).append("\n");
+        }
+        embedBuilder.addField("Place", teamsPlaceString.toString(), true);
+
         StringBuilder teamsNamesString = new StringBuilder();
         for(Team team : teams) {
-            teamsNamesString.append("> ").append(team.name).append("\n");
+            teamsNamesString.append(team.name).append("\n");
         }
         embedBuilder.addField("Name", teamsNamesString.toString(), true);
 
@@ -91,12 +97,6 @@ public class TeamsChannel extends Channel {
             teamsPointsString.append(team.points).append("\n");
         }
         embedBuilder.addField("Points", teamsPointsString.toString(), true);
-
-        StringBuilder teamsPlaceString = new StringBuilder();
-        for(int i = 1; i <= teams.size(); i++) {
-            teamsPlaceString.append(i).append("\n");
-        }
-        embedBuilder.addField("Place", teamsPlaceString.toString(), true);
 
         TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(channel != null) {

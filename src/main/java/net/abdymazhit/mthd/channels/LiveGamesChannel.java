@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Канал активных игр
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesChannel extends Channel {
@@ -118,7 +118,7 @@ public class LiveGamesChannel extends Channel {
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         String title = "```" +
-                "        " + game.firstTeamName + "   VS   " + game.secondTeamName + "        " +
+                "        " + game.firstTeamName + "   vs   " + game.secondTeamName + "        " +
                 "```";
         embedBuilder.setTitle(title);
         embedBuilder.setColor(3092790);

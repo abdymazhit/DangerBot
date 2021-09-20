@@ -15,12 +15,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал выбора игроков на игру
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -50,6 +51,13 @@ public class PlayersChoiceChannel extends Channel {
         Member firstTeamStarter = members.get(0);
         Member secondTeamStarter = members.get(1);
 
+        Member assistant = null;
+        try {
+            assistant = MTHD.getInstance().guild.retrieveMemberById(gameCategory.game.assistantDiscordId).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
         if(firstTeamStarter == null || secondTeamStarter == null) {
             return;
         }
@@ -59,6 +67,11 @@ public class PlayersChoiceChannel extends Channel {
                 EnumSet.of(Permission.MESSAGE_WRITE), null);
         createAction = createAction.addPermissionOverride(secondTeamStarter,
                 EnumSet.of(Permission.MESSAGE_WRITE), null);
+
+        if(assistant != null) {
+            createAction = createAction.addPermissionOverride(assistant,
+                    EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
+        }
 
         createAction = createAction.addPermissionOverride(gameCategory.firstTeamRole,
                 EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
@@ -149,12 +162,17 @@ public class PlayersChoiceChannel extends Channel {
     private void sendChannelMessage(int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Первая стадия игры - Выбор игроков на игру");
-        embedBuilder.setDescription("Начавшие поиск игры команд (" + gameCategory.firstTeamRole.getAsMention() + " и "
+        embedBuilder.setDescription(
+                "Начавшие поиск игры команд (" + gameCategory.firstTeamRole.getAsMention() + " и "
                 + gameCategory.secondTeamRole.getAsMention() + ") должны решить, кто из игроков будет играть в этой игре!\n" +
-                "У вас есть %time% сек. для установки игроков на игру!".replace("%time%", String.valueOf(time)));
-        embedBuilder.setColor(0xFF58B9FF);
-        embedBuilder.addField("Добавить участника в игру", "`!add <NAME>`", false);
-        embedBuilder.addField("Удалить участника из игры", "`!delete <NAME>`", false);
+                "У вас есть `" + time + " сек.` для установки игроков на игру!\n" +
+                "\n" +
+                "Добавить участника в игру\n" +
+                "`!add <NAME>`\n" +
+                "\n" +
+                "Удалить участника из игры\n" +
+                "`!delete <NAME>`");
+        embedBuilder.setColor(3092790);
 
         TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(channel != null) {
@@ -174,17 +192,25 @@ public class PlayersChoiceChannel extends Channel {
     private void sendGamePlayersMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Список участвующих в игре игроков");
-        embedBuilder.setColor(0xFF58B9FF);
+        embedBuilder.setColor(3092790);
 
         StringBuilder firstTeamPlayersNames = new StringBuilder();
-        for(String name : gameCategory.game.firstTeamPlayers) {
-            firstTeamPlayersNames.append(name).append("\n");
+        if(gameCategory.game.firstTeamPlayers.isEmpty()) {
+            firstTeamPlayersNames.append("-").append("\n");
+        } else {
+            for(String name : gameCategory.game.firstTeamPlayers) {
+                firstTeamPlayersNames.append(name).append("\n");
+            }
         }
         embedBuilder.addField(gameCategory.game.firstTeamName, firstTeamPlayersNames.toString(), true);
 
         StringBuilder secondTeamPlayersNames = new StringBuilder();
-        for(String name : gameCategory.game.secondTeamPlayers) {
-            secondTeamPlayersNames.append(name).append("\n");
+        if(gameCategory.game.secondTeamPlayers.isEmpty()) {
+            secondTeamPlayersNames.append("-").append("\n");
+        } else {
+            for(String name : gameCategory.game.secondTeamPlayers) {
+                secondTeamPlayersNames.append(name).append("\n");
+            }
         }
         embedBuilder.addField(gameCategory.game.secondTeamName, secondTeamPlayersNames.toString(), true);
 
@@ -196,7 +222,6 @@ public class PlayersChoiceChannel extends Channel {
                 channel.editMessageEmbedsById(channelGamePlayersMessageId, embedBuilder.build()).queue();
             }
         }
-
         embedBuilder.clear();
     }
 
@@ -210,8 +235,6 @@ public class PlayersChoiceChannel extends Channel {
                     "SELECT player_id FROM live_games_players WHERE team_id = ?;");
             firstStatement.setInt(1, gameCategory.game.firstTeamId);
             ResultSet firstResultSet = firstStatement.executeQuery();
-
-
             List<Integer> firstTeamPlayersId = new ArrayList<>();
             while(firstResultSet.next()) {
                 firstTeamPlayersId.add(firstResultSet.getInt("player_id"));
@@ -221,7 +244,6 @@ public class PlayersChoiceChannel extends Channel {
                     "SELECT player_id FROM live_games_players WHERE team_id = ?;");
             secondStatement.setInt(1, gameCategory.game.secondTeamId);
             ResultSet secondResultSet = secondStatement.executeQuery();
-
             List<Integer> secondTeamPlayersId = new ArrayList<>();
             while(secondResultSet.next()) {
                 secondTeamPlayersId.add(secondResultSet.getInt("player_id"));

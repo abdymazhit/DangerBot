@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -49,7 +49,8 @@ public class AuthCommandListener extends ListenerAdapter {
 
         String token = tokenOption.getAsString().replace("https://api.vime.world/web/token/", "")
                 .replace(" ", "");
-        String authInfo = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/misc/token/" + token);
+        String authInfo = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/misc/token/" + token + "?token="
+                + MTHD.getInstance().config.vimeApiToken);
         if(authInfo == null) {
             event.reply("Ошибка! Неверный токен авторизации!").setEphemeral(true).queue();
             return;

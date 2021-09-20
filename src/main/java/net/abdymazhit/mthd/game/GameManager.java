@@ -21,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Менеджер игры
  *
- * @version   18.09.2021
+ * @version   20.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -378,8 +378,6 @@ public class GameManager {
             if(createResultSet.next()) {
                 int finishedGameId = createResultSet.getInt(1);
 
-                System.out.println(game.firstTeamPlayersId);
-
                 for(int playerId : game.firstTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
                             "INSERT INTO finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
@@ -388,8 +386,6 @@ public class GameManager {
                     playersStatement.setInt(3, playerId);
                     playersStatement.executeUpdate();
                 }
-
-                System.out.println(game.secondTeamPlayersId);
 
                 for(int playerId : game.secondTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
