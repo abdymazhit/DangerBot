@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameCommandListener extends ListenerAdapter {
@@ -88,13 +88,13 @@ public class FindGameCommandListener extends ListenerAdapter {
 
                 int onlinePlayers = 0;
                 for(UserAccount player : members) {
-                    if(player.isDiscordOnline() || player.isVimeOnline()) {
+                    if(player.isDiscordOnline || player.isVimeOnline) {
                         onlinePlayers++;
                     }
                 }
 
                 if(format.equals("4x2")) {
-                    if(onlinePlayers < 4) {
+                    if(onlinePlayers < 1) {
                         message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
                         return;
                     }
@@ -172,8 +172,7 @@ public class FindGameCommandListener extends ListenerAdapter {
             preparedStatement.setString(2, format);
             preparedStatement.setInt(3, starterId);
             preparedStatement.setInt(4, teamId);
-            preparedStatement.executeUpdate();
-            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            preparedStatement.executeUpdate();ResultSet resultSet = preparedStatement.getGeneratedKeys();
 
             if(resultSet.next()) {
                 // Вернуть значение, что команда успешно добавлена в поиск игры

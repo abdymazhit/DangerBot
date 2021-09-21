@@ -21,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Менеджер игры
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -41,12 +41,10 @@ public class GameManager {
 
                 try {
                     Connection connection = MTHD.getInstance().database.getConnection();
-                    PreparedStatement preparedStatement = connection.prepareStatement(
-                            "SELECT * FROM live_games WHERE id = ?;");
+                    PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM live_games WHERE id = ?;");
                     preparedStatement.setInt(1, id);
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    
 
+                    ResultSet resultSet = preparedStatement.executeQuery();
                     if(resultSet.next()) {
                         int firstTeamId = resultSet.getInt("first_team_id");
                         int firstTeamStarterId = resultSet.getInt("first_team_starter_id");
@@ -59,12 +57,9 @@ public class GameManager {
                         int gameStateId = resultSet.getInt("game_state");
 
                         String firstTeamName = MTHD.getInstance().database.getTeamName(firstTeamId);
-                        if(firstTeamName == null) {
-                            return;
-                        }
-
                         String secondTeamName = MTHD.getInstance().database.getTeamName(secondTeamId);
-                        if(secondTeamName == null) {
+
+                        if(firstTeamName == null || secondTeamName == null) {
                             return;
                         }
 
@@ -82,32 +77,10 @@ public class GameManager {
                             }
                         }
 
-                        PreparedStatement firstStatement = connection.prepareStatement(
-                                "SELECT player_id FROM live_games_players WHERE team_id = ?;");
-                        firstStatement.setInt(1, firstTeamId);
-                        ResultSet firstResultSet = firstStatement.executeQuery();
-                        
-
-                        List<Integer> firstTeamPlayersId = new ArrayList<>();
-                        while(firstResultSet.next()) {
-                            firstTeamPlayersId.add(firstResultSet.getInt("player_id"));
-                        }
-
-                        PreparedStatement secondStatement = connection.prepareStatement(
-                                "SELECT player_id FROM live_games_players WHERE team_id = ?;");
-                        secondStatement.setInt(1, secondTeamId);
-                        ResultSet secondResultSet = secondStatement.executeQuery();
-
-                        List<Integer> secondTeamPlayersId = new ArrayList<>();
-                        while(secondResultSet.next()) {
-                            secondTeamPlayersId.add(secondResultSet.getInt("player_id"));
-                        }
-
                         Game game = new Game(id, firstTeamId, firstTeamStarterId, secondTeamId,
                                 secondTeamStarterId, format, selectedMap, state, assistantId, startedAt);
-                        game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(firstTeamPlayersId);
-                        game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(secondTeamPlayersId);
-
+                        game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(firstTeamId);
+                        game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(secondTeamId);
                         gameCategories.add(new GameCategory(game, category));
                     } else {
                         deleteGame(category.getId());
@@ -187,12 +160,10 @@ public class GameManager {
             PreparedStatement assistantsStatement = connection.prepareStatement(
                     "SELECT assistant_id FROM available_assistants;");
             ResultSet assistantsResultSet = assistantsStatement.executeQuery();
-
-
             if(assistantsResultSet.next()) {
                 UserAccount assistant = new UserAccount(assistantsResultSet.getInt("assistant_id"));
                 startGame(firstTeam.id, firstTeam.starterId, secondTeam.id, secondTeam.starterId,
-                        firstTeam.format, assistant.getId());
+                        firstTeam.format, assistant.id);
             }
         } catch (SQLException e) {
             // Критическая ошибка
@@ -225,8 +196,7 @@ public class GameManager {
             preparedStatement.setInt(8, GameState.PLAYERS_CHOICE.getId());
             preparedStatement.setInt(9, firstTeamId);
             preparedStatement.setInt(10, secondTeamId);
-            preparedStatement.executeUpdate();
-            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            preparedStatement.executeUpdate();ResultSet resultSet = preparedStatement.getGeneratedKeys();
 
             if(resultSet.next()) {
                 int gameId = resultSet.getInt(1);
@@ -254,10 +224,9 @@ public class GameManager {
     /**
      * Создает игру
      */
-    private void createGame(int gameId, int firstTeamId, int firstTeamStarterId, int secondTeamId, int secondTeamStarterId,
-                            String format, int assistantId) {
+    private void createGame(int gameId, int firstTeamId, int firstTeamStarterId, int secondTeamId,
+                            int secondTeamStarterId, String format, int assistantId) {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + gameId, true);
-
         if(categories.isEmpty()) {
             Game game = new Game(gameId, firstTeamId, firstTeamStarterId, secondTeamId, secondTeamStarterId, format, assistantId);
             gameCategories.add(new GameCategory(game));
@@ -273,18 +242,15 @@ public class GameManager {
     public void deleteGame(Game game) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement gameStatement = connection.prepareStatement(
-                    "DELETE FROM live_games WHERE id = ?;");
+            PreparedStatement gameStatement = connection.prepareStatement("DELETE FROM live_games WHERE id = ?;");
             gameStatement.setInt(1, game.id);
             gameStatement.executeUpdate();
 
-            PreparedStatement firstTeamStatement = connection.prepareStatement(
-                    "DELETE FROM live_games_players WHERE team_id = ?;");
+            PreparedStatement firstTeamStatement = connection.prepareStatement("DELETE FROM live_games_players WHERE team_id = ?;");
             firstTeamStatement.setInt(1, game.firstTeamId);
             firstTeamStatement.executeUpdate();
 
-            PreparedStatement secondTeamStatement = connection.prepareStatement(
-                    "DELETE FROM live_games_players WHERE team_id = ?;");
+            PreparedStatement secondTeamStatement = connection.prepareStatement("DELETE FROM live_games_players WHERE team_id = ?;");
             secondTeamStatement.setInt(1, game.secondTeamId);
             secondTeamStatement.executeUpdate();
 
@@ -324,12 +290,12 @@ public class GameManager {
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         if(game.firstTeamId == winnerTeamId) {
                             embedBuilder.setTitle("Побидетель: " + game.firstTeamName);
-                            embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + firstTeamRating + " (+" + (firstTeamRating - game.firstTeamPoints)
-                                    +")\n" + "Рейтинг проигравшего: " + secondTeamRating + " (" + (secondTeamRating - game.secondTeamPoints) + ")", true);
+                            embedBuilder.addField("Рейтинг", "Рейтинг " + gameCategory.firstTeamRole.getAsMention() + ": +" + firstTeamRating + " (+" + (firstTeamRating - game.firstTeamPoints)
+                                    +")\n" + "Рейтинг " + gameCategory.secondTeamRole.getAsMention() + ": " + secondTeamRating + " (" + (secondTeamRating - game.secondTeamPoints) + ")", true);
                         } else if(game.secondTeamId == winnerTeamId) {
                             embedBuilder.setTitle("Побидетель: " + game.secondTeamName);
-                            embedBuilder.addField("Рейтинг", "Рейтинг победителя: +" + secondTeamRating + " (+" + (secondTeamRating - game.secondTeamPoints)
-                                    +")\n" + "Рейтинг проигравшего: " + firstTeamRating + "(" + (firstTeamRating - game.firstTeamPoints) + ")", true);
+                            embedBuilder.addField("Рейтинг", "Рейтинг " + gameCategory.secondTeamRole.getAsMention() + ": +" + secondTeamRating + " (+" + (secondTeamRating - game.secondTeamPoints)
+                                    +")\n" + "Рейтинг " + gameCategory.firstTeamRole.getAsMention() + ": " + firstTeamRating + "(" + (firstTeamRating - game.firstTeamPoints) + ")", true);
                         }
 
                         embedBuilder.setColor(3092790);

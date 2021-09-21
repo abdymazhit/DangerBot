@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.customs.latestgame;
+package net.abdymazhit.mthd.customs.serialization;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
 /**
  * Последняя игра
  *
- * @version   17.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class LatestGame {

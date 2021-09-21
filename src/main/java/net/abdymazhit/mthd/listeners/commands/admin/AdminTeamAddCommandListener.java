@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -74,7 +74,7 @@ public class AdminTeamAddCommandListener {
             return;
         }
 
-        int memberTeamId = MTHD.getInstance().database.getUserTeamId(memberAccount.getId());
+        int memberTeamId = MTHD.getInstance().database.getUserTeamId(memberAccount.id);
         if(memberTeamId > 0) {
             message.reply("Ошибка! Участник уже состоит в команде!").queue();
             return;
@@ -86,7 +86,7 @@ public class AdminTeamAddCommandListener {
             return;
         }
 
-        boolean isMemberAdded = addTeamMember(teamId, memberAccount.getId(), adderId);
+        boolean isMemberAdded = addTeamMember(teamId, memberAccount.id, adderId);
         if(!isMemberAdded) {
             message.reply("Критическая ошибка при добавлении участника в команду! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -98,9 +98,9 @@ public class AdminTeamAddCommandListener {
             return;
         }
 
-        if(memberAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
-            MTHD.getInstance().guild.addRoleToMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(memberAccount.discordId != null) {
+            MTHD.getInstance().guild.addRoleToMember(memberAccount.discordId, teamRoles.get(0)).queue();
+            MTHD.getInstance().guild.addRoleToMember(memberAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
         message.reply("Участник успешно добавлен в команду! Название команды: " + teamName + ", ник участника: " + memberName).queue();

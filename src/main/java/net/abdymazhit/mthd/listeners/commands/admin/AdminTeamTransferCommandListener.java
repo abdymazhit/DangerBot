@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamTransferCommandListener {
@@ -90,32 +90,32 @@ public class AdminTeamTransferCommandListener {
             return;
         }
 
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(currentLeaderAccount.getId(), teamId);
+        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(currentLeaderAccount.id, teamId);
         if(!isUserTeamLeader) {
             message.reply("Ошибка! Текущий лидер команды в настоящий момент не является лидером этой команды!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.getId(), teamId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.id, teamId);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Новый лидер команды в настоящий момент не является участником этой команды!").queue();
             return;
         }
 
-        boolean isTransferred = transferLeader(teamId, currentLeaderAccount.getId(), newLeaderAccount.getId(), changerId);
+        boolean isTransferred = transferLeader(teamId, currentLeaderAccount.id, newLeaderAccount.id, changerId);
         if(!isTransferred) {
             message.reply("Критическая ошибка при передачи прав лидера! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        if(currentLeaderAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
-            MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(currentLeaderAccount.discordId != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(currentLeaderAccount.discordId, UserRole.LEADER.getRole()).queue();
+            MTHD.getInstance().guild.addRoleToMember(currentLeaderAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
-        if(newLeaderAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
-            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        if(newLeaderAccount.discordId != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.discordId, UserRole.MEMBER.getRole()).queue();
+            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.discordId, UserRole.LEADER.getRole()).queue();
         }
 
         message.reply("Права лидера успешно переданы! Название команды: " + teamName + ", новый лидер команды: " + newLeaderName).queue();

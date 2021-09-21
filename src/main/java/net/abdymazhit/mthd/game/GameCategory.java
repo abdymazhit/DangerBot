@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategory {
@@ -54,16 +54,16 @@ public class GameCategory {
 
         MTHD.getInstance().guild.createCategory("Game-" + game.id)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .queue(category -> {
-                    categoryId = category.getId();
-                    getTeamRoles(game.firstTeamName, game.secondTeamName);
+        .queue(category -> {
+            categoryId = category.getId();
+            getTeamRoles(game.firstTeamName, game.secondTeamName);
 
-                    createChatChannel();
-                    createFirstTeamVoiceChannel();
-                    createSecondTeamVoiceChannel();
+            createChatChannel();
+            createFirstTeamVoiceChannel();
+            createSecondTeamVoiceChannel();
 
-                    createPlayersChoiceChannel();
-                });
+            createPlayersChoiceChannel();
+        });
     }
 
     public GameCategory(Game game, Category category) {
@@ -192,7 +192,7 @@ public class GameCategory {
      */
     public void createGameChannel() {
         deleteMapChoiceChannel();
-        gameChannel = new GameChannel(this);
+        gameChannel = new GameChannel(this, false);
     }
 
     /**
@@ -205,7 +205,7 @@ public class GameCategory {
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .queue();
+            .queue();
         }
     }
 
@@ -219,7 +219,7 @@ public class GameCategory {
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .queue();
+            .queue();
         }
     }
 
@@ -233,7 +233,7 @@ public class GameCategory {
                     .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .queue();
+            .queue();
         }
     }
 
@@ -250,7 +250,6 @@ public class GameCategory {
             preparedStatement.setInt(1, gameState.getId());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();
-            
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -268,7 +267,6 @@ public class GameCategory {
             preparedStatement.setString(1, gameMap.getName());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();
-            
         } catch (SQLException e) {
             e.printStackTrace();
         }

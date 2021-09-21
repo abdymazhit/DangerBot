@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Представляет собой матч
+ * Представляет собой игру
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -91,29 +91,6 @@ public class Game {
 
     /** Vime id игроков второй команды */
     public List<Integer> secondTeamPlayersVimeId;
-
-    /**
-     * Инициализирует матч
-     * @param id Id матча
-     * @param firstTeamId Id первой команды
-     * @param firstTeamStarterId Id начавшего первой команды
-     * @param secondTeamId Id второй команды
-     * @param secondTeamStarterId Id начавшего второй команды
-     * @param format Формат матча
-     * @param assistantId Id помощника
-     * @param startedAt Время начала матча
-     */
-    public Game(int id, int firstTeamId, int firstTeamStarterId,  int secondTeamId, int secondTeamStarterId, String format,
-                int assistantId, Timestamp startedAt) {
-        this.id = id;
-        this.firstTeamId = firstTeamId;
-        this.firstTeamStarterId = firstTeamStarterId;
-        this.secondTeamId = secondTeamId;
-        this.secondTeamStarterId = secondTeamStarterId;
-        this.format = format;
-        this.assistantId = assistantId;
-        this.startedAt = startedAt;
-    }
 
     /**
      * Инициализирует матч

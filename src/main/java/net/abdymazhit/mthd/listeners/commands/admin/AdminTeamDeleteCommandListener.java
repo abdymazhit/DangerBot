@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Администраторская команда удаления участника из команды
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDeleteCommandListener {
@@ -80,20 +80,20 @@ public class AdminTeamDeleteCommandListener {
             return;
         }
 
-        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberAccount.getId());
+        boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberAccount.id);
         if(isUserTeamLeader) {
             message.reply("Ошибка! Участник является лидером команды! " +
                     "Для удаления участника из команды Вы сперва должны передавать права лидера другому игроку!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.getId(), teamId);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.id, teamId);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Участник не является участником этой команды!").queue();
             return;
         }
 
-        boolean isMemberDeleted = deleteTeamMember(teamId, memberAccount.getId(), deleterId);
+        boolean isMemberDeleted = deleteTeamMember(teamId, memberAccount.id, deleterId);
         if(!isMemberDeleted) {
             message.reply("Критическая ошибка при удалении участника из команды! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -105,9 +105,9 @@ public class AdminTeamDeleteCommandListener {
             return;
         }
 
-        if(memberAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
-            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(memberAccount.discordId != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.discordId, teamRoles.get(0)).queue();
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
         message.reply("Участник успешно удален из команды! Название команды: " + teamName + ", ник участника: " + memberName).queue();

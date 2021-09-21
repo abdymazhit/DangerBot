@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой команду
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
@@ -119,12 +119,12 @@ public class Team {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT discord_id, username FROM users WHERE id = ?;");
-            preparedStatement.setInt(1, user.getId());
+            preparedStatement.setInt(1, user.id);
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if(resultSet.next()) {
-                user.setDiscordId(resultSet.getString("discord_id"));
-                user.setUsername(resultSet.getString("username"));
+                user.discordId = resultSet.getString("discord_id");
+                user.username = resultSet.getString("username");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -135,10 +135,10 @@ public class Team {
      * Получает id игроков VimeWorld
      */
     private void getUsersVimeIds() {
-        StringBuilder names = new StringBuilder(leader.getUsername());
+        StringBuilder names = new StringBuilder(leader.username);
 
         for(UserAccount member : members) {
-            names.append(",").append(member.getUsername());
+            names.append(",").append(member.username);
         }
 
         String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
@@ -152,12 +152,12 @@ public class Team {
             int vimeId = infoObject.get("id").getAsInt();
             String username = infoObject.get("username").getAsString();
 
-            if(username.equals(leader.getUsername())) {
-                leader.setVimeId(vimeId);
+            if(username.equals(leader.username)) {
+                leader.vimeId = vimeId;
             } else {
                 for(UserAccount user : members) {
-                    if(username.equals(user.getUsername())) {
-                        user.setVimeId(vimeId);
+                    if(username.equals(user.username)) {
+                        user.vimeId = vimeId;
                     }
                 }
             }
@@ -170,9 +170,9 @@ public class Team {
     private void getUsersVimeOnline() {
         JsonArray jsonArray = new JsonArray();
         for(UserAccount user : members) {
-            jsonArray.add(user.getVimeId());
+            jsonArray.add(user.vimeId);
         }
-        jsonArray.add(leader.getVimeId());
+        jsonArray.add(leader.vimeId);
 
         String info = MTHD.getInstance().utils.sendPostRequest("https://api.vimeworld.ru/user/session" + "?token="
                 + MTHD.getInstance().config.vimeApiToken, jsonArray);
@@ -184,12 +184,12 @@ public class Team {
             String username = infoObject.get("username").getAsString();
             boolean isOnline = infoObject.get("online").getAsJsonObject().get("value").getAsBoolean();
 
-            if(username.equals(leader.getUsername())) {
-                leader.setVimeOnline(isOnline);
+            if(username.equals(leader.username)) {
+                leader.isVimeOnline = isOnline;
             } else {
                 for(UserAccount user : members) {
-                    if(username.equals(user.getUsername())) {
-                        user.setVimeOnline(isOnline);
+                    if(username.equals(user.username)) {
+                        user.isVimeOnline = isOnline;
                     }
                 }
             }
@@ -201,20 +201,19 @@ public class Team {
      */
     private void getUsersDiscordOnline() {
         try {
-            if(leader.getDiscordId() != null) {
-                Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.getDiscordId()).submit().get();
-
-                leader.setDiscordOnline(leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+            if(leader.discordId != null) {
+                Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.discordId).submit().get();
+                leader.isDiscordOnline = leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
                         leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                        leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+                        leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
             }
 
             for(UserAccount user : members) {
-                if(user.getDiscordId() != null) {
-                    Member member = MTHD.getInstance().guild.retrieveMemberById(user.getDiscordId()).submit().get();
-                    user.setDiscordOnline(member.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
+                if(user.discordId != null) {
+                    Member member = MTHD.getInstance().guild.retrieveMemberById(user.discordId).submit().get();
+                    user.isDiscordOnline = member.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
                             member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                            member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB));
+                            member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
                 }
             }
         } catch (InterruptedException | ExecutionException e) {

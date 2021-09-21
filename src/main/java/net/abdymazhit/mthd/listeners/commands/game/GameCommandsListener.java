@@ -17,7 +17,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -65,6 +65,7 @@ public class GameCommandsListener extends ListenerAdapter {
 
                 message.reply("Вы успешно начали игру!").queue();
                 gameCategory.setGameState(GameState.GAME);
+                MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
                 gameCategory.gameChannel.timer.cancel();
                 MTHD.getInstance().liveGamesManager.addLiveGame(gameCategory.game);
 
@@ -88,6 +89,7 @@ public class GameCommandsListener extends ListenerAdapter {
                         "Для отмены игры введите `!cancel`", false);
                 embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча администратор " +
                         "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
+                embedBuilder.addField("Помощник", gameCategory.game.assistantName, false);
 
                 messageChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
                 embedBuilder.clear();

@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда исключить участника из команды
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamKickCommandListener {
@@ -75,13 +75,13 @@ public class TeamKickCommandListener {
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.getId(), team.id);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.id, team.id);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Участник не является участником этой команды!").queue();
             return;
         }
 
-        boolean isMemberDeleted = deleteTeamMember(team.id, memberAccount.getId(), deleterId);
+        boolean isMemberDeleted = deleteTeamMember(team.id, memberAccount.id, deleterId);
         if(!isMemberDeleted) {
             message.reply("Критическая ошибка при удалении участника из команды! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -93,9 +93,9 @@ public class TeamKickCommandListener {
             return;
         }
 
-        if(memberAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), teamRoles.get(0)).queue();
-            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
+        if(memberAccount.discordId != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.discordId, teamRoles.get(0)).queue();
+            MTHD.getInstance().guild.removeRoleFromMember(memberAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
         message.reply("Вы успешно выгнали участника из команды!").queue();

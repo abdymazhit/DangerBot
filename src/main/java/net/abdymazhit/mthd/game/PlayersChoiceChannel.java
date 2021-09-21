@@ -1,5 +1,10 @@
 package net.abdymazhit.mthd.game;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
 import net.abdymazhit.mthd.enums.GameState;
@@ -8,20 +13,11 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.requests.restaction.ChannelAction;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал выбора игроков на игру
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -35,6 +31,9 @@ public class PlayersChoiceChannel extends Channel {
     /** Сообщение отмены игры */
     public String channelGameCancelMessageId;
 
+    /** Время выбора игроков */
+    private static final int choiceTime = 120;
+
     /**
      * Инициализирует канал выбора игроков на игру
      * @param gameCategory Категория игры
@@ -43,153 +42,125 @@ public class PlayersChoiceChannel extends Channel {
         this.gameCategory = gameCategory;
 
         Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
-        if(category == null) return;
-
-        List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategory.game.firstTeamStarterDiscordId,
-                gameCategory.game.secondTeamStarterDiscordId).get();
-
-        Member firstTeamStarter = members.get(0);
-        Member secondTeamStarter = members.get(1);
-
-        Member assistant = null;
-        try {
-            assistant = MTHD.getInstance().guild.retrieveMemberById(gameCategory.game.assistantDiscordId).submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-
-        if(firstTeamStarter == null || secondTeamStarter == null) {
+        if(category == null) {
+            System.out.println("Критическая ошибка! Категория Game не существует!");
             return;
         }
 
-        ChannelAction<TextChannel> createAction = category.createTextChannel("players-choice").setPosition(2);
-        createAction = createAction.addPermissionOverride(firstTeamStarter,
-                EnumSet.of(Permission.MESSAGE_WRITE), null);
-        createAction = createAction.addPermissionOverride(secondTeamStarter,
-                EnumSet.of(Permission.MESSAGE_WRITE), null);
-
-        if(assistant != null) {
-            createAction = createAction.addPermissionOverride(assistant,
-                    EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
+        List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategory.game.firstTeamStarterDiscordId,
+            gameCategory.game.secondTeamStarterDiscordId).get();
+        Member firstTeamStarter = members.get(0);
+        Member secondTeamStarter = members.get(1);
+        if(firstTeamStarter == null || secondTeamStarter == null) {
+            System.out.println("Критическая ошибка! Не удалось получить роли начавших игру первой и второй команды!");
+            return;
         }
 
-        createAction = createAction.addPermissionOverride(gameCategory.firstTeamRole,
-                EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
-        createAction = createAction.addPermissionOverride(gameCategory.secondTeamRole,
-                EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
-        createAction = createAction.addPermissionOverride(MTHD.getInstance().guild.getPublicRole(),
-                null, EnumSet.of(Permission.VIEW_CHANNEL));
+        MTHD.getInstance().guild.retrieveMemberById(gameCategory.game.assistantDiscordId).queue(assistant ->
+            category.createTextChannel("players-choice").setPosition(2)
+                .addPermissionOverride(firstTeamStarter, EnumSet.of(Permission.MESSAGE_WRITE), null)
+                .addPermissionOverride(secondTeamStarter, EnumSet.of(Permission.MESSAGE_WRITE), null)
+                .addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                .addPermissionOverride(gameCategory.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                .addPermissionOverride(gameCategory.secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(textChannel -> {
+                    channelId = textChannel.getId();
 
-        createAction.queue(textChannel -> {
-            channelId = textChannel.getId();
+                    AtomicInteger time = new AtomicInteger(choiceTime);
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            if(time.get() <= 0) {
+                                boolean isCancelling = false;
 
-            // Изменить
-            AtomicInteger time = new AtomicInteger(120);
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if(time.get() <= 0) {
-                        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
-                        if(channel != null) {
-                            boolean isCancelling = false;
-                            if(gameCategory.game.format.equals("4x2")) {
-                                if(gameCategory.game.firstTeamPlayers.size() < 4 ||
-                                        gameCategory.game.secondTeamPlayers.size() < 4) {
-                                    isCancelling = true;
-                                    channel.sendMessage("Недостаточно игроков для начала игры! Игра отменяется...")
-                                            .queue(message -> channelGameCancelMessageId = message.getId());
-
-                                    MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
-                                    new Timer().schedule(new TimerTask() {
-                                        @Override
-                                        public void run() {
-                                            Category category1 = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
-                                            if(category1 != null) {
-                                                MTHD.getInstance().gameManager.deleteGame(category1.getId());
-                                            }
-                                        }
-                                    }, 7000);
-                                }
-                            } else if(gameCategory.game.format.equals("6x2")) {
-                                if(gameCategory.game.firstTeamPlayers.size() < 6 ||
-                                        gameCategory.game.secondTeamPlayers.size() < 6) {
-                                    isCancelling = true;
-                                    channel.sendMessage("Недостаточно игроков для начала игры! Игра отменяется...")
-                                            .queue(message -> channelGameCancelMessageId = message.getId());
-
-                                    MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
-                                    new Timer().schedule(new TimerTask() {
-                                        @Override
-                                        public void run() {
-                                            Category category1 = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
-                                            if(category1 != null) {
-                                                MTHD.getInstance().gameManager.deleteGame(category1.getId());
-                                            }
-                                        }
-                                    }, 7000);
-                                }
-                            }
-
-                            cancel();
-                            if (!isCancelling) {
-                                channel.sendMessage("Игроки успешно выбраны для игры. Переход к выбору карт...").queue();
-                                gameCategory.setGameState(GameState.MAP_CHOICE);
-                                new Timer().schedule(new TimerTask() {
-                                    @Override
-                                    public void run() {
-                                        gameCategory.createMapsChoiceChannel();
+                                if(gameCategory.game.format.equals("4x2")) {
+                                    if(gameCategory.game.firstTeamPlayers.size() < 1 || gameCategory.game.secondTeamPlayers.size() < 1) {
+                                        isCancelling = true;
                                     }
-                                }, 7000);
+                                } else if(gameCategory.game.format.equals("6x2")) {
+                                    if(gameCategory.game.firstTeamPlayers.size() < 6 || gameCategory.game.secondTeamPlayers.size() < 6) {
+                                        isCancelling = true;
+                                    }
+                                }
+
+                                if(isCancelling) {
+                                    textChannel.sendMessage("Недостаточно игроков для начала игры! Игра отменяется...")
+                                        .queue(message -> channelGameCancelMessageId = message.getId());
+                                    MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
+                                    new Timer().schedule(new TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            MTHD.getInstance().gameManager.deleteGame(category.getId());
+                                        }
+                                    }, 7000);
+                                } else {
+                                    gameCategory.setGameState(GameState.MAP_CHOICE);
+                                    textChannel.sendMessage("Игроки успешно выбраны для игры. Переход к выбору карт...").queue();
+                                    MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
+                                    new Timer().schedule(new TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            gameCategory.createMapsChoiceChannel();
+                                        }
+                                    }, 7000);
+                                }
+                                cancel();
                             }
+
+                            if(time.get() % 2 == 0) {
+                                sendChannelMessage(textChannel, time.get());
+                            }
+
+                            time.getAndDecrement();
                         }
-                    }
-
-                    if(time.get() % 2 == 0) {
-                        sendChannelMessage(time.get());
-                    }
-
-                    time.getAndDecrement();
-                }
-            }, 0, 1000);
-
-            updateGamePlayersMessage();
-        });
+                    }, 0, 1000);
+                    updateGamePlayersMessage();
+                })
+        );
     }
 
     /**
      * Отправляет сообщение канала выбора игроков на игру
+     * @param time Время до конца установки игроков на игру
      */
-    private void sendChannelMessage(int time) {
+    private void sendChannelMessage(TextChannel textChannel, int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Первая стадия игры - Выбор игроков на игру");
-        embedBuilder.setDescription(
-                "Начавшие поиск игры команд (" + gameCategory.firstTeamRole.getAsMention() + " и "
-                + gameCategory.secondTeamRole.getAsMention() + ") должны решить, кто из игроков будет играть в этой игре!\n" +
-                "У вас есть `" + time + " сек.` для установки игроков на игру!\n" +
-                "\n" +
-                "Добавить участника в игру\n" +
-                "`!add <NAME>`\n" +
-                "\n" +
-                "Удалить участника из игры\n" +
-                "`!delete <NAME>`");
         embedBuilder.setColor(3092790);
+        embedBuilder.setDescription("""
+            Начавшие поиск игры команд (%first_team% и %second_team%) должны решить, кто из игроков будет играть в этой игре!
+            У вас есть `%time% сек.` для установки игроков на игру!
+             
+            Добавить участника в игру
+            `!add <NAME>`
 
-        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(channel != null) {
-            if(channelMessageId == null) {
-                channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
-            } else {
-                channel.editMessageEmbedsById(channelMessageId, embedBuilder.build()).queue();
-            }
+            Удалить участника из игры
+            `!delete <NAME>`"""
+            .replace("%first_team%", gameCategory.firstTeamRole.getAsMention())
+            .replace("%second_team%", gameCategory.secondTeamRole.getAsMention())
+            .replace("%time%", String.valueOf(time)));
+        if(channelMessageId == null) {
+            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+        } else {
+            textChannel.editMessageEmbedsById(channelMessageId, embedBuilder.build()).queue();
         }
-
         embedBuilder.clear();
     }
 
     /**
-     * Отправляет сообщение о игроках игры
+     * Обновляет сообщение о игроках игры
      */
-    private void sendGamePlayersMessage() {
+    public void updateGamePlayersMessage() {
+        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(textChannel == null) {
+            System.out.println("Критическая ошибка! Канал players-choice не существует!");
+            return;
+        }
+
+        gameCategory.game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(gameCategory.game.firstTeamId);
+        gameCategory.game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(gameCategory.game.secondTeamId);
+
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Список участвующих в игре игроков");
         embedBuilder.setColor(3092790);
@@ -214,47 +185,11 @@ public class PlayersChoiceChannel extends Channel {
         }
         embedBuilder.addField(gameCategory.game.secondTeamName, secondTeamPlayersNames.toString(), true);
 
-        TextChannel channel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(channel != null) {
-            if(channelGamePlayersMessageId == null) {
-                channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelGamePlayersMessageId = message.getId());
-            } else {
-                channel.editMessageEmbedsById(channelGamePlayersMessageId, embedBuilder.build()).queue();
-            }
+        if(channelGamePlayersMessageId == null) {
+            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelGamePlayersMessageId = message.getId());
+        } else {
+            textChannel.editMessageEmbedsById(channelGamePlayersMessageId, embedBuilder.build()).queue();
         }
         embedBuilder.clear();
-    }
-
-    /**
-     * Обновляет сообщение о игроках игры
-     */
-    public void updateGamePlayersMessage() {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement firstStatement = connection.prepareStatement(
-                    "SELECT player_id FROM live_games_players WHERE team_id = ?;");
-            firstStatement.setInt(1, gameCategory.game.firstTeamId);
-            ResultSet firstResultSet = firstStatement.executeQuery();
-            List<Integer> firstTeamPlayersId = new ArrayList<>();
-            while(firstResultSet.next()) {
-                firstTeamPlayersId.add(firstResultSet.getInt("player_id"));
-            }
-
-            PreparedStatement secondStatement = connection.prepareStatement(
-                    "SELECT player_id FROM live_games_players WHERE team_id = ?;");
-            secondStatement.setInt(1, gameCategory.game.secondTeamId);
-            ResultSet secondResultSet = secondStatement.executeQuery();
-            List<Integer> secondTeamPlayersId = new ArrayList<>();
-            while(secondResultSet.next()) {
-                secondTeamPlayersId.add(secondResultSet.getInt("player_id"));
-            }
-
-            gameCategory.game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(firstTeamPlayersId);
-            gameCategory.game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(secondTeamPlayersId);
-
-            sendGamePlayersMessage();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 }

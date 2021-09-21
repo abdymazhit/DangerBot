@@ -36,7 +36,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -127,7 +127,7 @@ public class MTHD {
         gameManager = new GameManager();
 
 //        Обновить команды, только при изменении/добавлении команды
-//        updateCommands();
+        updateCommands();
 
         addEventListeners(jda);
     }

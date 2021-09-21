@@ -1,18 +1,22 @@
 package net.abdymazhit.mthd.database;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Отвечает за работу с базой данных
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -28,26 +32,59 @@ public class Database {
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
+            connection = DriverManager.getConnection(config.url, config.username, config.password);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-            return;
-        }
-
-        try {
-            connection = DriverManager.getConnection(config.url, config.username, config.password);
+            System.out.println("Критическая ошибка! JDBC драйвер не найден!");
         } catch (SQLException e) {
             e.printStackTrace();
-            return;
+            System.out.println("Критическая ошибка! Неверный SQL запрос!");
         }
 
-        if(connection == null) {
-            throw new IllegalArgumentException("Не удалось подключиться к базе данных");
-        } else {
-            System.out.println("Удочное подключение к базе данных!");
-        }
+        System.out.println("Удочное подключение к базе данных!");
 
 //        Создать таблицы, только при необходимости
         new DatabaseTables(connection);
+    }
+
+    /**
+     * Получает доступных помощников
+     * @return Доступные помощники
+     */
+    public List<String> getAvailableAssistants() {
+        List<String> assistants = new ArrayList<>();
+        try {
+            ResultSet resultSet = connection.createStatement().executeQuery(
+                    "SELECT username FROM users INNER JOIN available_assistants ON available_assistants.assistant_id = users.id;");
+            while(resultSet.next()) {
+                assistants.add(resultSet.getString("username"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return assistants;
+    }
+
+    /**
+     * Получает имена игроков команды
+     * @param teamId Id команды
+     * @return Имена игроков команды
+     */
+    public List<String> getTeamPlayersNames(int teamId) {
+        List<String> playersNames = new ArrayList<>();
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                    SELECT u.username as username FROM users as u
+                    INNER JOIN live_games_players as lgp ON lgp.team_id = ? AND u.id = lgp.player_id;""");
+            preparedStatement.setInt(1, teamId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()) {
+                playersNames.add(resultSet.getString("username"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return playersNames;
     }
 
     /**
@@ -57,13 +94,10 @@ public class Database {
      */
     public int getUserId(String discordId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM users WHERE discord_id = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM users WHERE discord_id = ?;");
             preparedStatement.setString(1, discordId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt(1);
             }
@@ -80,13 +114,10 @@ public class Database {
      */
     public String getUserDiscordId(int userId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT discord_id FROM users WHERE id = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE id = ?;");
             preparedStatement.setInt(1, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getString("discord_id");
             }
@@ -103,16 +134,13 @@ public class Database {
      */
     public UserAccount getUserIdAndDiscordId(String username) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id, discord_id FROM users WHERE username LIKE ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT id, discord_id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
-            ResultSet resultSet = preparedStatement.executeQuery();
             
-
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 UserAccount userAccount = new UserAccount(resultSet.getInt(1));
-                userAccount.setDiscordId(resultSet.getString("discord_id"));
+                userAccount.discordId = resultSet.getString("discord_id");
                 return userAccount;
             }
         } catch (SQLException e) {
@@ -128,13 +156,10 @@ public class Database {
      */
     public int getUserIdByUsername(String username) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM users WHERE username LIKE ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
-            ResultSet resultSet = preparedStatement.executeQuery();
             
-
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt(1);
             }
@@ -151,13 +176,10 @@ public class Database {
      */
     public String getUserName(int userId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT username FROM users WHERE id = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT username FROM users WHERE id = ?;");
             preparedStatement.setInt(1, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
             
-
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getString("username");
             }
@@ -174,16 +196,13 @@ public class Database {
      */
     public int getUserTeamId(int userId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id team_id FROM teams WHERE leader_id = ? AND is_deleted IS NULL " +
-                            "UNION SELECT team_id FROM teams_members WHERE member_id = ?;"
-            );
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                SELECT id team_id FROM teams WHERE leader_id = ? AND is_deleted IS NULL
+                UNION SELECT team_id FROM teams_members WHERE member_id = ?;""");
             preparedStatement.setInt(1, userId);
             preparedStatement.setInt(2, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
             
-
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt("team_id");
             }
@@ -200,13 +219,10 @@ public class Database {
      */
     public int getTeamId(String teamName) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM teams WHERE name LIKE ? AND is_deleted is null;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM teams WHERE name LIKE ? AND is_deleted is null;");
             preparedStatement.setString(1, teamName);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt(1);
             }
@@ -216,15 +232,17 @@ public class Database {
         return -1;
     }
 
+    /**
+     * Получает количество очков команды
+     * @param teamId Id команды
+     * @return Количество очков команды
+     */
     public int getTeamPoints(int teamId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT points FROM teams WHERE id = ? AND is_deleted is null;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT points FROM teams WHERE id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt("points");
             }
@@ -241,13 +259,10 @@ public class Database {
      */
     public String getTeamName(int teamId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT name FROM teams WHERE id = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT name FROM teams WHERE id = ?;");
             preparedStatement.setInt(1, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getString("name");
             }
@@ -264,13 +279,10 @@ public class Database {
      */
     public boolean isUserTeamLeader(int userId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND is_deleted is null);");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND is_deleted is null);");
             preparedStatement.setInt(1, userId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getBoolean(1);
             }
@@ -288,14 +300,12 @@ public class Database {
      */
     public boolean isUserTeamLeader(int userId, int teamId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND id = ? AND is_deleted is null);");
             preparedStatement.setInt(1, userId);
             preparedStatement.setInt(2, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getBoolean(1);
             }
@@ -314,14 +324,12 @@ public class Database {
      */
     public boolean isUserTeamMember(int userId, int teamId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT EXISTS(SELECT 1 FROM teams_members WHERE member_id = ? AND team_id = ?);");
             preparedStatement.setInt(1, userId);
             preparedStatement.setInt(2, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getBoolean(1);
             }
@@ -338,13 +346,11 @@ public class Database {
      */
     public int getTeamIdByExactName(String teamName) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT id FROM teams WHERE name = ? AND is_deleted is null;");
             preparedStatement.setString(1, teamName);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt(1);
             }
@@ -361,13 +367,11 @@ public class Database {
      */
     public Team getLeaderTeam(int leaderId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT id, name FROM teams WHERE leader_id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, leaderId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 Team team = new Team(resultSet.getInt(1));
                 team.name = resultSet.getString("name");
@@ -386,13 +390,11 @@ public class Database {
      */
     public Team getMemberTeam(int memberId) {
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT id, name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
             preparedStatement.setInt(1, memberId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            
 
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 Team team = new Team(resultSet.getInt(1));
                 team.name = resultSet.getString("name");
@@ -411,15 +413,14 @@ public class Database {
      */
     public String setReady(int assistantId) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "INSERT INTO available_assistants (assistant_id) SELECT ? " +
-                            "WHERE NOT EXISTS (SELECT assistant_id FROM available_assistants WHERE assistant_id = ?)", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                INSERT INTO available_assistants (assistant_id) SELECT ?
+                WHERE NOT EXISTS (SELECT assistant_id FROM available_assistants WHERE assistant_id = ?)""", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, assistantId);
             preparedStatement.setInt(2, assistantId);
             preparedStatement.executeUpdate();
-            ResultSet resultSet = preparedStatement.getGeneratedKeys();
-            
 
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
             if(resultSet.next()) {
                 // Вернуть значение, что помощник успешно добавлен в таблицу доступных помощников
                 return null;
@@ -443,25 +444,11 @@ public class Database {
                     "DELETE FROM available_assistants WHERE assistant_id = ?;");
             preparedStatement.setInt(1, assistantId);
             preparedStatement.executeUpdate();
-
             return null;
         } catch (SQLException e) {
             e.printStackTrace();
             return "Критическая ошибка при удалении из таблицы доступных помощников! Свяжитесь с разработчиком бота!";
         }
-    }
-
-    /**
-     * Получает названий игроков команды
-     * @param teamPlayersId Список игроков по id
-     * @return Список названий игроков команды
-     */
-    public List<String> getTeamPlayersNames(List<Integer> teamPlayersId) {
-        List<String> teamPlayersNames = new ArrayList<>();
-        for(int userId : teamPlayersId) {
-            teamPlayersNames.add(MTHD.getInstance().database.getUserName(userId));
-        }
-        return teamPlayersNames;
     }
 
     /**

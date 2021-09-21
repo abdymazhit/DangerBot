@@ -21,7 +21,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -82,13 +82,14 @@ public class Utils {
     public MessageEmbed getAuthInfoMessageEmbed(String username, String level, String percent, String rank) {
         embedBuilder.setColor(3092790);
         embedBuilder.setTitle("Успешная авторизация!");
-        String description = "**Ваш ник:** `%username%`\n" +
-                "**Уровень:** `%level% [%percent%%]`\n" +
-                "**Статус:** `%rank%`";
-        description = description.replace("%username%", username)
-                .replace("%level%", level)
-                .replace("%percent%", String.valueOf((int) (Double.parseDouble(percent) * 100)))
-                .replace("%rank%", rank);
+        String description = """
+            **Ваш ник:** `%username%`
+            **Уровень:** `%level% [%percent%%]`
+            **Статус:** `%rank%`"""
+            .replace("%username%", username)
+            .replace("%level%", level)
+            .replace("%percent%", String.valueOf((int) (Double.parseDouble(percent) * 100)))
+            .replace("%rank%", rank);
         embedBuilder.setDescription(description);
         embedBuilder.setThumbnail("http://skin.vimeworld.ru/helm/3d/" + username +".png");
         embedBuilder.setTimestamp(new Date().toInstant());
@@ -108,67 +109,67 @@ public class Utils {
         StringBuilder membersString = new StringBuilder();
         StringBuilder members2String = new StringBuilder();
 
-        if(team.leader.isVimeOnline()) {
+        if(team.leader.isVimeOnline) {
             membersString.append("<:emote:884826184729366538> ");
         } else {
             membersString.append("<:emote:884826184641294346> ");
         }
 
-        if(team.leader.isDiscordOnline()) {
+        if(team.leader.isDiscordOnline) {
             membersString.append("<:emote:884825784857010196> ");
         } else {
             membersString.append("<:emote:884825362863910962> ");
         }
-        membersString.append("`").append(team.leader.getUsername()).append("`").append("\n");
+        membersString.append("`").append(team.leader.username).append("`").append("\n");
 
         if(team.members.size() > 7) {
             for(int i = 0; i < 7; i++) {
                 UserAccount user = team.members.get(i);
 
-                if(user.isVimeOnline()) {
+                if(user.isVimeOnline) {
                     membersString.append("<:emote:884826184729366538> ");
                 } else {
                     membersString.append("<:emote:884826184641294346> ");
                 }
 
-                if(user.isDiscordOnline()) {
+                if(user.isDiscordOnline) {
                     membersString.append("<:emote:884825784857010196> ");
                 } else {
                     membersString.append("<:emote:884825362863910962> ");
                 }
-                membersString.append("`").append(user.getUsername()).append("`").append("\n");
+                membersString.append("`").append(user.username).append("`").append("\n");
             }
 
             for(int i = 7; i < team.members.size(); i++) {
                 UserAccount user = team.members.get(i);
 
-                if(user.isVimeOnline()) {
+                if(user.isVimeOnline) {
                     members2String.append("<:emote:884826184729366538> ");
                 } else {
                     members2String.append("<:emote:884826184641294346> ");
                 }
 
-                if(user.isDiscordOnline()) {
+                if(user.isDiscordOnline) {
                     members2String.append("<:emote:884825784857010196> ");
                 } else {
                     members2String.append("<:emote:884825362863910962> ");
                 }
-                members2String.append("`").append(user.getUsername()).append("`").append("\n");
+                members2String.append("`").append(user.username).append("`").append("\n");
             }
         } else {
             for(UserAccount user : team.members) {
-                if(user.isVimeOnline()) {
+                if(user.isVimeOnline) {
                     membersString.append("<:emote:884826184729366538> ");
                 } else {
                     membersString.append("<:emote:884826184641294346> ");
                 }
 
-                if(user.isDiscordOnline()) {
+                if(user.isDiscordOnline) {
                     membersString.append("<:emote:884825784857010196> ");
                 } else {
                     membersString.append("<:emote:884825362863910962> ");
                 }
-                membersString.append("`").append(user.getUsername()).append("`").append("\n");
+                membersString.append("`").append(user.username).append("`").append("\n");
             }
         }
 
@@ -180,28 +181,30 @@ public class Utils {
             embedBuilder.addField("Игроки", ">>> " + members2String, false);
         }
 
-        String rating = ">>> ```\n" +
-                "%points%\n" +
-                "```";
-        rating = rating.replace("%points%", String.valueOf(team.points));
+        String rating = """
+            >>> ```
+            %points%
+            ```"""
+            .replace("%points%", String.valueOf(team.points));
         embedBuilder.addField("Рейтинг", rating, true);
 
-        String wins = ">>> ```\n" +
-                "%wins%\n" +
-                "```";
-        wins = wins.replace("%wins%", String.valueOf(team.wins));
+        String wins = """
+            >>> ```
+            %wins%
+            ```"""
+            .replace("%wins%", String.valueOf(team.wins));
         embedBuilder.addField("Побед", wins, true);
 
         String games = ">>> ```\n" +
                 "%games%\n" +
-                "```";
-        games = games.replace("%games%", String.valueOf(team.games));
+                "```".replace("%games%", String.valueOf(team.games));
         embedBuilder.addField("Всего игр", games, true);
 
-        String name = "```\n" +
-                "\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%team_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\n" +
-                "```";
-        name = name.replace("%team_name%", team.name);
+        String name = """
+            ```
+            \040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%team_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040
+            ```"""
+            .replace("%team_name%", team.name);
         embedBuilder.setDescription(name);
 
         MessageEmbed messageEmbed = embedBuilder.build();

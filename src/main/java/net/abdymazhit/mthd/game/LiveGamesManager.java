@@ -3,10 +3,10 @@ package net.abdymazhit.mthd.game;
 import com.google.gson.*;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Game;
-import net.abdymazhit.mthd.customs.latestgame.LatestGame;
-import net.abdymazhit.mthd.customs.match.Match;
-import net.abdymazhit.mthd.customs.match.Player;
-import net.abdymazhit.mthd.customs.match.Team;
+import net.abdymazhit.mthd.customs.serialization.LatestGame;
+import net.abdymazhit.mthd.customs.serialization.Match;
+import net.abdymazhit.mthd.customs.serialization.Player;
+import net.abdymazhit.mthd.customs.serialization.Team;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   20.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -115,7 +115,6 @@ public class LiveGamesManager {
 
         List<Game> games = new ArrayList<>(liveGames);
         for(Game liveGame : games) {
-            System.out.println(123);
             boolean hasFirstTeamPlayer = false;
             boolean hasSecondTeamPlayer = false;
 
@@ -187,11 +186,15 @@ public class LiveGamesManager {
     private int getTeamRating(int currentTeamPoints, int enemyPoints, boolean isWinner) {
         double pow = Math.pow(10, (enemyPoints - currentTeamPoints) / 400.0);
         double expectedScore = (1 / (1 + pow));
+        double addValue;
         if(isWinner) {
-            return (int) (currentTeamPoints + (20 * (1 - expectedScore)));
+            addValue = (20 * (1 - expectedScore));
+            addValue += addValue * 0.33;
         } else {
-            return (int) (currentTeamPoints + (20 * (0 - expectedScore)));
+            addValue = (20 * (0 - expectedScore));
+            addValue -= addValue * 0.33;
         }
+        return (int) (currentTeamPoints + addValue);
     }
 
     private void cancelChecking() {

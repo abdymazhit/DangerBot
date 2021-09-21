@@ -15,7 +15,7 @@ import java.sql.*;
 /**
  * Команда выбора игроков на игру
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -87,7 +87,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                int playerTeamId = MTHD.getInstance().database.getUserTeamId(playerAccount.getId());
+                int playerTeamId = MTHD.getInstance().database.getUserTeamId(playerAccount.id);
                 if(playerTeamId < 0) {
                     message.reply("Ошибка! Игрок не является участником или лидером какой-либо команды!").queue();
                     return;
@@ -129,7 +129,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                String errorMessage = addPlayerToGame(playerTeamId, playerAccount.getId());
+                String errorMessage = addPlayerToGame(playerTeamId, playerAccount.id);
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();
                     return;
@@ -181,7 +181,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                int playerTeamId = MTHD.getInstance().database.getUserTeamId(playerAccount.getId());
+                int playerTeamId = MTHD.getInstance().database.getUserTeamId(playerAccount.id);
                 if(playerTeamId < 0) {
                     message.reply("Ошибка! Игрок не является участником или лидером какой-либо команды!").queue();
                     return;
@@ -197,7 +197,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                String errorMessage = removePlayerFromGame(playerTeamId, playerAccount.getId());
+                String errorMessage = removePlayerFromGame(playerTeamId, playerAccount.id);
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();
                     return;

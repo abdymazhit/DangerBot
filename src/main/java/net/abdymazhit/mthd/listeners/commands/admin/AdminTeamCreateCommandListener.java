@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * Администраторская команда создания команды
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -69,7 +69,7 @@ public class AdminTeamCreateCommandListener {
             return;
         }
 
-        int leaderTeamId = MTHD.getInstance().database.getUserTeamId(leaderAccount.getId());
+        int leaderTeamId = MTHD.getInstance().database.getUserTeamId(leaderAccount.id);
         if(leaderTeamId > 0) {
             message.reply("Ошибка! Лидер уже состоит в команде!").queue();
             return;
@@ -82,7 +82,7 @@ public class AdminTeamCreateCommandListener {
             return;
         }
 
-        String errorMessage = createTeam(teamName, leaderAccount.getId(), creatorId);
+        String errorMessage = createTeam(teamName, leaderAccount.id, creatorId);
         if(errorMessage != null) {
             message.reply(errorMessage).queue();
             return;
@@ -90,18 +90,15 @@ public class AdminTeamCreateCommandListener {
 
         MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
                 .setColor(10070709).queue(role -> {
-                    if(leaderAccount.getDiscordId() != null) {
-                        MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), role).queue();
-                        message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
-                                + leaderName + ", роль команды: " + role.getAsMention()).queue();
-                    } else {
-                        message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
-                                + leaderName + ", роль команды: " + role.getAsMention()).queue();
+                    if(leaderAccount.discordId != null) {
+                        MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, role).queue();
                     }
-                });
+            message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
+                    + leaderName + ", роль команды: " + role.getAsMention()).queue();
+        });
 
-        if(leaderAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.addRoleToMember(leaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        if(leaderAccount.discordId != null) {
+            MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, UserRole.LEADER.getRole()).queue();
         }
 
         MTHD.getInstance().teamsChannel.updateTopMessage();

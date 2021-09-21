@@ -17,7 +17,7 @@ import java.time.Instant;
 /**
  * Команда передать права лидера
  *
- * @version   18.09.2021
+ * @version   21.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener {
@@ -73,13 +73,13 @@ public class TeamTransferCommandListener {
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.getId(), team.id);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.id, team.id);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Новый лидер команды в настоящий момент не является участником этой команды!").queue();
             return;
         }
 
-        boolean isTransferred = transferLeader(team.id, changerId, newLeaderAccount.getId(), changerId);
+        boolean isTransferred = transferLeader(team.id, changerId, newLeaderAccount.id, changerId);
         if(!isTransferred) {
             message.reply("Критическая ошибка при передачи прав лидера! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -88,9 +88,9 @@ public class TeamTransferCommandListener {
         MTHD.getInstance().guild.removeRoleFromMember(changer.getId(), UserRole.LEADER.getRole()).queue();
         MTHD.getInstance().guild.addRoleToMember(changer.getId(), UserRole.MEMBER.getRole()).queue();
 
-        if(newLeaderAccount.getDiscordId() != null) {
-            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.getDiscordId(), UserRole.MEMBER.getRole()).queue();
-            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.getDiscordId(), UserRole.LEADER.getRole()).queue();
+        if(newLeaderAccount.discordId != null) {
+            MTHD.getInstance().guild.removeRoleFromMember(newLeaderAccount.discordId, UserRole.MEMBER.getRole()).queue();
+            MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.discordId, UserRole.LEADER.getRole()).queue();
         }
 
         message.reply("Вы успешно передали права лидера! Новый лидер команды: " + newLeaderName).queue();
