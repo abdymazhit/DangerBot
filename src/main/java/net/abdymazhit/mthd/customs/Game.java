@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Представляет собой игру
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -106,7 +106,7 @@ public class Game {
      * @param startedAt Время начала матча
      */
     public Game(int id, int firstTeamId, int firstTeamStarterId,  int secondTeamId, int secondTeamStarterId, String format,
-                GameMap gameMap, GameState gameState, int assistantId, Timestamp startedAt) {
+        GameMap gameMap, GameState gameState, int assistantId, Timestamp startedAt) {
         this.id = id;
         this.firstTeamId = firstTeamId;
         this.firstTeamStarterId = firstTeamStarterId;
@@ -128,7 +128,7 @@ public class Game {
      * @param secondTeamStarterId Id начавшего второй команды
      */
     public Game(int id, int firstTeamId, int firstTeamStarterId, int secondTeamId,
-                int secondTeamStarterId, String format, int assistantId) {
+        int secondTeamStarterId, String format, int assistantId) {
         this.id = id;
         this.firstTeamId = firstTeamId;
         this.firstTeamStarterId = firstTeamStarterId;
@@ -168,7 +168,7 @@ public class Game {
         }
 
         String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
-                "?token=" + MTHD.getInstance().config.vimeApiToken);
+                                                              "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -196,7 +196,7 @@ public class Game {
         }
 
         String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
-                "?token=" + MTHD.getInstance().config.vimeApiToken);
+                                                              "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();

@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Канал поиска игры
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameChannel extends Channel {
@@ -43,15 +43,15 @@ public class FindGameChannel extends Channel {
         }
 
         category.createTextChannel("find-game").setPosition(2)
-                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-        .queue(textChannel -> {
-            channelId = textChannel.getId();
-            updateTeamsInGameSearchCountMessage();
-            updateAvailableAssistantsMessage();
-        });
+            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .queue(textChannel -> {
+                channelId = textChannel.getId();
+                updateTeamsInGameSearchCountMessage();
+                updateAvailableAssistantsMessage();
+            });
     }
 
     /**
@@ -81,8 +81,8 @@ public class FindGameChannel extends Channel {
 
             Выйти из поиска игры
             `!find leave`"""
-                .replace("%teams4x2Count%", String.valueOf(count4x2))
-                .replace("%teams6x2Count%", String.valueOf(count6x2)));
+            .replace("%teams4x2Count%", String.valueOf(count4x2))
+            .replace("%teams6x2Count%", String.valueOf(count6x2)));
         if(channelMessageId == null) {
             textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         } else {

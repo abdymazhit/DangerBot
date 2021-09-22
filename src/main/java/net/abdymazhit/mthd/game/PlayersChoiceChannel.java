@@ -17,7 +17,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 /**
  * Канал выбора игроков на игру
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -75,7 +75,7 @@ public class PlayersChoiceChannel extends Channel {
                                 boolean isCancelling = false;
 
                                 if(gameCategory.game.format.equals("4x2")) {
-                                    if(gameCategory.game.firstTeamPlayers.size() < 1 || gameCategory.game.secondTeamPlayers.size() < 1) {
+                                    if(gameCategory.game.firstTeamPlayers.size() < 4 || gameCategory.game.secondTeamPlayers.size() < 4) {
                                         isCancelling = true;
                                     }
                                 } else if(gameCategory.game.format.equals("6x2")) {
@@ -97,7 +97,6 @@ public class PlayersChoiceChannel extends Channel {
                                 } else {
                                     gameCategory.setGameState(GameState.MAP_CHOICE);
                                     textChannel.sendMessage("Игроки успешно выбраны для игры. Переход к выбору карт...").queue();
-                                    MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
                                     new Timer().schedule(new TimerTask() {
                                         @Override
                                         public void run() {

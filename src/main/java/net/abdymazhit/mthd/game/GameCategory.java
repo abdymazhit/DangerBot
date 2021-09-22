@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategory {
@@ -53,19 +53,24 @@ public class GameCategory {
         this.game = game;
 
         MTHD.getInstance().guild.createCategory("Game-" + game.id)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-        .queue(category -> {
-            categoryId = category.getId();
-            getTeamRoles(game.firstTeamName, game.secondTeamName);
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .queue(category -> {
+                categoryId = category.getId();
+                getTeamRoles(game.firstTeamName, game.secondTeamName);
 
-            createChatChannel();
-            createFirstTeamVoiceChannel();
-            createSecondTeamVoiceChannel();
+                createChatChannel();
+                createFirstTeamVoiceChannel();
+                createSecondTeamVoiceChannel();
 
-            createPlayersChoiceChannel();
-        });
+                createPlayersChoiceChannel();
+            });
     }
 
+    /**
+     * Инициализирует категорию игры
+     * @param game Игра
+     * @param category Категория
+     */
     public GameCategory(Game game, Category category) {
         game.getData();
         this.game = game;
@@ -73,23 +78,26 @@ public class GameCategory {
 
         getTeamRoles(game.firstTeamName, game.secondTeamName);
 
-        if(game.gameState.equals(GameState.PLAYERS_CHOICE)) {
-            for(TextChannel textChannel : category.getTextChannels()) {
-                if(textChannel.getName().equals("players-choice")) {
-                    textChannel.delete().queue();
-                    break;
-                }
+        for(TextChannel textChannel : category.getTextChannels()) {
+            if(textChannel.getName().equals("players-choice")) {
+                textChannel.delete().queue();
+            } else if(textChannel.getName().equals("map-choice")) {
+                textChannel.delete().queue();
+            } else if(textChannel.getName().equals("game")) {
+                textChannel.delete().queue();
             }
+        }
 
+        if(game.gameState.equals(GameState.PLAYERS_CHOICE)) {
             try {
                 Connection connection = MTHD.getInstance().database.getConnection();
                 PreparedStatement firstTeamStatement = connection.prepareStatement(
-                        "DELETE FROM live_games_players WHERE team_id = ?;");
+                    "DELETE FROM live_games_players WHERE team_id = ?;");
                 firstTeamStatement.setInt(1, game.firstTeamId);
                 firstTeamStatement.executeUpdate();
 
                 PreparedStatement secondTeamStatement = connection.prepareStatement(
-                        "DELETE FROM live_games_players WHERE team_id = ?;");
+                    "DELETE FROM live_games_players WHERE team_id = ?;");
                 secondTeamStatement.setInt(1, game.secondTeamId);
                 secondTeamStatement.executeUpdate();
             } catch (SQLException e) {
@@ -98,26 +106,9 @@ public class GameCategory {
 
             createPlayersChoiceChannel();
         } else if(game.gameState.equals(GameState.MAP_CHOICE)) {
-            for(TextChannel textChannel : category.getTextChannels()) {
-                if(textChannel.getName().equals("map-choice")) {
-                    textChannel.delete().queue();
-                    break;
-                }
-            }
-
             createMapsChoiceChannel();
-        } else if(game.gameState.equals(GameState.GAME_CREATION)) {
-            for(TextChannel textChannel : category.getTextChannels()) {
-                if(textChannel.getName().equals("game")) {
-                    textChannel.delete().queue();
-                    break;
-                }
-            }
-
+        } else if(game.gameState.equals(GameState.GAME_CREATION) || game.gameState.equals(GameState.GAME)) {
             createGameChannel();
-        } else if(game.gameState.equals(GameState.GAME)) {
-            MTHD.getInstance().liveGamesManager.addLiveGame(game);
-            gameChannel = new GameChannel(this, true);
         }
     }
 
@@ -179,6 +170,11 @@ public class GameCategory {
      */
     private void deleteMapChoiceChannel() {
         if(mapChoiceChannel != null) {
+            if(mapChoiceChannel.timer != null) {
+                mapChoiceChannel.timer.cancel();
+                mapChoiceChannel.timer = null;
+            }
+
             TextChannel channel = MTHD.getInstance().guild.getTextChannelById(mapChoiceChannel.channelId);
             if(channel != null) {
                 channel.delete().queue();
@@ -192,7 +188,7 @@ public class GameCategory {
      */
     public void createGameChannel() {
         deleteMapChoiceChannel();
-        gameChannel = new GameChannel(this, false);
+        gameChannel = new GameChannel(this);
     }
 
     /**
@@ -202,10 +198,10 @@ public class GameCategory {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
         if(category != null) {
             category.createTextChannel("chat").setPosition(0)
-                    .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue();
+                .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue();
         }
     }
 
@@ -216,10 +212,10 @@ public class GameCategory {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
         if(category != null) {
             category.createVoiceChannel(firstTeamRole.getName()).setPosition(2)
-                    .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue();
+                .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue();
         }
     }
 
@@ -230,10 +226,10 @@ public class GameCategory {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
         if(category != null) {
             category.createVoiceChannel(secondTeamRole.getName()).setPosition(3)
-                    .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue();
+                .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue();
         }
     }
 
@@ -246,10 +242,11 @@ public class GameCategory {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "UPDATE live_games SET game_state = ? WHERE id = ?;");
+                "UPDATE live_games SET game_state = ? WHERE id = ?;");
             preparedStatement.setInt(1, gameState.getId());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();
+            MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -260,10 +257,11 @@ public class GameCategory {
      * @param gameMap Выбранная карта
      */
     public void setGameMap(GameMap gameMap) {
+        game.gameMap = gameMap;
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "UPDATE live_games SET map_name = ? WHERE id = ?;");
+                "UPDATE live_games SET map_name = ? WHERE id = ?;");
             preparedStatement.setString(1, gameMap.getName());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();

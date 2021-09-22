@@ -3,7 +3,7 @@ package net.abdymazhit.mthd.customs;
 /**
  * Представляет собой файл конфигурации
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class Config {
@@ -19,7 +19,7 @@ public class Config {
 
     /** Параметры базы данных */
     public static class MySQL {
-        public String url = "jdbc:mysql://host:port/database";
+        public String url = "jdbc:mysql://host:port/database?autoReconnect=true&enabledTLSProtocols=TLSv1.2";
         public String username = "username";
         public String password = "password";
     }

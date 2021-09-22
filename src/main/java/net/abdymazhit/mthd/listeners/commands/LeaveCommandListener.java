@@ -15,7 +15,7 @@ import java.sql.SQLException;
 /**
  * Команда выхода
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class LeaveCommandListener extends ListenerAdapter {
@@ -28,17 +28,17 @@ public class LeaveCommandListener extends ListenerAdapter {
         MessageChannel messageChannel = event.getChannel();
         Member member = event.getMember();
 
-        if (!event.getName().equals("leave")) return;
-        if (!messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) return;
-        if (member == null) return;
+        if(!event.getName().equals("leave")) return;
+        if(!messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) return;
+        if(member == null) return;
 
-        if (!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+        if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
             event.reply("Ошибка! Вы не авторизованы!").setEphemeral(true).queue();
             return;
         }
 
         boolean isDeleted = deleteUser(member.getId());
-        if (!isDeleted) {
+        if(!isDeleted) {
             event.reply("Ошибка! Попробуйте выйти позже!").setEphemeral(true).queue();
             return;
         }
@@ -60,6 +60,11 @@ public class LeaveCommandListener extends ListenerAdapter {
         event.reply("Вы успешно вышли с аккаунта!").setEphemeral(true).queue();
     }
 
+    /**
+     * Удаляет пользователя
+     * @param discordId Id дискорда
+     * @return Значение, удален ли пользователь
+     */
     private boolean deleteUser(String discordId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
@@ -67,11 +72,10 @@ public class LeaveCommandListener extends ListenerAdapter {
             statement.setString(1, discordId);
             statement.executeUpdate();
 
+            // Вернуть значение, что пользователь успешно удален
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
-
-            // Вернуть значение, что произошла ошибка
             return false;
         }
     }

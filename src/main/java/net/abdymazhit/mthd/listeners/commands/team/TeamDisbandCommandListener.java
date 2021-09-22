@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Команда удалить команду
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamDisbandCommandListener {
@@ -82,49 +82,44 @@ public class TeamDisbandCommandListener {
      * @param deleterId Id удаляющего
      * @return Текст ошибки удаления команды
      */
-    private String disbandTeam(int teamId, int deleterId) {
+    public String disbandTeam(int teamId, int deleterId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                    "UPDATE teams SET is_deleted = true WHERE id = ?;");
+                "UPDATE teams SET is_deleted = true WHERE id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.executeUpdate();
 
-            PreparedStatement selectLeaderStatement = connection.prepareStatement("SELECT leader_id FROM teams WHERE id = ?;");
+            PreparedStatement selectLeaderStatement = connection.prepareStatement(
+                "SELECT discord_id FROM users WHERE id = (SELECT leader_id FROM teams WHERE id = ?);");
             selectLeaderStatement.setInt(1, teamId);
-            ResultSet selectLeaderResultSet = selectLeaderStatement.executeQuery();
-            if(selectLeaderResultSet.next()) {
-                int leaderId = selectLeaderResultSet.getInt("leader_id");
-
-                PreparedStatement leaderStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE id = ?;");
-                leaderStatement.setInt(1, leaderId);
-                ResultSet leaderResultSet = leaderStatement.executeQuery();
-                if(leaderResultSet.next()) {
-                    MTHD.getInstance().guild.removeRoleFromMember(leaderResultSet.getString("discord_id"), UserRole.LEADER.getRole()).queue();
+            ResultSet leaderResultSet = selectLeaderStatement.executeQuery();
+            if(leaderResultSet.next()) {
+                String leaderDiscordId = leaderResultSet.getString("discord_id");
+                if(leaderDiscordId != null) {
+                    MTHD.getInstance().guild.removeRoleFromMember(leaderDiscordId, UserRole.LEADER.getRole()).queue();
                 }
             }
 
-            PreparedStatement selectMemberStatement = connection.prepareStatement("SELECT member_id FROM teams_members WHERE team_id = ?;");
+            PreparedStatement selectMemberStatement = connection.prepareStatement("""
+                    SELECT u.discord_id as discord_id FROM users as u
+                    INNER JOIN teams_members as tm ON tm.team_id = ? AND u.id = tm.member_id;""");
             selectMemberStatement.setInt(1, teamId);
             ResultSet selectMemberResultSet = selectMemberStatement.executeQuery();
-            if(selectMemberResultSet.next()) {
-                int memberId = selectMemberResultSet.getInt("member_id");
-
-                PreparedStatement memberStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE id = ?;");
-                memberStatement.setInt(1, memberId);
-                ResultSet memberResultSet = memberStatement.executeQuery();
-                if(memberResultSet.next()) {
-                    MTHD.getInstance().guild.removeRoleFromMember(memberResultSet.getString("discord_id"), UserRole.MEMBER.getRole()).queue();
+            while(selectMemberResultSet.next()) {
+                String memberDiscordId = selectMemberResultSet.getString("discord_id");
+                if(memberDiscordId != null) {
+                    MTHD.getInstance().guild.removeRoleFromMember(memberDiscordId, UserRole.MEMBER.getRole()).queue();
                 }
             }
 
             PreparedStatement membersStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ?;");
+                "DELETE FROM teams_members WHERE team_id = ?;");
             membersStatement.setInt(1, teamId);
             membersStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_deletion_history (team_id, deleter_id, deleted_at) VALUES (?, ?, ?);");
+                "INSERT INTO teams_deletion_history (team_id, deleter_id, deleted_at) VALUES (?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, deleterId);
             historyStatement.setTimestamp(3, Timestamp.from(Instant.now()));

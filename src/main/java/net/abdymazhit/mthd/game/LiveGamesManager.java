@@ -16,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -42,6 +42,10 @@ public class LiveGamesManager {
         gson = new GsonBuilder().setLenient().create();
     }
 
+    /**
+     * Добавляет игру в активные игры
+     * @param game Активная игра
+     */
     public void addLiveGame(Game game) {
         if(game.firstTeamPlayersVimeId == null || game.secondTeamPlayersVimeId == null) {
             game.setFirstTeamPlayersIds();
@@ -57,6 +61,10 @@ public class LiveGamesManager {
         }
     }
 
+    /**
+     * Удаляет игру из активных игр
+     * @param game Активная игра
+     */
     public void removeLiveGame(Game game) {
         liveGames.remove(game);
         if(liveGames.isEmpty()) {
@@ -64,6 +72,9 @@ public class LiveGamesManager {
         }
     }
 
+    /**
+     * Начинает проверку результатов
+     */
     private void startChecking() {
         isStartedChecking = true;
         timer = new Timer();
@@ -73,7 +84,7 @@ public class LiveGamesManager {
                 List<LatestGame> latestGames = new ArrayList<>();
 
                 String latestGamesString = MTHD.getInstance().utils.sendGetRequest(
-                        "https://api.vimeworld.ru/match/latest?count=100&token=" + MTHD.getInstance().config.vimeApiToken);
+                    "https://api.vimeworld.ru/match/latest?count=100&token=" + MTHD.getInstance().config.vimeApiToken);
                 JsonArray infoArray = JsonParser.parseString(latestGamesString).getAsJsonArray();
                 for(JsonElement infoElement : infoArray) {
                     JsonObject infoObject = infoElement.getAsJsonObject();
@@ -107,7 +118,7 @@ public class LiveGamesManager {
      */
     public String finishMatch(String matchId) {
         String matchString = MTHD.getInstance().utils.sendGetRequest(
-                "https://api.vimeworld.ru/match/" + matchId + "?token=" + MTHD.getInstance().config.vimeApiToken);
+            "https://api.vimeworld.ru/match/" + matchId + "?token=" + MTHD.getInstance().config.vimeApiToken);
         Match match = gson.fromJson(matchString, Match.class);
         if(match == null) {
             return "Ошибка! Не удалось найти матч!";
@@ -134,43 +145,43 @@ public class LiveGamesManager {
                     if(team.getId().equals(winnerTeam)) {
                         if(liveGame.firstTeamPlayersVimeId.contains(team.getMembers().get(0))) {
                             int firstTeamRating = getTeamRating(liveGame.firstTeamPoints,
-                                    liveGame.secondTeamPoints, true);
+                                liveGame.secondTeamPoints, true);
                             int secondTeamRating = getTeamRating(liveGame.secondTeamPoints,
-                                    liveGame.firstTeamPoints, false);
+                                liveGame.firstTeamPoints, false);
 
                             MTHD.getInstance().gameManager.finishGame(liveGame, matchId,
-                                    liveGame.firstTeamId, firstTeamRating, secondTeamRating);
+                                liveGame.firstTeamId, firstTeamRating, secondTeamRating);
 
                             if(team.getBedAlive()) {
                                 MTHD.getInstance().gameManager.finishGameTeam(firstTeamRating, 1, 1,
-                                        1, 0, liveGame.firstTeamId);
+                                    1, 0, liveGame.firstTeamId);
                                 MTHD.getInstance().gameManager.finishGameTeam(secondTeamRating, 1, 0,
-                                        0, 1, liveGame.secondTeamId);
+                                    0, 1, liveGame.secondTeamId);
                             } else {
                                 MTHD.getInstance().gameManager.finishGameTeam(firstTeamRating, 1, 1,
-                                        1, 1, liveGame.firstTeamId);
+                                    1, 1, liveGame.firstTeamId);
                                 MTHD.getInstance().gameManager.finishGameTeam(secondTeamRating, 1, 0,
-                                        1, 1, liveGame.secondTeamId);
+                                    1, 1, liveGame.secondTeamId);
                             }
                         } else if(liveGame.secondTeamPlayersVimeId.contains(team.getMembers().get(0))) {
                             int firstTeamRating = getTeamRating(liveGame.firstTeamPoints,
-                                    liveGame.secondTeamPoints, false);
+                                liveGame.secondTeamPoints, false);
                             int secondTeamRating = getTeamRating(liveGame.secondTeamPoints,
-                                    liveGame.firstTeamPoints, true);
+                                liveGame.firstTeamPoints, true);
 
                             MTHD.getInstance().gameManager.finishGame(liveGame, matchId,
-                                    liveGame.secondTeamId, firstTeamRating, secondTeamRating);
+                                liveGame.secondTeamId, firstTeamRating, secondTeamRating);
 
                             if(team.getBedAlive()) {
                                 MTHD.getInstance().gameManager.finishGameTeam(secondTeamRating, 1, 1,
-                                        1, 0, liveGame.secondTeamId);
+                                    1, 0, liveGame.secondTeamId);
                                 MTHD.getInstance().gameManager.finishGameTeam(firstTeamRating, 1, 0,
-                                        0, 1, liveGame.firstTeamId);
+                                    0, 1, liveGame.firstTeamId);
                             } else {
                                 MTHD.getInstance().gameManager.finishGameTeam(secondTeamRating, 1, 1,
-                                        1, 1, liveGame.secondTeamId);
+                                    1, 1, liveGame.secondTeamId);
                                 MTHD.getInstance().gameManager.finishGameTeam(firstTeamRating, 1, 0,
-                                        1, 1, liveGame.firstTeamId);
+                                    1, 1, liveGame.firstTeamId);
                             }
                         }
 
@@ -183,6 +194,13 @@ public class LiveGamesManager {
         return null;
     }
 
+    /**
+     * Получает очки команды
+     * @param currentTeamPoints Очки текущей команды
+     * @param enemyPoints Очки враждебной команды
+     * @param isWinner Значение, является ли текущая команда победителем игры
+     * @return Очки команды
+     */
     private int getTeamRating(int currentTeamPoints, int enemyPoints, boolean isWinner) {
         double pow = Math.pow(10, (enemyPoints - currentTeamPoints) / 400.0);
         double expectedScore = (1 / (1 + pow));
@@ -197,6 +215,9 @@ public class LiveGamesManager {
         return (int) (currentTeamPoints + addValue);
     }
 
+    /**
+     * Заканчивает проверку результатов команд
+     */
     private void cancelChecking() {
         isStartedChecking = false;
         if(timer != null) {

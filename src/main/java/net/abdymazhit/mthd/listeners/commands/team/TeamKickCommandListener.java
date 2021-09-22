@@ -1,5 +1,6 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
+import java.util.List;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
@@ -9,20 +10,13 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
-
 /**
  * Команда исключить участника из команды
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
-public class TeamKickCommandListener {
+public class TeamKickCommandListener extends TeamLeaveCommandListener {
 
     /**
      * Событие получения команды
@@ -99,37 +93,5 @@ public class TeamKickCommandListener {
         }
 
         message.reply("Вы успешно выгнали участника из команды!").queue();
-    }
-
-    /**
-     * Удаляет участника из команды
-     * @param teamId Id команды
-     * @param memberId Id участника
-     * @param deleterId Id удаляющего
-     * @return Значение, удален ли участник из команды
-     */
-    private boolean deleteTeamMember(int teamId, int memberId, int deleterId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement deleteStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
-            deleteStatement.setInt(1, teamId);
-            deleteStatement.setInt(2, memberId);
-            deleteStatement.executeUpdate();
-
-            PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
-            historyStatement.setInt(1, teamId);
-            historyStatement.setInt(2, memberId);
-            historyStatement.setInt(3, deleterId);
-            historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
-            historyStatement.executeUpdate();
-
-            // Вернуть значение, что участник успешно удален
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
 }

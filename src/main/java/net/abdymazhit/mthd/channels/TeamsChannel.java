@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -44,14 +44,14 @@ public class TeamsChannel extends Channel {
         }
 
         category.createTextChannel("teams").setPosition(0)
-                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-        .queue(textChannel -> {
-            channelId = textChannel.getId();
-            updateTopMessage();
-            sendChannelMessage(textChannel);
-        });
+            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .queue(textChannel -> {
+                channelId = textChannel.getId();
+                updateTopMessage();
+                sendChannelMessage(textChannel);
+            });
     }
 
     /**

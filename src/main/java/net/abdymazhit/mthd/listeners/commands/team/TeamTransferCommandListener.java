@@ -17,7 +17,7 @@ import java.time.Instant;
 /**
  * Команда передать права лидера
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener {
@@ -104,29 +104,29 @@ public class TeamTransferCommandListener {
      * @param changerId Id изменяющего
      * @return Значение, переданы ли права лидера команды
      */
-    private boolean transferLeader(int teamId, int fromId, int toId, int changerId) {
+    public boolean transferLeader(int teamId, int fromId, int toId, int changerId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                    "UPDATE teams SET leader_id = ? WHERE id = ?;");
+                "UPDATE teams SET leader_id = ? WHERE id = ?;");
             updateStatement.setInt(1, toId);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();
 
             PreparedStatement deleteStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
+                "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, toId);
             deleteStatement.executeUpdate();
 
             PreparedStatement createStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
+                "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, fromId);
             createStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
+                "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, fromId);
             historyStatement.setInt(3, toId);

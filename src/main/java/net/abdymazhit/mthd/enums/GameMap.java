@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 /**
  * Представляет собой карту
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public enum GameMap {
@@ -104,8 +104,8 @@ public enum GameMap {
 
     public static GameMap[] values4x2() {
         return new GameMap[] { GameMap.ACTUON, GameMap.AQUARIUM, GameMap.LOCKS, GameMap.FERNIGAD, GameMap.FROKUS,
-                GameMap.JUNGLIOS, GameMap.CRIMENTIS, GameMap.KRITAZ, GameMap.AWAKENING, GameMap.TROSTER,
-                GameMap.JUNO, GameMap.ZELNES, GameMap.REKLAS};
+            GameMap.JUNGLIOS, GameMap.CRIMENTIS, GameMap.KRITAZ, GameMap.AWAKENING, GameMap.TROSTER,
+            GameMap.JUNO, GameMap.ZELNES, GameMap.REKLAS};
     }
 
     public static GameMap[] values6x2() {

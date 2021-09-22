@@ -1,5 +1,11 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
@@ -8,17 +14,10 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
-
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -117,19 +116,18 @@ public class AdminTeamAddCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement addStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
+                "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             addStatement.setInt(1, teamId);
             addStatement.setInt(2, memberId);
             addStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
+                "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, memberId);
             historyStatement.setInt(3, adderId);
             historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            
 
             // Вернуть значение, что участник успешно добавлен
             return true;

@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой команду
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
@@ -84,7 +84,7 @@ public class Team {
     private void getTeamInfo() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT name, leader_id, points, games, wins, won_beds, lost_beds FROM teams WHERE id = ?;");
+                "SELECT name, leader_id, points, games, wins, won_beds, lost_beds FROM teams WHERE id = ?;");
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
 
@@ -98,7 +98,7 @@ public class Team {
                 lost_beds = resultSet.getInt("lost_beds");
 
                 PreparedStatement membersStatement = connection.prepareStatement(
-                        "SELECT member_id FROM teams_members WHERE team_id = ?;");
+                    "SELECT member_id FROM teams_members WHERE team_id = ?;");
                 membersStatement.setInt(1, id);
                 ResultSet membersResultSet = membersStatement.executeQuery();
 
@@ -118,7 +118,7 @@ public class Team {
     public void getUsersInfo(UserAccount user) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT discord_id, username FROM users WHERE id = ?;");
+                "SELECT discord_id, username FROM users WHERE id = ?;");
             preparedStatement.setInt(1, user.id);
             ResultSet resultSet = preparedStatement.executeQuery();
 
@@ -142,7 +142,7 @@ public class Team {
         }
 
         String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
-                "?token=" + MTHD.getInstance().config.vimeApiToken);
+                                                              "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -175,7 +175,7 @@ public class Team {
         jsonArray.add(leader.vimeId);
 
         String info = MTHD.getInstance().utils.sendPostRequest("https://api.vimeworld.ru/user/session" + "?token="
-                + MTHD.getInstance().config.vimeApiToken, jsonArray);
+                                                               + MTHD.getInstance().config.vimeApiToken, jsonArray);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -204,16 +204,16 @@ public class Team {
             if(leader.discordId != null) {
                 Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.discordId).submit().get();
                 leader.isDiscordOnline = leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                        leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                        leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
+                                         leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                                         leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
             }
 
             for(UserAccount user : members) {
                 if(user.discordId != null) {
                     Member member = MTHD.getInstance().guild.retrieveMemberById(user.discordId).submit().get();
                     user.isDiscordOnline = member.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                            member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                            member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
+                                           member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                                           member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
                 }
             }
         } catch (InterruptedException | ExecutionException e) {

@@ -16,7 +16,7 @@ import net.abdymazhit.mthd.customs.UserAccount;
 /**
  * Отвечает за работу с базой данных
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -44,7 +44,7 @@ public class Database {
         System.out.println("Удочное подключение к базе данных!");
 
 //        Создать таблицы, только при необходимости
-        new DatabaseTables(connection);
+//        new DatabaseTables(connection);
     }
 
     /**
@@ -55,7 +55,7 @@ public class Database {
         List<String> assistants = new ArrayList<>();
         try {
             ResultSet resultSet = connection.createStatement().executeQuery(
-                    "SELECT username FROM users INNER JOIN available_assistants ON available_assistants.assistant_id = users.id;");
+                "SELECT username FROM users INNER JOIN available_assistants ON available_assistants.assistant_id = users.id;");
             while(resultSet.next()) {
                 assistants.add(resultSet.getString("username"));
             }
@@ -136,7 +136,7 @@ public class Database {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT id, discord_id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
-            
+
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 UserAccount userAccount = new UserAccount(resultSet.getInt(1));
@@ -158,7 +158,7 @@ public class Database {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
-            
+
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt(1);
@@ -178,7 +178,7 @@ public class Database {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT username FROM users WHERE id = ?;");
             preparedStatement.setInt(1, userId);
-            
+
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getString("username");
@@ -201,7 +201,7 @@ public class Database {
                 UNION SELECT team_id FROM teams_members WHERE member_id = ?;""");
             preparedStatement.setInt(1, userId);
             preparedStatement.setInt(2, userId);
-            
+
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 return resultSet.getInt("team_id");
@@ -301,7 +301,7 @@ public class Database {
     public boolean isUserTeamLeader(int userId, int teamId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND id = ? AND is_deleted is null);");
+                "SELECT EXISTS(SELECT 1 FROM teams WHERE leader_id = ? AND id = ? AND is_deleted is null);");
             preparedStatement.setInt(1, userId);
             preparedStatement.setInt(2, teamId);
 
@@ -325,7 +325,7 @@ public class Database {
     public boolean isUserTeamMember(int userId, int teamId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT EXISTS(SELECT 1 FROM teams_members WHERE member_id = ? AND team_id = ?);");
+                "SELECT EXISTS(SELECT 1 FROM teams_members WHERE member_id = ? AND team_id = ?);");
             preparedStatement.setInt(1, userId);
             preparedStatement.setInt(2, teamId);
 
@@ -347,7 +347,7 @@ public class Database {
     public int getTeamIdByExactName(String teamName) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id FROM teams WHERE name = ? AND is_deleted is null;");
+                "SELECT id FROM teams WHERE name = ? AND is_deleted is null;");
             preparedStatement.setString(1, teamName);
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -368,7 +368,7 @@ public class Database {
     public Team getLeaderTeam(int leaderId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id, name FROM teams WHERE leader_id = ? AND is_deleted is null;");
+                "SELECT id, name FROM teams WHERE leader_id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, leaderId);
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -391,7 +391,7 @@ public class Database {
     public Team getMemberTeam(int memberId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT id, name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
+                "SELECT id, name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
             preparedStatement.setInt(1, memberId);
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -441,7 +441,7 @@ public class Database {
     public String setUnready(int assistantId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "DELETE FROM available_assistants WHERE assistant_id = ?;");
+                "DELETE FROM available_assistants WHERE assistant_id = ?;");
             preparedStatement.setInt(1, assistantId);
             preparedStatement.executeUpdate();
             return null;

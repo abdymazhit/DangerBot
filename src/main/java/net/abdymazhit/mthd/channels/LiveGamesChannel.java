@@ -3,6 +3,10 @@ package net.abdymazhit.mthd.channels;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
 import net.abdymazhit.mthd.customs.LiveGame;
@@ -14,15 +18,10 @@ import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Канал активных игр
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesChannel extends Channel {
@@ -50,14 +49,14 @@ public class LiveGamesChannel extends Channel {
         }
 
         category.createTextChannel("live-games").setPosition(1)
-                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
-        .queue(textChannel -> {
-            channelId = textChannel.getId();
-            updateLiveGamesMessages();
-        });
+            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
+            .queue(textChannel -> {
+                channelId = textChannel.getId();
+                updateLiveGamesMessages();
+            });
     }
 
     /**
@@ -66,23 +65,29 @@ public class LiveGamesChannel extends Channel {
     public void updateLiveGamesMessages() {
         List<LiveGame> games = getLiveGames();
 
-        Map<LiveGame, String> channelLiveGamesMessages = new HashMap<>(this.channelLiveGamesMessagesId);
-        Map<LiveGame, String> liveGamesMessages = new HashMap<>(this.channelLiveGamesMessagesId);
+        Map<LiveGame, String> channelLiveGamesMessages = new HashMap<>(channelLiveGamesMessagesId);
+        Map<LiveGame, String> liveGamesMessages = new HashMap<>(channelLiveGamesMessagesId);
 
         for(LiveGame liveGame : games) {
             boolean isSent = false;
+            LiveGame neededGame = null;
 
             for(LiveGame game : channelLiveGamesMessages.keySet()) {
                 if(liveGame.id == game.id) {
                     isSent = true;
+                    neededGame = game;
                     liveGamesMessages.remove(game);
                 }
             }
 
             if(!isSent) {
-                sendLiveGamesMessage(liveGame);
+                sendLiveGamesMessage(liveGame, null);
+            } else {
+                sendLiveGamesMessage(liveGame, channelLiveGamesMessagesId.get(neededGame));
             }
         }
+
+        if(channelId == null) return;
 
         TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(textChannel == null) {
@@ -98,9 +103,12 @@ public class LiveGamesChannel extends Channel {
     }
 
     /**
-     * Отправляет информационное сообщение о активных играх
+     * Отправляет информационное сообщение о активной игре
+     * @param liveGame Активная игра
      */
-    private void sendLiveGamesMessage(LiveGame liveGame) {
+    private void sendLiveGamesMessage(LiveGame liveGame, String messageId) {
+        if(channelId == null) return;
+
         TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(textChannel == null) {
             System.out.println("Критическая ошибка! Канал live-games не существует!");
@@ -110,13 +118,18 @@ public class LiveGamesChannel extends Channel {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("""
             ```              %first_team%   vs   %second_team%              ```"""
-                .replace("%first_team%", liveGame.firstTeamName)
-                .replace("%second_team%", liveGame.secondTeamName));
+            .replace("%first_team%", liveGame.firstTeamName)
+            .replace("%second_team%", liveGame.secondTeamName));
         embedBuilder.setColor(3092790);
         embedBuilder.addField("Формат", liveGame.format, true);
         embedBuilder.addField("Помощник", liveGame.assistantName, true);
         embedBuilder.addField("Стадия игры", liveGame.gameState.getName(), true);
-        textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(liveGame, message.getId()));
+
+        if(messageId == null) {
+            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(liveGame, message.getId()));
+        } else {
+            textChannel.editMessageEmbedsById(messageId, embedBuilder.build()).queue();
+        }
         embedBuilder.clear();
     }
 

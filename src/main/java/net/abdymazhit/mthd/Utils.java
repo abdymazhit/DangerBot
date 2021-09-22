@@ -21,7 +21,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -195,9 +195,10 @@ public class Utils {
             .replace("%wins%", String.valueOf(team.wins));
         embedBuilder.addField("Побед", wins, true);
 
-        String games = ">>> ```\n" +
-                "%games%\n" +
-                "```".replace("%games%", String.valueOf(team.games));
+        String games = """
+            >>> ```
+            %games%
+            ```""".replace("%games%", String.valueOf(team.games));
         embedBuilder.addField("Всего игр", games, true);
 
         String name = """

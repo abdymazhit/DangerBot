@@ -36,7 +36,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -127,7 +127,7 @@ public class MTHD {
         gameManager = new GameManager();
 
 //        Обновить команды, только при изменении/добавлении команды
-        updateCommands();
+//        updateCommands();
 
         addEventListeners(jda);
     }
@@ -164,7 +164,7 @@ public class MTHD {
         CommandListUpdateAction commandsAction = guild.updateCommands();
 
         commandsAction = commandsAction.addCommands(new CommandData("auth", "Авторизация")
-                .addOption(OptionType.STRING, "token", "Токен авторизации", true));
+            .addOption(OptionType.STRING, "token", "Токен авторизации", true));
 
         commandsAction = commandsAction.addCommands(new CommandData("leave", "Выход с аккаунта"));
 

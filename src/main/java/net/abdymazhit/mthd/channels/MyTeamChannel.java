@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -37,14 +37,14 @@ public class MyTeamChannel extends Channel {
         }
 
         category.createTextChannel("my-team").setPosition(3)
-                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-        .queue(textChannel -> {
-            channelId = textChannel.getId();
-            sendChannelMessage(textChannel);
-        });
+            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .queue(textChannel -> {
+                channelId = textChannel.getId();
+                sendChannelMessage(textChannel);
+            });
     }
 
     /**

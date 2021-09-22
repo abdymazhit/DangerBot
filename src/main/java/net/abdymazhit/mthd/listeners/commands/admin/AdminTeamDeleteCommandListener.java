@@ -1,27 +1,22 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
+import java.util.List;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
+import net.abdymazhit.mthd.listeners.commands.team.TeamLeaveCommandListener;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
-
 /**
  * Администраторская команда удаления участника из команды
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
-public class AdminTeamDeleteCommandListener {
+public class AdminTeamDeleteCommandListener extends TeamLeaveCommandListener {
 
     /**
      * Событие получения команды
@@ -53,7 +48,7 @@ public class AdminTeamDeleteCommandListener {
             message.reply("Ошибка! У вас нет прав для этого действия!").queue();
             return;
         }
-        
+
         if(!deleter.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
             message.reply("Ошибка! Вы не авторизованы!").queue();
             return;
@@ -83,7 +78,7 @@ public class AdminTeamDeleteCommandListener {
         boolean isUserTeamLeader = MTHD.getInstance().database.isUserTeamLeader(memberAccount.id);
         if(isUserTeamLeader) {
             message.reply("Ошибка! Участник является лидером команды! " +
-                    "Для удаления участника из команды Вы сперва должны передавать права лидера другому игроку!").queue();
+                          "Для удаления участника из команды Вы сперва должны передавать права лидера другому игроку!").queue();
             return;
         }
 
@@ -111,37 +106,5 @@ public class AdminTeamDeleteCommandListener {
         }
 
         message.reply("Участник успешно удален из команды! Название команды: " + teamName + ", ник участника: " + memberName).queue();
-    }
-
-    /**
-     * Удаляет участника из команды
-     * @param teamId Id команды
-     * @param memberId Id участника
-     * @param deleterId Id удаляющего
-     * @return Значение, удален ли участник из команды
-     */
-    private boolean deleteTeamMember(int teamId, int memberId, int deleterId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement deleteStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
-            deleteStatement.setInt(1, teamId);
-            deleteStatement.setInt(2, memberId);
-            deleteStatement.executeUpdate();
-
-            PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
-            historyStatement.setInt(1, teamId);
-            historyStatement.setInt(2, memberId);
-            historyStatement.setInt(3, deleterId);
-            historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
-            historyStatement.executeUpdate();
-
-            // Вернуть значение, что участник успешно удален
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
 }

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -36,11 +36,11 @@ public class AdminChannel extends Channel {
         }
 
         category.createTextChannel("admin").setPosition(0)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-        .queue(textChannel -> {
-            channelId = textChannel.getId();
-            sendChannelMessage(textChannel);
-        });
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .queue(textChannel -> {
+                channelId = textChannel.getId();
+                sendChannelMessage(textChannel);
+            });
     }
 
     /**

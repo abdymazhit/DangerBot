@@ -7,6 +7,7 @@ import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
+import net.abdymazhit.mthd.enums.GameState;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
@@ -16,10 +17,13 @@ import net.dv8tion.jda.api.entities.TextChannel;
 /**
  * Канал игры
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
+
+    /** Категория игры */
+    private final GameCategory gameCategory;
 
     /** Сообщение отмены игры */
     public String channelGameCancelMessageId;
@@ -33,19 +37,13 @@ public class GameChannel extends Channel {
     /**
      * Инициализирует канал игры
      * @param gameCategory Категория игры
-     * @param isRebooting Значение, является ли инициализация по причине перезагрузки
      */
-    public GameChannel(GameCategory gameCategory, boolean isRebooting) {
+    public GameChannel(GameCategory gameCategory) {
+        this.gameCategory = gameCategory;
+
         Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
         if(category == null) {
             System.out.println("Критическая ошибка! Категория Game не существует!");
-            return;
-        }
-
-        if(isRebooting) {
-            for(TextChannel textChannel : category.getTextChannels()) {
-                channelId = textChannel.getId();
-            }
             return;
         }
 
@@ -66,7 +64,11 @@ public class GameChannel extends Channel {
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                 .queue(textChannel -> {
                     channelId = textChannel.getId();
-                    sendChannelMessage(gameCategory, textChannel, assistant);
+                    if(gameCategory.game.gameState.equals(GameState.GAME_CREATION)) {
+                        sendChannelMessage(gameCategory, textChannel, assistant);
+                    } else if(gameCategory.game.gameState.equals(GameState.GAME)) {
+                        sendGameStartMessage();
+                    }
                 }));
     }
 
@@ -82,7 +84,7 @@ public class GameChannel extends Channel {
             @Override
             public void run() {
                 if(time.get() <= 0) {
-                    textChannel.sendMessage("Вы не успели начать игру в течении 5 минут! Игра отменяется...")
+                    textChannel.sendMessage("Вы не успели начать игру в течении 10 минут! Игра отменяется...")
                         .queue(message -> channelGameCancelMessageId = message.getId());
                     MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
                     new Timer().schedule(new TimerTask() {
@@ -152,5 +154,46 @@ public class GameChannel extends Channel {
                 time.getAndDecrement();
             }
         }, 0, 1000);
+    }
+
+    /**
+     * Отправляет сообщение о начале игры
+     */
+    public void sendGameStartMessage() {
+        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(textChannel == null) {
+            System.out.println("Критическая ошибка! Канал game не существует!");
+            return;
+        }
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle(gameCategory.game.firstTeamName + " vs " + gameCategory.game.secondTeamName);
+        embedBuilder.setColor(3092790);
+
+        StringBuilder firstTeamPlayersStrings = new StringBuilder();
+        for(String username : gameCategory.game.firstTeamPlayers) {
+            firstTeamPlayersStrings.append("`").append(username).append("`").append("\n");
+        }
+
+        StringBuilder secondTeamPlayersStrings = new StringBuilder();
+        for(String username : gameCategory.game.secondTeamPlayers) {
+            secondTeamPlayersStrings.append("`").append(username).append("`").append("\n");
+        }
+
+        embedBuilder.addField("Команда " + gameCategory.game.firstTeamName, String.valueOf(firstTeamPlayersStrings), true);
+        embedBuilder.addField("Команда " + gameCategory.game.secondTeamName, String.valueOf(secondTeamPlayersStrings), true);
+
+        embedBuilder.addField("Отмена игры", "Данная команда доступна только для администрации. " +
+                                             "Для отмены игры введите `!cancel`", false);
+        embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча администратор " +
+                                                           "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
+        embedBuilder.addField("Помощник игры", gameCategory.game.assistantName, false);
+
+        if(channelMessageId == null) {
+            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+        } else {
+            textChannel.editMessageEmbedsById(gameCategory.gameChannel.channelMessageId, embedBuilder.build()).queue();
+        }
+        embedBuilder.clear();
     }
 }

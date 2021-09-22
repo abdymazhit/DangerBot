@@ -1,25 +1,36 @@
 package net.abdymazhit.mthd.game;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.imageio.ImageIO;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.*;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * Канал выбора карты
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -37,7 +48,10 @@ public class MapChoiceChannel extends Channel {
     public String channelMapsMessageId;
 
     /** Таймер обратного отсчета */
-    private Timer timer;
+    public Timer timer;
+
+    /** Значение, отправляется ли сообщение о доступных картах */
+    public boolean isMapsMessageSending;
 
     /** Время каждого раунда бана */
     private static final int roundTime = 20;
@@ -49,6 +63,7 @@ public class MapChoiceChannel extends Channel {
     public MapChoiceChannel(GameCategory gameCategory) {
         this.gameCategory = gameCategory;
         gameMaps = new ArrayList<>();
+        isMapsMessageSending = true;
 
         Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
         if(category == null) {
@@ -189,61 +204,118 @@ public class MapChoiceChannel extends Channel {
      * @param file Файл изображения
      */
     private void createCountdownTask(TextChannel textChannel, File file) {
-        AtomicInteger time =  new AtomicInteger(roundTime);
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if(gameMaps.size() == 1) {
-                    if(time.get() <= 0) {
-                        gameCategory.createGameChannel();
+        if(gameMaps.size() == 1) {
+            gameCategory.setGameState(GameState.GAME_CREATION);
+            gameCategory.setGameMap(gameMaps.get(0));
+
+            isMapsMessageSending = true;
+            textChannel.editMessageById(channelMapsMessageId, """
+                    Карта игры успешно выбрана! Название карты: %map_name%. Переход к созданию игры..."""
+                .replace("%map_name%", gameMaps.get(0).getName()))
+                .retainFiles(new ArrayList<>()).addFile(file).queue(message -> {
+                    isMapsMessageSending = false;
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            gameCategory.createGameChannel();
+                        }
+                    }, 7000);
+                });
+        } else {
+            if(timer != null) {
+                timer.cancel();
+                timer = null;
+            }
+
+            AtomicBoolean canStart = new AtomicBoolean(false);
+            if(channelMapsMessageId == null) {
+                isMapsMessageSending = true;
+                textChannel.sendMessageEmbeds(getBanPickMessage(roundTime))
+                    .addFile(file).queue(message -> {
+                    channelMapsMessageId = message.getId();
+                    isMapsMessageSending = false;
+                    canStart.set(true);
+                });
+            } else {
+                isMapsMessageSending = true;
+                textChannel.editMessageEmbedsById(channelMapsMessageId, getBanPickMessage(roundTime))
+                    .retainFiles(new ArrayList<>()).addFile(file).queue(message -> {
+                    isMapsMessageSending = false;
+                    canStart.set(true);
+                });
+            }
+
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if(canStart.get()) {
+                        AtomicInteger time =  new AtomicInteger(roundTime);
+                        timer = new Timer();
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                if(time.get() % 2 == 0) {
+                                    textChannel.editMessageEmbedsById(channelMapsMessageId, getBanPickMessage(time.get())).queue();
+                                }
+
+                                if(time.get() <= 0) {
+                                    banMap(gameMaps.get(new Random().nextInt(gameMaps.size())));
+                                    cancel();
+                                }
+                                time.getAndDecrement();
+                            }
+                        }, 0, 1000);
                         cancel();
                     }
-
-                    if(time.get() == roundTime) {
-                        gameCategory.setGameState(GameState.GAME_CREATION);
-                        gameCategory.setGameMap(gameMaps.get(0));
-                        gameCategory.game.gameMap = gameMaps.get(0);
-
-                        textChannel.editMessageById(channelMapsMessageId, """
-                            Карта игры успешно выбрана! Название карты: %map_name%. Переход к созданию игры..."""
-                            .replace("%map_name%", gameMaps.get(0).getName()))
-                            .retainFiles(new ArrayList<>()).addFile(file).queue();
-                        MTHD.getInstance().liveGamesChannel.updateLiveGamesMessages();
-                    }
-                } else {
-                    String mapsMessageText = """
-                        Команда %team% должна забанить карту!
-                            
-                        Оставшееся время для бана карты: `%time% сек.`"""
-                        .replace("%team%", currentBannerTeamRole.getAsMention())
-                        .replace("%time%", String.valueOf(time));
-
-                    if(channelMapsMessageId == null) {
-                        try {
-                            Message message = textChannel.sendMessage(mapsMessageText).retainFiles(new ArrayList<>()).addFile(file).submit().get();
-                            channelMapsMessageId = message.getId();
-                        } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
-                        }
-                    } else {
-                        if(time.get() <= 0) {
-                            banMap(gameMaps.get(new Random().nextInt(gameMaps.size())));
-                            cancel();
-                        }
-
-                        if(time.get() == roundTime) {
-                            textChannel.editMessageById(channelMapsMessageId, mapsMessageText)
-                                .retainFiles(new ArrayList<>()).addFile(file).queue(message -> channelMapsMessageId = message.getId());
-                        } else {
-                            if(time.get() % 2 == 0) {
-                                textChannel.editMessageById(channelMapsMessageId, mapsMessageText).queue();
-                            }
-                        }
-                    }
                 }
-                time.getAndDecrement();
+            }, 0, 1000);
+        }
+    }
+
+    /**
+     * Получает сообщение о бане
+     * @param time Время до бана
+     * @return Сообщение о бане
+     */
+    private MessageEmbed getBanPickMessage(int time) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Команда %team% должна забанить карту!"
+            .replace("%team%", currentBannerTeamRole.getName()));
+        embedBuilder.setColor(3092790);
+        embedBuilder.setDescription("Оставшееся время для бана карты: `%time% сек.`"
+            .replace("%team%", currentBannerTeamRole.getAsMention())
+            .replace("%time%", String.valueOf(time)));
+
+        StringBuilder maps1String = new StringBuilder();
+        StringBuilder maps2String = new StringBuilder();
+
+        GameMap[] maps = new GameMap[0];
+        if(gameCategory.game.format.equals("4x2")) {
+            maps = GameMap.values4x2();
+        } else if(gameCategory.game.format.equals("6x2")) {
+            maps = GameMap.values6x2();
+        }
+
+        for(int i = 0; i < maps.length; i++) {
+            int index = (maps.length / 2) + 1;
+            GameMap gameMap = maps[i];
+            if(i < index) {
+                if(gameMaps.contains(gameMap)) {
+                    maps1String.append(gameMap.getId()).append(". ").append(gameMap.getName()).append("\n");
+                }
+            } else {
+                if(gameMaps.contains(gameMap)) {
+                    maps2String.append(gameMap.getId()).append(". ").append(gameMap.getName()).append("\n");
+                }
             }
-        }, 0, 1000);
+        }
+
+        embedBuilder.addField("Первая строка", maps1String.toString(), true);
+        embedBuilder.addField("Вторая строка", maps2String.toString(), true);
+
+        MessageEmbed messageEmbed = embedBuilder.build();
+        embedBuilder.clear();
+
+        return messageEmbed;
     }
 }

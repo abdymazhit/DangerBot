@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда покинуть команду
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLeaveCommandListener {
@@ -91,17 +91,17 @@ public class TeamLeaveCommandListener {
      * @param deleterId Id удаляющего
      * @return Значение, удален ли участник из команды
      */
-    private boolean deleteTeamMember(int teamId, int memberId, int deleterId) {
+    public boolean deleteTeamMember(int teamId, int memberId, int deleterId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
+                "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, memberId);
             deleteStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
+                "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, memberId);
             historyStatement.setInt(3, deleterId);

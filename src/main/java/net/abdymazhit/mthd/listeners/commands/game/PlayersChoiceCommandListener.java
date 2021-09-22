@@ -15,7 +15,7 @@ import java.sql.*;
 /**
  * Команда выбора игроков на игру
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -33,11 +33,18 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         if(event.getAuthor().isBot()) return;
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            game(gameCategory, messageChannel, message, starter);
+            choicePlayer(gameCategory, messageChannel, message, starter);
         }
     }
 
-    private void game(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member starter) {
+    /**
+     * Выбирает игрока
+     * @param gameCategory Категория игры
+     * @param messageChannel Канал сообщений
+     * @param message Сообщение
+     * @param starter Начавщий игру
+     */
+    private void choicePlayer(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member starter) {
         if(gameCategory.playersChoiceChannel == null) return;
         if(gameCategory.playersChoiceChannel.channelId == null) return;
 
@@ -68,7 +75,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                 }
 
                 if(!starter.getRoles().contains(gameCategory.firstTeamRole) &&
-                        !starter.getRoles().contains(gameCategory.secondTeamRole)) {
+                   !starter.getRoles().contains(gameCategory.secondTeamRole)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -83,7 +90,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
 
                 UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
                 if(playerAccount == null) {
-                    message.reply("Ошибка! Игрок не зарегистрированы на сервере!").queue();
+                    message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
                     return;
                 }
 
@@ -162,7 +169,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                 }
 
                 if(!starter.getRoles().contains(gameCategory.firstTeamRole) &&
-                        !starter.getRoles().contains(gameCategory.secondTeamRole)) {
+                   !starter.getRoles().contains(gameCategory.secondTeamRole)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -177,7 +184,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
 
                 UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
                 if(playerAccount == null) {
-                    message.reply("Ошибка! Игрок не зарегистрированы на сервере!").queue();
+                    message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
                     return;
                 }
 
@@ -220,11 +227,10 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT 1 FROM live_games WHERE first_team_starter_id = ? OR second_team_starter_id = ?;");
+                "SELECT 1 FROM live_games WHERE first_team_starter_id = ? OR second_team_starter_id = ?;");
             preparedStatement.setInt(1, starterId);
             preparedStatement.setInt(2, starterId);
             ResultSet resultSet = preparedStatement.executeQuery();
-            
             return !resultSet.next();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -242,15 +248,14 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement createStatement = connection.prepareStatement(
-                    "INSERT INTO live_games_players (team_id, player_id) SELECT ?, ? " +
-                            "WHERE NOT EXISTS (SELECT 1 FROM live_games_players WHERE team_id = ? AND player_id = ?);", Statement.RETURN_GENERATED_KEYS);
+                "INSERT INTO live_games_players (team_id, player_id) SELECT ?, ? " +
+                "WHERE NOT EXISTS (SELECT 1 FROM live_games_players WHERE team_id = ? AND player_id = ?);", Statement.RETURN_GENERATED_KEYS);
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, playerId);
             createStatement.setInt(3, teamId);
             createStatement.setInt(4, playerId);
             createStatement.executeUpdate();
             ResultSet createResultSet = createStatement.getGeneratedKeys();
-
             if(createResultSet.next()) {
                 // Вернуть значение, что игрок успешно добавлен в список участвующих в игре игроков
                 return null;
@@ -272,22 +277,24 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
     private String removePlayerFromGame(int teamId, int playerId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
+
+            PreparedStatement selectStatement = connection.prepareStatement(
+                "SELECT 1 FROM live_games_players WHERE team_id = ? AND player_id = ?;");
+            selectStatement.setInt(1, teamId);
+            selectStatement.setInt(2, playerId);
+            ResultSet selectResultSet = selectStatement.executeQuery();
+            if(!selectResultSet.next()) {
+                return "Ошибка! Игрок не участвует в игре!";
+            }
+
             PreparedStatement createStatement = connection.prepareStatement(
-                    "DELETE FROM live_games_players WHERE team_id = ? AND player_id = ? " +
-                            "AND EXISTS (SELECT 1 FROM live_games_players WHERE team_id = ? AND player_id = ?);", Statement.RETURN_GENERATED_KEYS);
+                "DELETE FROM live_games_players WHERE team_id = ? AND player_id = ?;");
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, playerId);
-            createStatement.setInt(3, teamId);
-            createStatement.setInt(4, playerId);
             createStatement.executeUpdate();
-            ResultSet createResultSet = createStatement.getGeneratedKeys();
 
-            if(createResultSet.next()) {
-                // Вернуть значение, что игрок успешно удален из списока участвующих в игре игроков
-                return null;
-            } else {
-                return "Ошибка! Вы не участвуете в игре!";
-            }
+            // Вернуть значение, что игрок успешно удален из списока участвующих в игре игроков
+            return null;
         } catch (SQLException e) {
             e.printStackTrace();
             return "Критическая ошибка при удалении Вас из списка участвующих в игре игроков! Свяжитесь с разработчиком бота!";

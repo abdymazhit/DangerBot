@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Администраторская команда переименования команды
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamRenameCommandListener {
@@ -88,6 +88,7 @@ public class AdminTeamRenameCommandListener {
         teamRoles.get(0).getManager().setName(newTeamName).queue();
 
         message.reply("Команда успешно переименована! Новое название команды: " + newTeamName).queue();
+        MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 
     /**
@@ -102,21 +103,19 @@ public class AdminTeamRenameCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                    "UPDATE teams SET name = ? WHERE id = ?;");
+                "UPDATE teams SET name = ? WHERE id = ?;");
             updateStatement.setString(1, toName);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();
-            
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_names_rename_history (team_id, from_name, to_name, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
+                "INSERT INTO teams_names_rename_history (team_id, from_name, to_name, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setString(2, fromName);
             historyStatement.setString(3, toName);
             historyStatement.setInt(4, changerId);
             historyStatement.setTimestamp(5, Timestamp.from(Instant.now()));
             historyStatement.executeUpdate();
-            
 
             // Вернуть значение, что команда успешно переименована
             return true;

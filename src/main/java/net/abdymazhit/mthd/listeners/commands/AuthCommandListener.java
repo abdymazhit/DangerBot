@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   20.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -48,9 +48,9 @@ public class AuthCommandListener extends ListenerAdapter {
         }
 
         String token = tokenOption.getAsString().replace("https://api.vime.world/web/token/", "")
-                .replace(" ", "");
+            .replace(" ", "");
         String authInfo = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/misc/token/" + token + "?token="
-                + MTHD.getInstance().config.vimeApiToken);
+                                                                  + MTHD.getInstance().config.vimeApiToken);
         if(authInfo == null) {
             event.reply("Ошибка! Неверный токен авторизации!").setEphemeral(true).queue();
             return;
@@ -117,10 +117,8 @@ public class AuthCommandListener extends ListenerAdapter {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
-            ResultSet resultSet = preparedStatement.executeQuery();
-
             int userId = -1;
-
+            ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 String discord_id = resultSet.getString("discord_id");
                 if(discord_id != null) {
@@ -170,37 +168,34 @@ public class AuthCommandListener extends ListenerAdapter {
             statement.setTimestamp(3, Timestamp.from(Instant.now()));
             statement.executeUpdate();
 
-            setUserTeamRoleIsLeader(discordId, userId);
-            setUserTeamRoleIsMember(discordId, userId);
+            setTeamRoleIsLeader(discordId, userId);
+            setTeamRoleIsMember(discordId, userId);
 
             // Вернуть значение, что пользователь добавлен
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
-
-            // Вернуть значение, что произошла ошибка
             return false;
         }
     }
 
-    public void setUserTeamRoleIsLeader(String discordId, int userId) {
+    /**
+     * Установить роль команды, если пользователь является лидером
+     * @param discordId Id дискорда
+     * @param userId Id пользователя
+     */
+    public void setTeamRoleIsLeader(String discordId, int userId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT name FROM teams WHERE leader_id = ? AND is_deleted is null;");
+                "SELECT name FROM teams WHERE leader_id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
-
             if(resultSet.next()) {
-                Role teamRole = null;
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(resultSet.getString("name"), true);
-                if(!teamRoles.isEmpty()) {
-                    teamRole = teamRoles.get(0);
-                }
-
-                if(teamRole != null) {
+                if(teamRoles.size() == 1) {
                     MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.LEADER.getRole()).queue();
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
+                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
                 }
             }
         } catch (SQLException e) {
@@ -208,24 +203,23 @@ public class AuthCommandListener extends ListenerAdapter {
         }
     }
 
-    public void setUserTeamRoleIsMember(String discordId, int userId) {
+    /**
+     * Установить роль команды, если пользователь является участником
+     * @param discordId Id дискорда
+     * @param userId Id пользователя
+     */
+    public void setTeamRoleIsMember(String discordId, int userId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
+                "SELECT name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
-
             if(resultSet.next()) {
-                Role teamRole = null;
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(resultSet.getString("name"), true);
-                if(!teamRoles.isEmpty()) {
-                    teamRole = teamRoles.get(0);
-                }
-
-                if(teamRole != null) {
+                if(teamRoles.size() == 1) {
                     MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.MEMBER.getRole()).queue();
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRole).queue();
+                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
                 }
             }
         } catch (SQLException e) {

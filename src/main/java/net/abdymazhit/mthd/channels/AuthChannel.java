@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Канал авторизации
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthChannel extends Channel{
@@ -46,6 +46,6 @@ public class AuthChannel extends Channel{
 
             **Как выйти с аккаунта?**
             Для выхода с аккаунта используйте команду `/leave`""")
-        .queue(message -> channelMessageId = message.getId());
+            .queue(message -> channelMessageId = message.getId());
     }
 }

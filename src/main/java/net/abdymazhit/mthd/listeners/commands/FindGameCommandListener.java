@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class FindGameCommandListener extends ListenerAdapter {
@@ -40,7 +40,7 @@ public class FindGameCommandListener extends ListenerAdapter {
 
         if(contentRaw.startsWith("!find")) {
             if(!member.getRoles().contains(UserRole.LEADER.getRole()) &&
-                    !member.getRoles().contains(UserRole.MEMBER.getRole()) ) {
+               !member.getRoles().contains(UserRole.MEMBER.getRole()) ) {
                 message.reply("Ошибка! У вас нет прав для этого действия!").queue();
                 return;
             }
@@ -94,7 +94,7 @@ public class FindGameCommandListener extends ListenerAdapter {
                 }
 
                 if(format.equals("4x2")) {
-                    if(onlinePlayers < 1) {
+                    if(onlinePlayers < 4) {
                         message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
                         return;
                     }
@@ -166,14 +166,14 @@ public class FindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "INSERT INTO teams_in_game_search (team_id, format, starter_id) SELECT ?, ?, ? " +
-                            "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
+                "INSERT INTO teams_in_game_search (team_id, format, starter_id) SELECT ?, ?, ? " +
+                "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.setString(2, format);
             preparedStatement.setInt(3, starterId);
             preparedStatement.setInt(4, teamId);
-            preparedStatement.executeUpdate();ResultSet resultSet = preparedStatement.getGeneratedKeys();
-
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
             if(resultSet.next()) {
                 // Вернуть значение, что команда успешно добавлена в поиск игры
                 return null;
@@ -195,10 +195,11 @@ public class FindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "DELETE FROM teams_in_game_search WHERE team_id = ?", Statement.RETURN_GENERATED_KEYS);
+                "DELETE FROM teams_in_game_search WHERE team_id = ?", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.executeUpdate();
 
+            // Вернуть значение, что команда успешно удалена из поиска игры
             return null;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -214,15 +215,13 @@ public class FindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT first_team_id, second_team_id FROM live_games;");
+                "SELECT first_team_id, second_team_id FROM live_games;");
             ResultSet resultSet = preparedStatement.executeQuery();
-
             List<Integer> teamsInLiveGames = new ArrayList<>();
             while(resultSet.next()) {
                 teamsInLiveGames.add(resultSet.getInt("first_team_id"));
                 teamsInLiveGames.add(resultSet.getInt("second_team_id"));
             }
-
             return teamsInLiveGames;
         } catch (SQLException e) {
             e.printStackTrace();

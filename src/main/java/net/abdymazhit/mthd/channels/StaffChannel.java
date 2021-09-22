@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Канал помощников
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class StaffChannel extends Channel {
@@ -37,12 +37,12 @@ public class StaffChannel extends Channel {
         }
 
         category.createTextChannel("staff").setPosition(1)
-                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-        .queue(textChannel -> {
-            channelId = textChannel.getId();
-            sendChannelMessage(textChannel);
-        });
+            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+            .queue(textChannel -> {
+                channelId = textChannel.getId();
+                sendChannelMessage(textChannel);
+            });
     }
 
     /**

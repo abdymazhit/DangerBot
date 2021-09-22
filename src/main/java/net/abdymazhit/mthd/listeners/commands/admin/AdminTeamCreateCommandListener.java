@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * Администраторская команда создания команды
  *
- * @version   21.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -77,8 +77,8 @@ public class AdminTeamCreateCommandListener {
 
         if(!MTHD.getInstance().guild.getRolesByName(teamName, true).isEmpty()) {
             message.reply("Ошибка! Вы пытаетесь занять роль команды, которая уже существует! " +
-                    "Возможно вы пытаетесь занять роли сервера: Admin, Assistant... Если Вы уверены, " +
-                    "что не занимаете роль сервера свяжитесь с разработчиком бота!").queue();
+                          "Возможно вы пытаетесь занять роли сервера: Admin, Assistant... Если Вы уверены, " +
+                          "что не занимаете роль сервера свяжитесь с разработчиком бота!").queue();
             return;
         }
 
@@ -89,18 +89,15 @@ public class AdminTeamCreateCommandListener {
         }
 
         MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
-                .setColor(10070709).queue(role -> {
-                    if(leaderAccount.discordId != null) {
-                        MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, role).queue();
-                    }
+            .setColor(10070709).queue(role -> {
+            if(leaderAccount.discordId != null) {
+                MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, role).queue();
+                MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, UserRole.LEADER.getRole()).queue();
+            }
+
             message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
-                    + leaderName + ", роль команды: " + role.getAsMention()).queue();
+                          + leaderName + ", роль команды: " + role.getAsMention()).queue();
         });
-
-        if(leaderAccount.discordId != null) {
-            MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, UserRole.LEADER.getRole()).queue();
-        }
-
         MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 
@@ -114,27 +111,25 @@ public class AdminTeamCreateCommandListener {
     private String createTeam(String teamName, int leaderId, int creatorId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement createStatement = connection.prepareStatement(
-                            "INSERT INTO teams (name, leader_id) SELECT ?, ? " +
-                            "WHERE NOT EXISTS (SELECT leader_id FROM teams WHERE name LIKE ? AND is_deleted is null);", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement createStatement = connection.prepareStatement("""
+                INSERT INTO teams (name, leader_id) SELECT ?, ? WHERE NOT EXISTS
+                (SELECT leader_id FROM teams WHERE name LIKE ? AND is_deleted is null);""", Statement.RETURN_GENERATED_KEYS);
             createStatement.setString(1, teamName);
             createStatement.setInt(2, leaderId);
             createStatement.setString(3, teamName);
             createStatement.executeUpdate();
             ResultSet createResultSet = createStatement.getGeneratedKeys();
-
             if(createResultSet.next()) {
                 int teamId = createResultSet.getInt(1);
 
                 PreparedStatement historyStatement = connection.prepareStatement(
-                        "INSERT INTO teams_creation_history (team_id, name, leader_id, creator_id, created_at) VALUES (?, ?, ?, ?, ?);");
+                    "INSERT INTO teams_creation_history (team_id, name, leader_id, creator_id, created_at) VALUES (?, ?, ?, ?, ?);");
                 historyStatement.setInt(1, teamId);
                 historyStatement.setString(2, teamName);
                 historyStatement.setInt(3, leaderId);
                 historyStatement.setInt(4, creatorId);
                 historyStatement.setTimestamp(5, Timestamp.from(Instant.now()));
                 historyStatement.executeUpdate();
-                
 
                 // Вернуть значение, что команда успешно создана
                 return null;

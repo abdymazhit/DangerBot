@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Очищает сообщения канала
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -100,12 +100,15 @@ public class MessageReceivedListener extends ListenerAdapter {
             } else if(gameCategory.mapChoiceChannel != null) {
                 if(gameCategory.mapChoiceChannel.channelId != null) {
                     if(messageChannel.getId().equals(gameCategory.mapChoiceChannel.channelId)) {
-                        if(gameCategory.mapChoiceChannel.channelMessageId != null &&
-                                gameCategory.mapChoiceChannel.channelMapsMessageId != null) {
-                            if(!message.getId().equals(gameCategory.mapChoiceChannel.channelMessageId) &&
-                                    !message.getId().equals(gameCategory.mapChoiceChannel.channelMapsMessageId)) {
-                                message.delete().queueAfter(7, TimeUnit.SECONDS);
-                                break;
+                        if(gameCategory.mapChoiceChannel.channelMessageId != null) {
+                            if(gameCategory.mapChoiceChannel.channelMapsMessageId != null) {
+                                if(!message.getId().equals(gameCategory.mapChoiceChannel.channelMessageId) &&
+                                   !message.getId().equals(gameCategory.mapChoiceChannel.channelMapsMessageId)) {
+                                    message.delete().queueAfter(7, TimeUnit.SECONDS);
+                                    break;
+                                }
+                            } else {
+                                if(!event.getAuthor().isBot()) message.delete().queue();
                             }
                         }
                     }

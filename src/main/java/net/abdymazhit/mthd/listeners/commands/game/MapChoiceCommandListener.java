@@ -1,5 +1,9 @@
 package net.abdymazhit.mthd.listeners.commands.game;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
@@ -10,15 +14,10 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 /**
  * Команда выбора карты
  *
- * @version   18.09.2021
+ * @version   22.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -36,11 +35,18 @@ public class MapChoiceCommandListener extends ListenerAdapter {
         if(event.getAuthor().isBot()) return;
 
         for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            game(gameCategory, messageChannel, message, starter);
+            choiceMap(gameCategory, messageChannel, message, starter);
         }
     }
 
-    private void game(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member starter) {
+    /**
+     * Выбирает карту
+     * @param gameCategory Категория игры
+     * @param messageChannel Канал сообщений
+     * @param message Сообщение
+     * @param starter Начавщий игру
+     */
+    private void choiceMap(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member starter) {
         if(gameCategory.mapChoiceChannel == null) return;
 
         if(gameCategory.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
@@ -55,6 +61,11 @@ public class MapChoiceCommandListener extends ListenerAdapter {
 
                 if(command.length > 2) {
                     message.reply("Ошибка! Неверная команда!").queue();
+                    return;
+                }
+
+                if(gameCategory.mapChoiceChannel.isMapsMessageSending) {
+                    message.reply("Ошибка! Дождитесь загрузки фотографии доступных карт!").queue();
                     return;
                 }
 
@@ -102,7 +113,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 }
 
                 if(!starter.getRoles().contains(gameCategory.firstTeamRole) &&
-                        !starter.getRoles().contains(gameCategory.secondTeamRole)) {
+                   !starter.getRoles().contains(gameCategory.secondTeamRole)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -139,8 +150,8 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                gameCategory.mapChoiceChannel.banMap(banningGameMap);
                 message.reply("Вы успешно забанили карту!").queue();
+                gameCategory.mapChoiceChannel.banMap(banningGameMap);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
@@ -156,11 +167,10 @@ public class MapChoiceCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT 1 FROM live_games WHERE first_team_starter_id = ? OR second_team_starter_id = ?;");
+                "SELECT 1 FROM live_games WHERE first_team_starter_id = ? OR second_team_starter_id = ?;");
             preparedStatement.setInt(1, starterId);
             preparedStatement.setInt(2, starterId);
             ResultSet resultSet = preparedStatement.executeQuery();
-            
             return !resultSet.next();
         } catch (SQLException e) {
             e.printStackTrace();
