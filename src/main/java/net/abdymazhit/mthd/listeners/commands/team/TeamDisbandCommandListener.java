@@ -3,9 +3,7 @@ package net.abdymazhit.mthd.listeners.commands.team;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.enums.UserRole;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.sql.*;
@@ -15,7 +13,7 @@ import java.util.List;
 /**
  * Команда удалить команду
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class TeamDisbandCommandListener {
@@ -68,6 +66,19 @@ public class TeamDisbandCommandListener {
         if(teamRoles.size() != 1) {
             message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
             return;
+        }
+
+        // Удалить голосовой канал команды
+        List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
+        if(categories.isEmpty()) {
+            throw new IllegalArgumentException("Критическая ошибка! Категория Team Rating не существует!");
+        }
+
+        Category category = categories.get(0);
+        for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
+            if(voiceChannel.getName().equals(team.name)) {
+                voiceChannel.delete().queue();
+            }
         }
 
         teamRoles.get(0).delete().queue();

@@ -21,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Менеджер игры
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -35,59 +35,85 @@ public class GameManager {
     public GameManager() {
         gameCategories = new ArrayList<>();
 
+        List<Game> liveGames = new ArrayList<>();
+
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            ResultSet resultSet = connection.createStatement().executeQuery("SELECT * FROM live_games;");
+            while(resultSet.next()) {
+                int id = resultSet.getInt("id");
+                int firstTeamId = resultSet.getInt("first_team_id");
+                int firstTeamStarterId = resultSet.getInt("first_team_starter_id");
+                int secondTeamId = resultSet.getInt("second_team_id");
+                int secondTeamStarterId = resultSet.getInt("second_team_starter_id");
+                String format = resultSet.getString("format");
+                String mapName = resultSet.getString("map_name");
+                int assistantId = resultSet.getInt("assistant_id");
+                Timestamp startedAt = resultSet.getTimestamp("started_at");
+                int gameStateId = resultSet.getInt("game_state");
+
+                String firstTeamName = MTHD.getInstance().database.getTeamName(firstTeamId);
+                String secondTeamName = MTHD.getInstance().database.getTeamName(secondTeamId);
+
+                if(firstTeamName == null || secondTeamName == null) {
+                    return;
+                }
+
+                GameMap selectedMap = null;
+                for(GameMap gameMap : GameMap.values()) {
+                    if(gameMap.getName().equals(mapName)) {
+                        selectedMap = gameMap;
+                    }
+                }
+
+                GameState state = null;
+                for(GameState gameState : GameState.values()) {
+                    if(gameState.getId() == gameStateId) {
+                        state = gameState;
+                    }
+                }
+
+                Game game = new Game(id, firstTeamId, firstTeamStarterId, secondTeamId,
+                    secondTeamStarterId, format, selectedMap, state, assistantId, startedAt);
+                game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(firstTeamId);
+                game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(secondTeamId);
+                liveGames.add(game);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        List<Integer> gameCategoriesIds = new ArrayList<>();
         for(Category category : MTHD.getInstance().guild.getCategories()) {
             if(category.getName().contains("Game-")) {
                 int id = Integer.parseInt(category.getName().replace("Game-", ""));
+                gameCategoriesIds.add(id);
+            }
+        }
 
-                try {
-                    Connection connection = MTHD.getInstance().database.getConnection();
-                    PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM live_games WHERE id = ?;");
-                    preparedStatement.setInt(1, id);
-
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    if(resultSet.next()) {
-                        int firstTeamId = resultSet.getInt("first_team_id");
-                        int firstTeamStarterId = resultSet.getInt("first_team_starter_id");
-                        int secondTeamId = resultSet.getInt("second_team_id");
-                        int secondTeamStarterId = resultSet.getInt("second_team_starter_id");
-                        String format = resultSet.getString("format");
-                        String mapName = resultSet.getString("map_name");
-                        int assistantId = resultSet.getInt("assistant_id");
-                        Timestamp startedAt = resultSet.getTimestamp("started_at");
-                        int gameStateId = resultSet.getInt("game_state");
-
-                        String firstTeamName = MTHD.getInstance().database.getTeamName(firstTeamId);
-                        String secondTeamName = MTHD.getInstance().database.getTeamName(secondTeamId);
-
-                        if(firstTeamName == null || secondTeamName == null) {
-                            return;
-                        }
-
-                        GameMap selectedMap = null;
-                        for(GameMap gameMap : GameMap.values()) {
-                            if(gameMap.getName().equals(mapName)) {
-                                selectedMap = gameMap;
-                            }
-                        }
-
-                        GameState state = null;
-                        for(GameState gameState : GameState.values()) {
-                            if(gameState.getId() == gameStateId) {
-                                state = gameState;
-                            }
-                        }
-
-                        Game game = new Game(id, firstTeamId, firstTeamStarterId, secondTeamId,
-                            secondTeamStarterId, format, selectedMap, state, assistantId, startedAt);
-                        game.firstTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(firstTeamId);
-                        game.secondTeamPlayers = MTHD.getInstance().database.getTeamPlayersNames(secondTeamId);
-                        gameCategories.add(new GameCategory(game, category));
-                    } else {
-                        deleteGame(category.getId());
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
+        for(Game game : liveGames) {
+            if(gameCategoriesIds.contains(game.id)) {
+                List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + game.id, true);
+                if(categories.size() == 1) {
+                    gameCategories.add(new GameCategory(game, categories.get(0)));
+                    gameCategoriesIds.remove(Integer.valueOf(game.id));
                 }
+            } else {
+                MTHD.getInstance().guild.createCategory("Game-" + game.id).queue(
+                    category -> {
+                        gameCategories.add(new GameCategory(game, category));
+                        gameCategoriesIds.remove(Integer.valueOf(game.id));
+                    });
+            }
+        }
+
+        for(int id : gameCategoriesIds) {
+            List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + id, true);
+            for(Category category : categories) {
+                for(GuildChannel guildChannel : category.getChannels()) {
+                    guildChannel.delete().queue();
+                }
+                category.delete().queue();
             }
         }
     }

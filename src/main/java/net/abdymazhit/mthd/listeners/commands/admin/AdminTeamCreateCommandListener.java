@@ -3,17 +3,21 @@ package net.abdymazhit.mthd.listeners.commands.admin;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Администраторская команда создания команды
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -94,6 +98,17 @@ public class AdminTeamCreateCommandListener {
                 MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, role).queue();
                 MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, UserRole.LEADER.getRole()).queue();
             }
+
+            List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
+            if(categories.isEmpty()) {
+                throw new IllegalArgumentException("Критическая ошибка! Категория Team Rating не существует!");
+            }
+
+            Category category = categories.get(0);
+            category.createVoiceChannel(teamName)
+                    .addPermissionOverride(role, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                    .queue();
 
             message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
                           + leaderName + ", роль команды: " + role.getAsMention()).queue();

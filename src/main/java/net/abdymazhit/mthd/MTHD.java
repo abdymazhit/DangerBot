@@ -6,10 +6,10 @@ import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.game.GameManager;
 import net.abdymazhit.mthd.game.LiveGamesManager;
-import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
-import net.abdymazhit.mthd.listeners.commands.LeaveCommandListener;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
+import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
 import net.abdymazhit.mthd.listeners.commands.FindGameCommandListener;
+import net.abdymazhit.mthd.listeners.commands.LeaveCommandListener;
 import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.game.GameCommandsListener;
@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.Compression;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import javax.security.auth.login.LoginException;
@@ -36,7 +37,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -74,14 +75,17 @@ public class MTHD {
     /** Канал моя команда */
     public final MyTeamChannel myTeamChannel;
 
+    /** Инструменты для упрощения работы */
+    public final Utils utils;
+
+    /** Менеджер MTHD */
+    public final MTHDManager mthdManager;
+
     /** Менеджер активных игр */
     public final LiveGamesManager liveGamesManager;
 
     /** Менеджер игры */
     public final GameManager gameManager;
-
-    /** Инструменты для упрощения работы */
-    public final Utils utils;
 
     /**
      * Создает бота
@@ -106,7 +110,7 @@ public class MTHD {
         JDABuilder builder = JDABuilder.createDefault(config.token);
         builder.enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES);
         builder.enableCache(CacheFlag.CLIENT_STATUS);
-        builder.disableCache(CacheFlag.VOICE_STATE);
+        builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setBulkDeleteSplittingEnabled(false);
         builder.setCompression(Compression.ZLIB);
         JDA jda = builder.build().awaitReady();
@@ -123,6 +127,7 @@ public class MTHD {
         findGameChannel = new FindGameChannel();
         myTeamChannel = new MyTeamChannel();
         utils = new Utils();
+        mthdManager = new MTHDManager();
         liveGamesManager = new LiveGamesManager();
         gameManager = new GameManager();
 

@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
@@ -18,7 +19,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategory {
@@ -78,14 +79,38 @@ public class GameCategory {
 
         getTeamRoles(game.firstTeamName, game.secondTeamName);
 
-        for(TextChannel textChannel : category.getTextChannels()) {
-            if(textChannel.getName().equals("players-choice")) {
-                textChannel.delete().queue();
-            } else if(textChannel.getName().equals("map-choice")) {
-                textChannel.delete().queue();
-            } else if(textChannel.getName().equals("game")) {
-                textChannel.delete().queue();
+        boolean hasChatChannel = false;
+        boolean hasFirstTeamVoiceChannel = false;
+        boolean hasSecondTeamVoiceChannel = false;
+
+        for(GuildChannel channel : category.getChannels()) {
+            if(channel.getName().equals("players-choice")) {
+                channel.delete().queue();
+            } else if(channel.getName().equals("map-choice")) {
+                channel.delete().queue();
+            } else if(channel.getName().equals("game")) {
+                channel.delete().queue();
+            } else if(channel.getName().equals("chat")) {
+                hasChatChannel = true;
+            } else if(channel.getName().equals(game.firstTeamName)) {
+                hasFirstTeamVoiceChannel = true;
+            } else if(channel.getName().equals(game.secondTeamName)) {
+                hasSecondTeamVoiceChannel = true;
+            } else {
+                channel.delete().queue();
             }
+        }
+
+        if(!hasChatChannel) {
+            createChatChannel();
+        }
+
+        if(!hasFirstTeamVoiceChannel) {
+            createFirstTeamVoiceChannel();
+        }
+
+        if(!hasSecondTeamVoiceChannel) {
+            createSecondTeamVoiceChannel();
         }
 
         if(game.gameState.equals(GameState.PLAYERS_CHOICE)) {

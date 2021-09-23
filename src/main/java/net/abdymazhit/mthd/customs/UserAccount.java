@@ -3,7 +3,7 @@ package net.abdymazhit.mthd.customs;
 /**
  * Представляет собой аккаунт пользователя
  *
- * @version   21.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class UserAccount {
@@ -19,6 +19,9 @@ public class UserAccount {
 
     /** Имя пользователя */
     public String username;
+
+    /** Название команды пользователя */
+    public String teamName;
 
     /** Статус онлайна пользователя в VimeWorld */
     public boolean isVimeOnline;

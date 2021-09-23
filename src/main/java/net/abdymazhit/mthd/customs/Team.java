@@ -19,13 +19,10 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой команду
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
-
-    /** Подключение к базе данных */
-    private Connection connection;
 
     /** Id команды */
     public final int id;
@@ -67,7 +64,6 @@ public class Team {
      * Получить информацию о команде из базы данных
      */
     public void getTeamInfoByDatabase() {
-        connection = MTHD.getInstance().database.getConnection();
         getTeamInfo();
         for(UserAccount user : members) {
             getUsersInfo(user);
@@ -83,6 +79,7 @@ public class Team {
      */
     private void getTeamInfo() {
         try {
+            Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
                 "SELECT name, leader_id, points, games, wins, won_beds, lost_beds FROM teams WHERE id = ?;");
             preparedStatement.setInt(1, id);
@@ -101,7 +98,6 @@ public class Team {
                     "SELECT member_id FROM teams_members WHERE team_id = ?;");
                 membersStatement.setInt(1, id);
                 ResultSet membersResultSet = membersStatement.executeQuery();
-
                 while(membersResultSet.next()) {
                     members.add(new UserAccount(membersResultSet.getInt("member_id")));
                 }
@@ -117,11 +113,10 @@ public class Team {
      */
     public void getUsersInfo(UserAccount user) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement(
                 "SELECT discord_id, username FROM users WHERE id = ?;");
             preparedStatement.setInt(1, user.id);
             ResultSet resultSet = preparedStatement.executeQuery();
-
             if(resultSet.next()) {
                 user.discordId = resultSet.getString("discord_id");
                 user.username = resultSet.getString("username");
@@ -142,7 +137,7 @@ public class Team {
         }
 
         String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
-                                                              "?token=" + MTHD.getInstance().config.vimeApiToken);
+            "?token=" + MTHD.getInstance().config.vimeApiToken);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -175,7 +170,7 @@ public class Team {
         jsonArray.add(leader.vimeId);
 
         String info = MTHD.getInstance().utils.sendPostRequest("https://api.vimeworld.ru/user/session" + "?token="
-                                                               + MTHD.getInstance().config.vimeApiToken, jsonArray);
+            + MTHD.getInstance().config.vimeApiToken, jsonArray);
         if(info == null) return;
 
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
@@ -204,16 +199,16 @@ public class Team {
             if(leader.discordId != null) {
                 Member leaderMember = MTHD.getInstance().guild.retrieveMemberById(leader.discordId).submit().get();
                 leader.isDiscordOnline = leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                                         leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                                         leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                    leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
             }
 
             for(UserAccount user : members) {
                 if(user.discordId != null) {
                     Member member = MTHD.getInstance().guild.retrieveMemberById(user.discordId).submit().get();
                     user.isDiscordOnline = member.getOnlineStatus().equals(OnlineStatus.ONLINE) ||
-                                           member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
-                                           member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
+                        member.getOnlineStatus().equals(OnlineStatus.IDLE) ||
+                        member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
                 }
             }
         } catch (InterruptedException | ExecutionException e) {

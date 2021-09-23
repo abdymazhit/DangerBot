@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Представляет собой игру
  *
- * @version   22.09.2021
+ * @version   23.09.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -152,6 +152,9 @@ public class Game {
         assistantDiscordId = MTHD.getInstance().database.getUserDiscordId(assistantId);
     }
 
+    /**
+     * Установить id участников первой команды
+     */
     public void setFirstTeamPlayersIds() {
         firstTeamPlayersId = new ArrayList<>();
         for(String playerName : firstTeamPlayers) {
@@ -180,6 +183,9 @@ public class Game {
         }
     }
 
+    /**
+     * Установить id участников второй команды
+     */
     public void setSecondTeamPlayersIds() {
         secondTeamPlayersId = new ArrayList<>();
         for(String playerName : secondTeamPlayers) {
