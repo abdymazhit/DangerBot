@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой команду
  *
- * @version   23.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class Team {
@@ -49,7 +49,7 @@ public class Team {
     public int lost_beds;
 
     /** Участники команды */
-    public final List<UserAccount> members;
+    public List<UserAccount> members;
 
     /**
      * Инициализирует команду

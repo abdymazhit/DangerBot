@@ -15,7 +15,7 @@ import java.sql.SQLException;
 /**
  * Команда выхода
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class LeaveCommandListener extends ListenerAdapter {
@@ -43,11 +43,9 @@ public class LeaveCommandListener extends ListenerAdapter {
             return;
         }
 
-        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-            for(Role role : member.getRoles()) {
-                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                    MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
-                }
+        for(Role role : member.getRoles()) {
+            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
+                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
             }
         }
 

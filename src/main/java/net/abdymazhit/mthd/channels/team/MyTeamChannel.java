@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.channels;
+package net.abdymazhit.mthd.channels.team;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   23.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -68,7 +68,13 @@ public class AdminChannel extends Channel {
             `!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`
 
             Переименование команды
-            `!adminteam rename <TEAM_NAME> <TO_NAME>`""");
+            `!adminteam rename <TEAM_NAME> <TO_NAME>`
+            
+            Добавить игрока в Single Rating
+            `!adminsingle add <PLAYER_NAME>`
+            
+            Удалить игрока из Single Rating
+            `!adminsingle delete <PLAYER_NAME>`""");
         textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         embedBuilder.clear();
     }

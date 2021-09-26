@@ -20,7 +20,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер сервера
  *
- * @version   23.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHDManager {
@@ -33,9 +33,11 @@ public class MTHDManager {
         configureVoiceChannelsForTeams(teamsNames);
 
         Map<String, String> usersDiscordIdsNames = getUsersDiscordIdsNames();
+        Map<String, String> playersDiscordIdsNames = getPlayersDiscordIdsNames();
+
         List<UserAccount> teamMembers = getUsersAsTeamMembers();
         List<UserAccount> teamLeader = getUsersAsTeamLeaders();
-        configureUsersRoles(usersDiscordIdsNames, teamMembers, teamLeader);
+        configureUsersRoles(usersDiscordIdsNames, playersDiscordIdsNames, teamMembers, teamLeader);
     }
 
     /**
@@ -85,7 +87,7 @@ public class MTHDManager {
 
         for(Role role : MTHD.getInstance().guild.getRoles()) {
             if(!role.equals(MTHD.getInstance().guild.getBotRole()) && !role.equals(MTHD.getInstance().guild.getPublicRole())
-               && !role.equals(MTHD.getInstance().guild.getBoostRole())
+               && !role.equals(MTHD.getInstance().guild.getBoostRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())
                && !role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
                && !role.equals(UserRole.LEADER.getRole()) && !role.equals(UserRole.MEMBER.getRole())
                && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.TEST.getRole())) {
@@ -152,6 +154,24 @@ public class MTHDManager {
         return usersDiscordIdsNames;
     }
 
+    private Map<String, String> getPlayersDiscordIdsNames() {
+        Map<String, String> playersDiscordIdsNames = new HashMap<>();
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            ResultSet resultSet = connection.createStatement().executeQuery("""
+                SELECT discord_id, username FROM users as u
+                INNER JOIN players as p ON p.player_id = u.id AND p.is_deleted is null;""");
+            while(resultSet.next()) {
+                String discordId = resultSet.getString("discord_id");
+                String username = resultSet.getString("username");
+                playersDiscordIdsNames.put(discordId, username);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return playersDiscordIdsNames;
+    }
+
     /**
      * Получает всех участников команд
      * @return Все участники команд
@@ -213,19 +233,26 @@ public class MTHDManager {
         return userAccounts;
     }
 
-    private void configureUsersRoles(Map<String, String> usersDiscordIdsNames, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
+    private void configureUsersRoles(Map<String, String> usersDiscordIdsNames, Map<String, String> playersDiscordIdsNames, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
         MTHD.getInstance().guild.loadMembers().onSuccess(members -> {
             for(Member member : members) {
                 String discordId = member.getId();
                 if(!usersDiscordIdsNames.containsKey(discordId)) {
-                    if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-                        for(Role role : member.getRoles()) {
-                            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
-                            }
+                    for(Role role : member.getRoles()) {
+                        if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
+                           && !role.equals(MTHD.getInstance().guild.getBotRole())) {
+                            MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
                         }
                     }
                 } else {
+                    MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
+
+                    if(!playersDiscordIdsNames.containsKey(discordId)) {
+                        MTHD.getInstance().guild.removeRoleFromMember(member, UserRole.SINGLE_RATING.getRole()).queue();
+                    } else {
+                        MTHD.getInstance().guild.addRoleToMember(member, UserRole.SINGLE_RATING.getRole()).queue();
+                    }
+
                     configureUserTeamRole(discordId, teamMembers, teamLeaders);
                 }
             }
@@ -244,7 +271,8 @@ public class MTHDManager {
                 MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member -> {
                     for(Role role : member.getRoles()) {
                         if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                           && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.MEMBER.getRole())) {
+                           && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.MEMBER.getRole())
+                           && !role.equals(UserRole.SINGLE_RATING.getRole())) {
                             if(!role.getName().equals(userAccount.teamName)) {
                                 MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
                             }
@@ -266,7 +294,8 @@ public class MTHDManager {
                 MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member -> {
                     for(Role role : member.getRoles()) {
                         if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                           && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.LEADER.getRole())) {
+                           && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.LEADER.getRole())
+                           && !role.equals(UserRole.SINGLE_RATING.getRole())) {
                             if(!role.getName().equals(userAccount.teamName)) {
                                 MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
                             }
@@ -280,7 +309,7 @@ public class MTHDManager {
         MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member -> {
             for(Role role : member.getRoles()) {
                 if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                   && !role.equals(UserRole.AUTHORIZED.getRole())) {
+                   && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())) {
                     MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(null, ignore(UNKNOWN_ROLE));
                 }
             }

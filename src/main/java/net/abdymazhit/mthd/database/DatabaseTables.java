@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   21.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -23,28 +23,32 @@ public record DatabaseTables(Connection connection) {
         createUsersTable();
         createUsersAuthHistoryTable();
 
-        createSingleRatingTable();
-        createTeamRatingTable();
+        createPlayersTable();
+        createPlayersAdditionHistoryTable();
+        createPlayersDeletionHistoryTable();
+
+        createPlayersInGameSearchTable();
+        createSingleLiveGamesTable();
+        createSingleLiveGamesPlayersTable();
+        createSingleFinishedGamesHistory();
+        createSingleFinishedGamesPlayersHistory();
 
         createTeamsTable();
         createTeamsCreationHistoryTable();
         createTeamsDeletionHistoryTable();
-
         createTeamsMembersTable();
         createTeamsMembersAdditionHistoryTable();
         createTeamsMembersDeletionHistoryTable();
-
         createTeamsNamesRenameHistoryTable();
         createTeamsLeadersTransferHistoryTable();
 
-        createAvailableAssistantsTable();
         createTeamsInGameSearchTable();
+        createTeamLiveGamesTable();
+        createTeamLiveGamesPlayersTable();
+        createTeamFinishedGamesHistory();
+        createTeamFinishedGamesPlayersHistory();
 
-        createLiveGamesTable();
-        createLiveGamesPlayersTable();
-
-        createFinishedGamesHistory();
-        createFinishedGamesPlayersHistory();
+        createAvailableAssistantsTable();
     }
 
     /**
@@ -85,35 +89,171 @@ public record DatabaseTables(Connection connection) {
     }
 
     /**
-     * Создает таблицу обладетелей Single Rating
+     * Создает таблицу игроков
      */
-    private void createSingleRatingTable() {
+    private void createPlayersTable() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS single_rating (
+                    CREATE TABLE IF NOT EXISTS players (
                         id serial not null AUTO_INCREMENT,
-                        user_id int not null,
+                        player_id int not null,
+                        points int default 1000 not null,
+                        games int default 0 not null,
+                        wins int default 0 not null,
+                        is_deleted boolean,
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * Создает таблицу обладетелей Team Rating
+     * Создает таблицу истории добавления игроков
      */
-    private void createTeamRatingTable() {
+    private void createPlayersAdditionHistoryTable() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS team_rating (
+                    CREATE TABLE IF NOT EXISTS players_addition_history (
                         id serial not null AUTO_INCREMENT,
-                        user_id int not null,
+                        player_id int not null,
+                        adder_id int not null,
+                        added_at timestamp not null,
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории удаления игроков
+     */
+    private void createPlayersDeletionHistoryTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS players_deletion_history (
+                        id serial not null AUTO_INCREMENT,
+                        player_id int not null,
+                        deleter_id int not null,
+                        deleted_at timestamp not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу игроков в поиске игры
+     */
+    private void createPlayersInGameSearchTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS players_in_game_search (
+                        id serial not null AUTO_INCREMENT,
+                        player_id int not null,
+                        format varchar(50) not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу игр игроков в прямом эфире Single рейтинга
+     */
+    private void createSingleLiveGamesTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS single_live_games (
+                        id serial not null AUTO_INCREMENT,
+                        first_team_captain_id int not null,
+                        second_team_captain_id int not null,
+                        format varchar(50) not null,
+                        map_name varchar(50),
+                        assistant_id int not null,
+                        started_at timestamp not null,
+                        game_state int not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу игроков матчей в прямом эфире Single рейтинга
+     */
+    private void createSingleLiveGamesPlayersTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS single_live_games_players (
+                        id serial not null AUTO_INCREMENT,
+                        live_game_id int not null,
+                        team_id boolean,
+                        player_id int not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории завершенных игр Single рейтинга
+     */
+    private void createSingleFinishedGamesHistory() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS single_finished_games_history (
+                        id serial not null AUTO_INCREMENT,
+                        first_team_captain_id int not null,
+                        second_team_captain_id int not null,
+                        format varchar(50) not null,
+                        map_name varchar(50) not null,
+                        match_id varchar(50) not null,
+                        winner_team_id int not null,
+                        assistant_id int not null,
+                        finished_at timestamp not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории игроков завершенных игр Single рейтинга
+     */
+    private void createSingleFinishedGamesPlayersHistory() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS single_finished_games_players_history (
+                    id serial not null AUTO_INCREMENT,
+                    finished_game_id int not null,
+                    team_id boolean not null,
+                    player_id int not null,
+                    rating_changes int not null,
+                    PRIMARY KEY (id));
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -137,7 +277,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -158,7 +299,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -177,7 +319,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -194,7 +337,8 @@ public record DatabaseTables(Connection connection) {
                         member_id int not null, PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -214,7 +358,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -234,7 +379,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -255,7 +401,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -276,7 +423,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -293,7 +441,8 @@ public record DatabaseTables(Connection connection) {
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -308,27 +457,28 @@ public record DatabaseTables(Connection connection) {
                         id serial not null AUTO_INCREMENT,
                         team_id int not null,
                         format varchar(50) not null,
-                        starter_id int not null,
+                        captain_id int not null,
                         PRIMARY KEY (id)
                     );
             """);
-            preparedStatement.executeUpdate();        } catch (SQLException e) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * Создает таблицу игр в прямом эфире
+     * Создает таблицу игр команд в прямом эфире
      */
-    private void createLiveGamesTable() {
+    private void createTeamLiveGamesTable() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS live_games (
+                    CREATE TABLE IF NOT EXISTS team_live_games (
                         id serial not null AUTO_INCREMENT,
                         first_team_id int not null,
-                        first_team_starter_id int not null,
+                        first_team_captain_id int not null,
                         second_team_id int not null,
-                        second_team_starter_id int not null,
+                        second_team_captain_id int not null,
                         format varchar(50) not null,
                         map_name varchar(50),
                         assistant_id int not null,
@@ -344,12 +494,12 @@ public record DatabaseTables(Connection connection) {
     }
 
     /**
-     * Создает таблицу игроков матчей в прямом эфире
+     * Создает таблицу игроков матчей команд в прямом эфире
      */
-    private void createLiveGamesPlayersTable() {
+    private void createTeamLiveGamesPlayersTable() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS live_games_players (
+                    CREATE TABLE IF NOT EXISTS team_live_games_players (
                         id serial not null AUTO_INCREMENT,
                         team_id int not null,
                         player_id int not null,
@@ -363,17 +513,17 @@ public record DatabaseTables(Connection connection) {
     }
 
     /**
-     * Создает таблицу истории завершенных игр
+     * Создает таблицу истории завершенных игр команд
      */
-    private void createFinishedGamesHistory() {
+    private void createTeamFinishedGamesHistory() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS finished_games_history (
+                    CREATE TABLE IF NOT EXISTS team_finished_games_history (
                         id serial not null AUTO_INCREMENT,
                         first_team_id int not null,
-                        first_team_starter_id int not null,
+                        first_team_captain_id int not null,
                         second_team_id int not null,
-                        second_team_starter_id int not null,
+                        second_team_captain_id int not null,
                         format varchar(50) not null,
                         map_name varchar(50) not null,
                         match_id varchar(50) not null,
@@ -392,12 +542,12 @@ public record DatabaseTables(Connection connection) {
     }
 
     /**
-     * Создает таблицу истории игроков завершенных игр
+     * Создает таблицу истории игроков завершенных игр команд
      */
-    private void createFinishedGamesPlayersHistory() {
+    private void createTeamFinishedGamesPlayersHistory() {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    CREATE TABLE IF NOT EXISTS finished_games_players_history (
+                    CREATE TABLE IF NOT EXISTS team_finished_games_players_history (
                     id serial not null AUTO_INCREMENT,
                     finished_game_id int not null,
                     team_id int not null,

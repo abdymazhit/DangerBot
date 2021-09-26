@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.game.GameCategory;
+import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -10,12 +10,13 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import java.util.concurrent.TimeUnit;
 
 import static net.dv8tion.jda.api.exceptions.ErrorResponseException.ignore;
+import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
 import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_MESSAGE;
 
 /**
  * Очищает сообщения канала
  *
- * @version   23.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -60,6 +61,14 @@ public class MessageReceivedListener extends ListenerAdapter {
             }
         }
 
+        if(MTHD.getInstance().playersChannel.channelId != null && MTHD.getInstance().playersChannel.channelMessageId != null) {
+            if(messageChannel.getId().equals(MTHD.getInstance().playersChannel.channelId)) {
+                if(!message.getId().equals(MTHD.getInstance().playersChannel.channelMessageId)) {
+                    message.delete().queueAfter(30, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                }
+            }
+        }
+
         if(MTHD.getInstance().authChannel.channelId != null && MTHD.getInstance().authChannel.channelMessageId != null) {
             if(messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) {
                 if(!message.getId().equals(MTHD.getInstance().authChannel.channelMessageId)) {
@@ -70,43 +79,72 @@ public class MessageReceivedListener extends ListenerAdapter {
             }
         }
 
-        if(MTHD.getInstance().findGameChannel.channelId != null && MTHD.getInstance().findGameChannel.channelMessageId != null &&
-                MTHD.getInstance().findGameChannel.channelAvailableAssistantsMessageId != null) {
-            if(messageChannel.getId().equals(MTHD.getInstance().findGameChannel.channelId)) {
-                if(!message.getId().equals(MTHD.getInstance().findGameChannel.channelMessageId) &&
-                        !message.getId().equals(MTHD.getInstance().findGameChannel.channelAvailableAssistantsMessageId)) {
+        if(MTHD.getInstance().teamFindGameChannel.channelId != null && MTHD.getInstance().teamFindGameChannel.channelMessageId != null &&
+           MTHD.getInstance().teamFindGameChannel.channelAvailableAssistantsMessageId != null) {
+            if(messageChannel.getId().equals(MTHD.getInstance().teamFindGameChannel.channelId)) {
+                if(!message.getId().equals(MTHD.getInstance().teamFindGameChannel.channelMessageId) &&
+                   !message.getId().equals(MTHD.getInstance().teamFindGameChannel.channelAvailableAssistantsMessageId)) {
                     message.delete().queueAfter(3, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
                 }
             }
         }
 
-        for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            if(gameCategory.playersChoiceChannel != null) {
-                if(gameCategory.playersChoiceChannel.channelId != null) {
-                    if(messageChannel.getId().equals(gameCategory.playersChoiceChannel.channelId)) {
-                        if(gameCategory.playersChoiceChannel.channelMessageId != null &&
-                                gameCategory.playersChoiceChannel.channelGamePlayersMessageId != null) {
-                            if(!message.getId().equals(gameCategory.playersChoiceChannel.channelMessageId) &&
-                                    !message.getId().equals(gameCategory.playersChoiceChannel.channelGamePlayersMessageId)) {
-                                if(gameCategory.playersChoiceChannel.channelGameCancelMessageId != null) {
-                                    if(!message.getId().equals(gameCategory.playersChoiceChannel.channelGameCancelMessageId)) {
-                                        message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+        if(MTHD.getInstance().singleFindGameChannel.channelId != null && MTHD.getInstance().singleFindGameChannel.channelMessageId != null &&
+           MTHD.getInstance().singleFindGameChannel.channelAvailableAssistantsMessageId != null) {
+            if(messageChannel.getId().equals(MTHD.getInstance().singleFindGameChannel.channelId)) {
+                if(!message.getId().equals(MTHD.getInstance().singleFindGameChannel.channelMessageId) &&
+                   !message.getId().equals(MTHD.getInstance().singleFindGameChannel.channelAvailableAssistantsMessageId)) {
+                    message.delete().queueAfter(3, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                }
+            }
+        }
+
+        for(GameCategoryManager gameCategoryManager : MTHD.getInstance().gameManager.gameCategories) {
+            if(gameCategoryManager.playersPickChannel != null) {
+                if(gameCategoryManager.playersPickChannel.channelId != null) {
+                    if(messageChannel.getId().equals(gameCategoryManager.playersPickChannel.channelId)) {
+                        if(gameCategoryManager.playersPickChannel.channelMessageId != null &&
+                           gameCategoryManager.playersPickChannel.channelPlayersMessageId != null) {
+                            if(!message.getId().equals(gameCategoryManager.playersPickChannel.channelMessageId) &&
+                               !message.getId().equals(gameCategoryManager.playersPickChannel.channelPlayersMessageId)) {
+                                if(gameCategoryManager.playersPickChannel.channelPlayersMessageId != null) {
+                                    if(!message.getId().equals(gameCategoryManager.playersPickChannel.channelPlayersMessageId)) {
+                                        message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
                                     }
                                 } else {
-                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
                                     break;
                                 }
                             }
                         }
                     }
                 }
-            } else if(gameCategory.mapChoiceChannel != null) {
-                if(gameCategory.mapChoiceChannel.channelId != null) {
-                    if(messageChannel.getId().equals(gameCategory.mapChoiceChannel.channelId)) {
-                        if(gameCategory.mapChoiceChannel.channelMessageId != null) {
-                            if(gameCategory.mapChoiceChannel.channelMapsMessageId != null) {
-                                if(!message.getId().equals(gameCategory.mapChoiceChannel.channelMessageId) &&
-                                   !message.getId().equals(gameCategory.mapChoiceChannel.channelMapsMessageId)) {
+            } else if(gameCategoryManager.playersChoiceChannel != null) {
+                if(gameCategoryManager.playersChoiceChannel.channelId != null) {
+                    if(messageChannel.getId().equals(gameCategoryManager.playersChoiceChannel.channelId)) {
+                        if(gameCategoryManager.playersChoiceChannel.channelMessageId != null &&
+                           gameCategoryManager.playersChoiceChannel.channelGamePlayersMessageId != null) {
+                            if(!message.getId().equals(gameCategoryManager.playersChoiceChannel.channelMessageId) &&
+                               !message.getId().equals(gameCategoryManager.playersChoiceChannel.channelGamePlayersMessageId)) {
+                                if(gameCategoryManager.playersChoiceChannel.channelGameCancelMessageId != null) {
+                                    if(!message.getId().equals(gameCategoryManager.playersChoiceChannel.channelGameCancelMessageId)) {
+                                        message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
+                                    }
+                                } else {
+                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if(gameCategoryManager.mapChoiceChannel != null) {
+                if(gameCategoryManager.mapChoiceChannel.channelId != null) {
+                    if(messageChannel.getId().equals(gameCategoryManager.mapChoiceChannel.channelId)) {
+                        if(gameCategoryManager.mapChoiceChannel.channelMessageId != null) {
+                            if(gameCategoryManager.mapChoiceChannel.channelMapsMessageId != null) {
+                                if(!message.getId().equals(gameCategoryManager.mapChoiceChannel.channelMessageId) &&
+                                   !message.getId().equals(gameCategoryManager.mapChoiceChannel.channelMapsMessageId)) {
                                     message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
                                     break;
                                 }
@@ -116,13 +154,13 @@ public class MessageReceivedListener extends ListenerAdapter {
                         }
                     }
                 }
-            } else if(gameCategory.gameChannel != null) {
-                if(gameCategory.gameChannel.channelId != null) {
-                    if(messageChannel.getId().equals(gameCategory.gameChannel.channelId)) {
-                        if(gameCategory.gameChannel.channelMessageId != null) {
-                            if(!message.getId().equals(gameCategory.gameChannel.channelMessageId)) {
-                                if(gameCategory.gameChannel.channelGameCancelMessageId != null) {
-                                    if(!message.getId().equals(gameCategory.gameChannel.channelGameCancelMessageId)) {
+            } else if(gameCategoryManager.gameChannel != null) {
+                if(gameCategoryManager.gameChannel.channelId != null) {
+                    if(messageChannel.getId().equals(gameCategoryManager.gameChannel.channelId)) {
+                        if(gameCategoryManager.gameChannel.channelMessageId != null) {
+                            if(!message.getId().equals(gameCategoryManager.gameChannel.channelMessageId)) {
+                                if(gameCategoryManager.gameChannel.channelGameCancelMessageId != null) {
+                                    if(!message.getId().equals(gameCategoryManager.gameChannel.channelGameCancelMessageId)) {
                                         message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
                                         break;
                                     }

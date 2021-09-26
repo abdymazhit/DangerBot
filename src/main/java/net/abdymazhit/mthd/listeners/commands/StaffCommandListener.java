@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Команда персонала
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class StaffCommandListener extends ListenerAdapter {
@@ -56,8 +56,10 @@ public class StaffCommandListener extends ListenerAdapter {
                     return;
                 }
                 message.reply("Вы успешно добавлены в таблицу доступных помощников!").queue();
-                MTHD.getInstance().findGameChannel.updateAvailableAssistantsMessage();
-                MTHD.getInstance().gameManager.tryStartGame();
+                MTHD.getInstance().teamFindGameChannel.updateAvailableAssistantsMessage();
+                MTHD.getInstance().singleFindGameChannel.updateAvailableAssistantsMessage();
+                MTHD.getInstance().gameManager.teamGameManager.tryStartGame();
+                MTHD.getInstance().gameManager.singleGameManager.tryStartGame();
             } else if(contentRaw.equals("!unready")) {
                 String errorMessage = MTHD.getInstance().database.setUnready(assistantId);
                 if(errorMessage != null) {
@@ -65,8 +67,10 @@ public class StaffCommandListener extends ListenerAdapter {
                     return;
                 }
                 message.reply("Вы успешно удалены из таблицы доступных помощников!").queue();
-                MTHD.getInstance().findGameChannel.updateAvailableAssistantsMessage();
-                MTHD.getInstance().gameManager.tryStartGame();
+                MTHD.getInstance().teamFindGameChannel.updateAvailableAssistantsMessage();
+                MTHD.getInstance().singleFindGameChannel.updateAvailableAssistantsMessage();
+                MTHD.getInstance().gameManager.teamGameManager.tryStartGame();
+                MTHD.getInstance().gameManager.singleGameManager.tryStartGame();
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

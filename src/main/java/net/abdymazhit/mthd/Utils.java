@@ -1,6 +1,7 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.JsonArray;
+import net.abdymazhit.mthd.customs.Player;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -21,7 +22,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -206,6 +207,46 @@ public class Utils {
             \040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%team_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040
             ```"""
             .replace("%team_name%", team.name);
+        embedBuilder.setDescription(name);
+
+        MessageEmbed messageEmbed = embedBuilder.build();
+        embedBuilder.clear();
+
+        return messageEmbed;
+    }
+
+    /**
+     * Получает информационное embed сообщение игрока
+     * @param player Игрок
+     * @return Информационное embed сообщение игрока
+     */
+    public MessageEmbed getPlayerInfoMessageEmbed(Player player) {
+        embedBuilder.setColor(3092790);
+        String rating = """
+            >>> ```
+            %points%
+            ```"""
+                .replace("%points%", String.valueOf(player.points));
+        embedBuilder.addField("Рейтинг", rating, true);
+
+        String wins = """
+            >>> ```
+            %wins%
+            ```"""
+                .replace("%wins%", String.valueOf(player.wins));
+        embedBuilder.addField("Побед", wins, true);
+
+        String games = """
+            >>> ```
+            %games%
+            ```""".replace("%games%", String.valueOf(player.games));
+        embedBuilder.addField("Всего игр", games, true);
+
+        String name = """
+            ```
+            \040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%player_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040
+            ```"""
+                .replace("%player_name%", player.username);
         embedBuilder.setDescription(name);
 
         MessageEmbed messageEmbed = embedBuilder.build();

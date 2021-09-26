@@ -17,10 +17,10 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
-public class FindGameCommandListener extends ListenerAdapter {
+public class TeamFindGameCommandListener extends ListenerAdapter {
 
     /**
      * Событие получения сообщений
@@ -31,7 +31,7 @@ public class FindGameCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         Member member = event.getMember();
 
-        if(!messageChannel.getId().equals(MTHD.getInstance().findGameChannel.channelId)) return;
+        if(!messageChannel.getId().equals(MTHD.getInstance().teamFindGameChannel.channelId)) return;
         if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
@@ -123,8 +123,8 @@ public class FindGameCommandListener extends ListenerAdapter {
                 }
 
                 message.reply("Ваша команда успешно добавлена в поиск игры!").queue();
-                MTHD.getInstance().findGameChannel.updateTeamsInGameSearchCountMessage();
-                MTHD.getInstance().gameManager.tryStartGame();
+                MTHD.getInstance().teamFindGameChannel.updateTeamsInGameSearchCountMessage();
+                MTHD.getInstance().gameManager.teamGameManager.tryStartGame();
             } else if(contentRaw.equals("!find leave")) {
                 int memberId = MTHD.getInstance().database.getUserId(member.getId());
                 if(memberId < 0) {
@@ -145,8 +145,8 @@ public class FindGameCommandListener extends ListenerAdapter {
                 }
 
                 message.reply("Ваша команда успешно удалена из поиска игры!").queue();
-                MTHD.getInstance().findGameChannel.updateTeamsInGameSearchCountMessage();
-                MTHD.getInstance().gameManager.tryStartGame();
+                MTHD.getInstance().teamFindGameChannel.updateTeamsInGameSearchCountMessage();
+                MTHD.getInstance().gameManager.teamGameManager.tryStartGame();
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
@@ -159,18 +159,18 @@ public class FindGameCommandListener extends ListenerAdapter {
      * Добавляет команду в поиск игры
      * @param teamId Id команды
      * @param format Формат игры
-     * @param starterId Id начавшего
+     * @param captainId Id начавшего
      * @return Текст ошибки добавления команды
      */
-    private String addTeamToTeamsInGameSearch(int teamId, String format, int starterId) {
+    private String addTeamToTeamsInGameSearch(int teamId, String format, int captainId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "INSERT INTO teams_in_game_search (team_id, format, starter_id) SELECT ?, ?, ? " +
+                "INSERT INTO teams_in_game_search (team_id, format, captain_id) SELECT ?, ?, ? " +
                 "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.setString(2, format);
-            preparedStatement.setInt(3, starterId);
+            preparedStatement.setInt(3, captainId);
             preparedStatement.setInt(4, teamId);
             preparedStatement.executeUpdate();
             ResultSet resultSet = preparedStatement.getGeneratedKeys();
@@ -215,7 +215,7 @@ public class FindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT first_team_id, second_team_id FROM live_games;");
+                "SELECT first_team_id, second_team_id FROM team_live_games;");
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Integer> teamsInLiveGames = new ArrayList<>();
             while(resultSet.next()) {

@@ -1,48 +1,43 @@
-package net.abdymazhit.mthd.game;
+package net.abdymazhit.mthd.channels.game;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.imageio.ImageIO;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
+import net.abdymazhit.mthd.enums.Rating;
+import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Category;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.requests.restaction.ChannelAction;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал выбора карты
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
 
     /** Категория игры */
-    private final GameCategory gameCategory;
+    private final GameCategoryManager gameCategoryManager;
 
     /** Список доступных карт */
     public final List<GameMap> gameMaps;
 
     /** Роль текущей банющей команды */
     public Role currentBannerTeamRole;
+
+    /** Текущий банющий капитан */
+    public Member currentBannerCaptain;
 
     /** Id сообщения о картах */
     public String channelMapsMessageId;
@@ -58,59 +53,92 @@ public class MapChoiceChannel extends Channel {
 
     /**
      * Инициализирует канал выбора карты
-     * @param gameCategory Категория игры
+     * @param gameCategoryManager Категория игры
      */
-    public MapChoiceChannel(GameCategory gameCategory) {
-        this.gameCategory = gameCategory;
+    public MapChoiceChannel(GameCategoryManager gameCategoryManager) {
+        this.gameCategoryManager = gameCategoryManager;
         gameMaps = new ArrayList<>();
         isMapsMessageSending = true;
 
-        Category category = MTHD.getInstance().guild.getCategoryById(gameCategory.categoryId);
+        Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
         if(category == null) {
             System.out.println("Критическая ошибка! Категория Game не существует!");
             return;
         }
 
-        List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategory.game.firstTeamStarterDiscordId,
-            gameCategory.game.secondTeamStarterDiscordId).get();
-        Member firstTeamStarter = members.get(0);
-        Member secondTeamStarter = members.get(1);
-        if(firstTeamStarter == null || secondTeamStarter == null) {
+        List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategoryManager.game.firstTeamCaptain.discordId,
+            gameCategoryManager.game.secondTeamCaptain.discordId).get();
+        Member firstTeamCaptain = members.get(0);
+        Member secondTeamCaptain = members.get(1);
+        if(firstTeamCaptain == null || secondTeamCaptain == null) {
             System.out.println("Критическая ошибка! Не удалось получить роли начавших игру первой и второй команды!");
             return;
         }
 
-        if(gameCategory.game.format.equals("4x2")) {
+        if(gameCategoryManager.game.format.equals("4x2")) {
             Collections.addAll(gameMaps, GameMap.values4x2());
-        } else if(gameCategory.game.format.equals("6x2")) {
+        } else if(gameCategoryManager.game.format.equals("6x2")) {
             Collections.addAll(gameMaps, GameMap.values6x2());
         }
 
-        MTHD.getInstance().guild.retrieveMemberById(gameCategory.game.assistantDiscordId).queue(member ->
-            category.createTextChannel("map-choice").setPosition(2)
-                .addPermissionOverride(firstTeamStarter, EnumSet.of(Permission.MESSAGE_WRITE), null)
-                .addPermissionOverride(secondTeamStarter, EnumSet.of(Permission.MESSAGE_WRITE), null)
-                .addPermissionOverride(gameCategory.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
-                .addPermissionOverride(gameCategory.secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .queue(textChannel -> {
+        if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+            MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant ->
+                    category.createTextChannel("map-choice").setPosition(2)
+                            .addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
+                            .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
+                            .addPermissionOverride(gameCategoryManager.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                            .addPermissionOverride(gameCategoryManager.secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                            .addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                            .queue(textChannel -> {
+                                channelId = textChannel.getId();
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.setTitle("Вторая стадия игры - Выбор карты");
+                                embedBuilder.setColor(3092790);
+                                embedBuilder.setDescription("""
+                        Начавшие поиск игры команд (%first_team% и %second_team%) должны решить какую карту будут играть!
+                        
+                        Обратите внимание, если Вы не успеете заблокировать карту за отведенное время, тогда будет заблокирована случайная карта.
+          
+                        Заблокировать карту
+                        `!ban <ПОРЯДКОВЫЙ НОМЕР> или <НАЗВАНИЕ КАРТЫ>`"""
+                                        .replace("%first_team%", gameCategoryManager.firstTeamRole.getAsMention())
+                                        .replace("%second_team%", gameCategoryManager.secondTeamRole.getAsMention()));
+                                textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                                embedBuilder.clear();
+                                updateMapsMessage(textChannel);
+                            })
+            );
+        } else {
+            MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant -> {
+                ChannelAction<TextChannel> createAction = category.createTextChannel("map-choice").setPosition(2)
+                        .addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
+                        .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
+                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                        .addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null);
+
+                for(Member member : gameCategoryManager.players) {
+                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
+                }
+
+                createAction.queue(textChannel -> {
                     channelId = textChannel.getId();
                     EmbedBuilder embedBuilder = new EmbedBuilder();
                     embedBuilder.setTitle("Вторая стадия игры - Выбор карты");
                     embedBuilder.setColor(3092790);
                     embedBuilder.setDescription("""
-                        Начавшие поиск игры команд (%first_team% и %second_team%) должны решить какую карту будут играть!
+                        Капитаны команд (%first_captain% и %second_captain%) должны решить какую карту будут играть!
           
                         Заблокировать карту
                         `!ban <ПОРЯДКОВЫЙ НОМЕР> или <НАЗВАНИЕ КАРТЫ>`"""
-                        .replace("%first_team%", gameCategory.firstTeamRole.getAsMention())
-                        .replace("%second_team%", gameCategory.secondTeamRole.getAsMention()));
+                            .replace("%first_captain%", gameCategoryManager.game.firstTeamCaptainMember.getAsMention())
+                            .replace("%second_captain%", gameCategoryManager.game.secondTeamCaptainMember.getAsMention()));
                     textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
                     embedBuilder.clear();
                     updateMapsMessage(textChannel);
-                })
-        );
+                });
+            });
+        }
     }
 
     /**
@@ -133,20 +161,32 @@ public class MapChoiceChannel extends Channel {
      * Обновляет сообщение о доступных картах
      */
     private void updateMapsMessage(TextChannel textChannel) {
-        if(currentBannerTeamRole == null) {
-            currentBannerTeamRole = gameCategory.firstTeamRole;
-        } else {
-            if(currentBannerTeamRole.equals(gameCategory.firstTeamRole)) {
-                currentBannerTeamRole = gameCategory.secondTeamRole;
+        if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+            if(currentBannerTeamRole == null) {
+                currentBannerTeamRole = gameCategoryManager.firstTeamRole;
             } else {
-                currentBannerTeamRole = gameCategory.firstTeamRole;
+                if(currentBannerTeamRole.equals(gameCategoryManager.firstTeamRole)) {
+                    currentBannerTeamRole = gameCategoryManager.secondTeamRole;
+                } else {
+                    currentBannerTeamRole = gameCategoryManager.firstTeamRole;
+                }
+            }
+        } else {
+            if(currentBannerCaptain == null) {
+                currentBannerCaptain = gameCategoryManager.game.firstTeamCaptainMember;
+            } else {
+                if(currentBannerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
+                    currentBannerCaptain = gameCategoryManager.game.secondTeamCaptainMember;
+                } else {
+                    currentBannerCaptain = gameCategoryManager.game.firstTeamCaptainMember;
+                }
             }
         }
 
         GameMap[] maps = new GameMap[0];
-        if(gameCategory.game.format.equals("4x2")) {
+        if(gameCategoryManager.game.format.equals("4x2")) {
             maps = GameMap.values4x2();
-        } else if(gameCategory.game.format.equals("6x2")) {
+        } else if(gameCategoryManager.game.format.equals("6x2")) {
             maps = GameMap.values6x2();
         }
 
@@ -205,8 +245,8 @@ public class MapChoiceChannel extends Channel {
      */
     private void createCountdownTask(TextChannel textChannel, File file) {
         if(gameMaps.size() == 1) {
-            gameCategory.setGameState(GameState.GAME_CREATION);
-            gameCategory.setGameMap(gameMaps.get(0));
+            gameCategoryManager.setGameState(GameState.GAME_CREATION);
+            gameCategoryManager.setGameMap(gameMaps.get(0));
 
             isMapsMessageSending = true;
             textChannel.editMessageById(channelMapsMessageId, """
@@ -217,7 +257,7 @@ public class MapChoiceChannel extends Channel {
                     new Timer().schedule(new TimerTask() {
                         @Override
                         public void run() {
-                            gameCategory.createGameChannel();
+                            gameCategoryManager.createGameChannel();
                         }
                     }, 7000);
                 });
@@ -279,20 +319,31 @@ public class MapChoiceChannel extends Channel {
      */
     private MessageEmbed getBanPickMessage(int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Команда %team% должна забанить карту!"
-            .replace("%team%", currentBannerTeamRole.getName()));
         embedBuilder.setColor(3092790);
+
+        if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+            embedBuilder.setTitle("Команда %team% должна забанить карту!"
+                    .replace("%team%", currentBannerTeamRole.getName()));
+        } else {
+            if(currentBannerCaptain.getNickname() != null) {
+                embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
+                        .replace("%captain%", currentBannerCaptain.getNickname()));
+            } else {
+                embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
+                        .replace("%captain%", currentBannerCaptain.getEffectiveName()));
+            }
+        }
+
         embedBuilder.setDescription("Оставшееся время для бана карты: `%time% сек.`"
-            .replace("%team%", currentBannerTeamRole.getAsMention())
-            .replace("%time%", String.valueOf(time)));
+                .replace("%time%", String.valueOf(time)));
 
         StringBuilder maps1String = new StringBuilder();
         StringBuilder maps2String = new StringBuilder();
 
         GameMap[] maps = new GameMap[0];
-        if(gameCategory.game.format.equals("4x2")) {
+        if(gameCategoryManager.game.format.equals("4x2")) {
             maps = GameMap.values4x2();
-        } else if(gameCategory.game.format.equals("6x2")) {
+        } else if(gameCategoryManager.game.format.equals("6x2")) {
             maps = GameMap.values6x2();
         }
 

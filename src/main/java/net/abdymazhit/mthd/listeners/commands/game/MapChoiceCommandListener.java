@@ -1,23 +1,25 @@
 package net.abdymazhit.mthd.listeners.commands.game;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
-import net.abdymazhit.mthd.game.GameCategory;
+import net.abdymazhit.mthd.enums.Rating;
+import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 /**
  * Команда выбора карты
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -29,27 +31,27 @@ public class MapChoiceCommandListener extends ListenerAdapter {
     public void onMessageReceived(MessageReceivedEvent event) {
         MessageChannel messageChannel = event.getChannel();
         Message message = event.getMessage();
-        Member starter = event.getMember();
+        Member captain = event.getMember();
 
-        if(starter == null) return;
+        if(captain == null) return;
         if(event.getAuthor().isBot()) return;
 
-        for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            choiceMap(gameCategory, messageChannel, message, starter);
+        for(GameCategoryManager gameCategoryManager : MTHD.getInstance().gameManager.gameCategories) {
+            choiceMap(gameCategoryManager, messageChannel, message, captain);
         }
     }
 
     /**
      * Выбирает карту
-     * @param gameCategory Категория игры
+     * @param gameCategoryManager Категория игры
      * @param messageChannel Канал сообщений
      * @param message Сообщение
-     * @param starter Начавщий игру
+     * @param captain Капитан команды
      */
-    private void choiceMap(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member starter) {
-        if(gameCategory.mapChoiceChannel == null) return;
+    private void choiceMap(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member captain) {
+        if(gameCategoryManager.mapChoiceChannel == null) return;
 
-        if(gameCategory.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
+        if(gameCategoryManager.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.startsWith("!ban")) {
                 String[] command = contentRaw.split(" ");
@@ -64,7 +66,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(gameCategory.mapChoiceChannel.isMapsMessageSending) {
+                if(gameCategoryManager.mapChoiceChannel.isMapsMessageSending) {
                     message.reply("Ошибка! Дождитесь загрузки фотографии доступных карт!").queue();
                     return;
                 }
@@ -72,7 +74,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 String mapName = command[1];
 
                 GameMap banningGameMap = null;
-                if(gameCategory.game.format.equals("4x2")) {
+                if(gameCategoryManager.game.format.equals("4x2")) {
                     for(GameMap gameMap : GameMap.values4x2()) {
                         if(gameMap.getName().equalsIgnoreCase(mapName)) {
                             banningGameMap = gameMap;
@@ -86,7 +88,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                             } catch(NumberFormatException ignored) { }
                         }
                     }
-                } else if(gameCategory.game.format.equals("6x2")) {
+                } else if(gameCategoryManager.game.format.equals("6x2")) {
                     for(GameMap gameMap : GameMap.values6x2()) {
                         if(gameMap.getName().equalsIgnoreCase(mapName)) {
                             banningGameMap = gameMap;
@@ -107,51 +109,59 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(!gameCategory.mapChoiceChannel.gameMaps.contains(banningGameMap)) {
+                if(!gameCategoryManager.mapChoiceChannel.gameMaps.contains(banningGameMap)) {
                     message.reply("Ошибка! Карта уже забанена!").queue();
                     return;
                 }
 
-                if(!starter.getRoles().contains(gameCategory.firstTeamRole) &&
-                   !starter.getRoles().contains(gameCategory.secondTeamRole)) {
-                    message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
-                    return;
+                if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+                    if(!captain.getRoles().contains(gameCategoryManager.firstTeamRole) &&
+                       !captain.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                        message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
+                        return;
+                    }
+
+                    if(!captain.getRoles().contains(gameCategoryManager.mapChoiceChannel.currentBannerTeamRole)) {
+                        message.reply("Ошибка! Сейчас не ваша очередь бана!").queue();
+                        return;
+                    }
+                } else {
+                    if(!captain.equals(gameCategoryManager.mapChoiceChannel.currentBannerCaptain)) {
+                        message.reply("Ошибка! Сейчас не ваша очередь бана или Вы не являетесь капитаном команды!").queue();
+                        return;
+                    }
                 }
 
-                if(!starter.getRoles().contains(gameCategory.mapChoiceChannel.currentBannerTeamRole)) {
-                    message.reply("Ошибка! Сейчас не ваша очередь бана!").queue();
-                    return;
-                }
-
-                if(gameCategory.mapChoiceChannel.gameMaps.size() == 1) {
+                if(gameCategoryManager.mapChoiceChannel.gameMaps.size() == 1) {
                     message.reply("Ошибка! Все карты забанены!").queue();
                     return;
                 }
 
-                int starterId = MTHD.getInstance().database.getUserId(starter.getId());
-                if(starterId < 0) {
+                int captainId = MTHD.getInstance().database.getUserId(captain.getId());
+                if(captainId < 0) {
                     message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
                     return;
                 }
 
-                if(isNotStarter(starterId)) {
-                    message.reply("Ошибка! Только начавший игру может банить карты!").queue();
-                    return;
+                if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+                    if(isNotTeamCaptain(captainId)) {
+                        message.reply("Ошибка! Только начавший игру может банить карты!").queue();
+                        return;
+                    }
+                } else {
+                    if(isNotSingleCaptain(captainId)) {
+                        message.reply("Ошибка! Вы не являетесь капитаном команды!").queue();
+                        return;
+                    }
                 }
 
-                int starterTeamId = MTHD.getInstance().database.getUserTeamId(starterId);
-                if(starterTeamId < 0) {
-                    message.reply("Ошибка! Вы не являетесь участником или лидером какой-либо команды!").queue();
-                    return;
-                }
-
-                if(!gameCategory.game.gameState.equals(GameState.MAP_CHOICE)) {
+                if(!gameCategoryManager.game.gameState.equals(GameState.MAP_CHOICE)) {
                     message.reply("Ошибка! Стадия выбора карты закончена!").queue();
                     return;
                 }
 
                 message.reply("Вы успешно забанили карту!").queue();
-                gameCategory.mapChoiceChannel.banMap(banningGameMap);
+                gameCategoryManager.mapChoiceChannel.banMap(banningGameMap);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
@@ -160,16 +170,36 @@ public class MapChoiceCommandListener extends ListenerAdapter {
 
     /**
      * Проверяет, является ли пользователь не начавшим игру
-     * @param starterId Id начавшего игру
+     * @param captainId Id капитана команды
      * @return Значение, является ли пользователь не начавшим игру
      */
-    private boolean isNotStarter(int starterId) {
+    private boolean isNotTeamCaptain(int captainId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT 1 FROM live_games WHERE first_team_starter_id = ? OR second_team_starter_id = ?;");
-            preparedStatement.setInt(1, starterId);
-            preparedStatement.setInt(2, starterId);
+                "SELECT 1 FROM team_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;");
+            preparedStatement.setInt(1, captainId);
+            preparedStatement.setInt(2, captainId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return !resultSet.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    /**
+     * Проверяет, является ли пользователь не капитаном команды
+     * @param captainId Id капитана команды
+     * @return Значение, является ли пользователь не капитаном команды
+     */
+    private boolean isNotSingleCaptain(int captainId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT 1 FROM single_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;");
+            preparedStatement.setInt(1, captainId);
+            preparedStatement.setInt(2, captainId);
             ResultSet resultSet = preparedStatement.executeQuery();
             return !resultSet.next();
         } catch (SQLException e) {

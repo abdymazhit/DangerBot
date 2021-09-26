@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Администраторские команды
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class AdminCommandsListener extends ListenerAdapter {
@@ -32,6 +32,12 @@ public class AdminCommandsListener extends ListenerAdapter {
     /** Команда передачи прав лидера команды */
     private final AdminTeamTransferCommandListener adminTeamTransferCommandListener;
 
+    /** Команда добавления игрока в Single Rating */
+    private final AdminSingleAddCommandListener adminSingleAddCommandListener;
+
+    /** Команда удаления игрока из Single Rating */
+    private final AdminSingleDeleteCommandListener adminSingleDeleteCommandListener;
+
     /**
      * Инициализирует команды
      */
@@ -42,6 +48,8 @@ public class AdminCommandsListener extends ListenerAdapter {
         this.adminTeamDisbandCommandListener = new AdminTeamDisbandCommandListener();
         this.adminTeamRenameCommandListener = new AdminTeamRenameCommandListener();
         this.adminTeamTransferCommandListener = new AdminTeamTransferCommandListener();
+        this.adminSingleAddCommandListener = new AdminSingleAddCommandListener();
+        this.adminSingleDeleteCommandListener = new AdminSingleDeleteCommandListener();
     }
 
     /**
@@ -68,6 +76,10 @@ public class AdminCommandsListener extends ListenerAdapter {
                 adminTeamRenameCommandListener.onCommandReceived(event);
             } else if(contentRaw.startsWith("!adminteam transfer")) {
                 adminTeamTransferCommandListener.onCommandReceived(event);
+            } else if(contentRaw.startsWith("!adminsingle add")) {
+                adminSingleAddCommandListener.onCommandReceived(event);
+            } else if(contentRaw.startsWith("!adminsingle delete")) {
+                adminSingleDeleteCommandListener.onCommandReceived(event);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

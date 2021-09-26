@@ -1,21 +1,22 @@
 package net.abdymazhit.mthd.listeners.commands.game;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.UserRole;
-import net.abdymazhit.mthd.game.GameCategory;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 /**
  * Команда отмены игры
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -32,21 +33,21 @@ public class GameCommandsListener extends ListenerAdapter {
         if(assistant == null) return;
         if(event.getAuthor().isBot()) return;
 
-        for(GameCategory gameCategory : MTHD.getInstance().gameManager.getGameCategories()) {
-            processGame(gameCategory, messageChannel, message, assistant);
+        for(GameCategoryManager gameCategoryManager : MTHD.getInstance().gameManager.gameCategories) {
+            processGame(gameCategoryManager, messageChannel, message, assistant);
         }
     }
 
     /**
      * Обрабыватывает действия игры
-     * @param gameCategory Категория игры
+     * @param gameCategoryManager Категория игры
      * @param messageChannel Канал сообщений
      * @param message Сообщение
      * @param assistant Помощник игры
      */
-    private void processGame(GameCategory gameCategory, MessageChannel messageChannel, Message message, Member assistant) {
-        if(gameCategory.gameChannel == null) return;
-        if(gameCategory.gameChannel.channelId.equals(messageChannel.getId())) {
+    private void processGame(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member assistant) {
+        if(gameCategoryManager.gameChannel == null) return;
+        if(gameCategoryManager.gameChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.equals("!start")) {
                 if(!assistant.getRoles().contains(UserRole.ADMIN.getRole()) &&
@@ -62,17 +63,17 @@ public class GameCommandsListener extends ListenerAdapter {
                 }
 
                 if(!assistant.getRoles().contains(UserRole.ADMIN.getRole())) {
-                    if(cancellerId != gameCategory.game.assistantId) {
+                    if(cancellerId != gameCategoryManager.game.assistantAccount.id) {
                         message.reply("Ошибка! Только помощник этой игры может начать игру!").queue();
                         return;
                     }
                 }
 
                 message.reply("Вы успешно начали игру!").queue();
-                gameCategory.setGameState(GameState.GAME);
-                gameCategory.gameChannel.timer.cancel();
-                MTHD.getInstance().liveGamesManager.addLiveGame(gameCategory.game);
-                gameCategory.gameChannel.sendGameStartMessage();
+                gameCategoryManager.setGameState(GameState.GAME);
+                gameCategoryManager.gameChannel.timer.cancel();
+                MTHD.getInstance().liveGamesManager.addLiveGame(gameCategoryManager.game);
+                gameCategoryManager.gameChannel.sendGameStartMessage();
             } else if(contentRaw.equals("!cancel")) {
                 if(!assistant.getRoles().contains(UserRole.ADMIN.getRole())) {
                     message.reply("Ошибка! У вас нет прав для этого действия!").queue();
@@ -86,17 +87,17 @@ public class GameCommandsListener extends ListenerAdapter {
                 }
 
                 message.reply("Вы успешно отменили игру!").queue();
-                MTHD.getInstance().gameManager.deleteGame(gameCategory.game);
+                MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
 
-                if(gameCategory.gameChannel.timer != null) {
-                    gameCategory.gameChannel.timer.cancel();
+                if(gameCategoryManager.gameChannel.timer != null) {
+                    gameCategoryManager.gameChannel.timer.cancel();
                 }
-                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategoryManager.game);
 
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        MTHD.getInstance().gameManager.deleteGame(gameCategory.categoryId);
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
                     }
                 }, 7000);
             } else if(contentRaw.startsWith("!finish")) {
@@ -126,16 +127,18 @@ public class GameCommandsListener extends ListenerAdapter {
                     return;
                 }
 
+                MTHD.getInstance().liveGamesManager.addLiveGame(gameCategoryManager.game);
+
                 String errorMessage = MTHD.getInstance().liveGamesManager.finishMatch(matchId);
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();
                     return;
                 }
 
-                if(gameCategory.gameChannel.timer != null) {
-                    gameCategory.gameChannel.timer.cancel();
+                if(gameCategoryManager.gameChannel.timer != null) {
+                    gameCategoryManager.gameChannel.timer.cancel();
                 }
-                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategory.game);
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategoryManager.game);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

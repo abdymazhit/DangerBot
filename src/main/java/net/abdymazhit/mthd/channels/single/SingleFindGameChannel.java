@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.channels;
+package net.abdymazhit.mthd.channels.single;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
@@ -15,12 +15,12 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Канал поиска игры
+ * Канал поиска игры игроков
  *
- * @version   23.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
-public class FindGameChannel extends Channel {
+public class SingleFindGameChannel extends Channel {
 
     /** Id сообщения о доступных помощниках */
     public String channelAvailableAssistantsMessageId;
@@ -28,10 +28,10 @@ public class FindGameChannel extends Channel {
     /**
      * Инициализирует канал поиска игры
      */
-    public FindGameChannel() {
-        List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
+    public SingleFindGameChannel() {
+        List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Single Rating", true);
         if(categories.isEmpty()) {
-            throw new IllegalArgumentException("Критическая ошибка! Категория Team Rating не существует!");
+            throw new IllegalArgumentException("Критическая ошибка! Категория Single Rating не существует!");
         }
 
         Category category = categories.get(0);
@@ -43,30 +43,29 @@ public class FindGameChannel extends Channel {
         }
 
         category.createTextChannel("find-game").setPosition(2)
-            .setSlowmode(5)
-            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue(textChannel -> {
-                channelId = textChannel.getId();
-                updateTeamsInGameSearchCountMessage();
-                updateAvailableAssistantsMessage();
-            });
+                .setSlowmode(5)
+                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(UserRole.SINGLE_RATING.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(textChannel -> {
+                    channelId = textChannel.getId();
+                    updatePlayersInGameSearchCountMessage();
+                    updateAvailableAssistantsMessage();
+                });
     }
 
     /**
-     * Обновляет количество команд в поиске игры
+     * Обновляет количество игроков в поиске игры
      */
-    public void updateTeamsInGameSearchCountMessage() {
+    public void updatePlayersInGameSearchCountMessage() {
         TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
         if(textChannel == null) {
             System.out.println("Критическая ошибка! Канал find-game не существует!");
             return;
         }
 
-        int count4x2 = getTeamsCountInGameSearchByFormat("4x2");
-        int count6x2 = getTeamsCountInGameSearchByFormat("6x2");
+        int count4x2 = getPlayersCountInGameSearchByFormat("4x2");
+        int count6x2 = getPlayersCountInGameSearchByFormat("6x2");
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Поиск игры");
@@ -74,16 +73,16 @@ public class FindGameChannel extends Channel {
         embedBuilder.setDescription("""
             Доступные форматы игры: 4x2 , 6x2
 
-            Команд в поиске игры 4x2: `%teams4x2Count%`
-            Команд в поиске игры 6x2: `%teams6x2Count%`
+            Игроков в поиске игры 4x2: `%players4x2Count%`
+            Игроков в поиске игры 6x2: `%players6x2Count%`
 
             Войти в поиск игры
             `!find game <FORMAT>`
 
             Выйти из поиска игры
             `!find leave`"""
-            .replace("%teams4x2Count%", String.valueOf(count4x2))
-            .replace("%teams6x2Count%", String.valueOf(count6x2)));
+                .replace("%players4x2Count%", String.valueOf(count4x2))
+                .replace("%players6x2Count%", String.valueOf(count6x2)));
         if(channelMessageId == null) {
             textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
         } else {
@@ -126,17 +125,16 @@ public class FindGameChannel extends Channel {
     }
 
     /**
-     * Получает количество команд в поиске игры по формату
+     * Получает количество игроков в поиске игры по формату
      * @param format Формат игры
-     * @return Количество команд в поиске игры по формату
+     * @return Количество игроков в поиске игры по формату
      */
-    public int getTeamsCountInGameSearchByFormat(String format) {
+    public int getPlayersCountInGameSearchByFormat(String format) {
         int count = 0;
         try {
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement(
-                "SELECT COUNT(*) as count FROM teams_in_game_search WHERE format = ?;");
+                    "SELECT COUNT(*) as count FROM players_in_game_search WHERE format = ?;");
             preparedStatement.setString(1, format);
-
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 count = resultSet.getInt("count");

@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Представляет собой роль пользователя
  *
- * @version   23.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public enum UserRole {
@@ -16,6 +16,7 @@ public enum UserRole {
     AUTHORIZED("Authorized"),
     MEMBER("Member"),
     LEADER("Leader"),
+    SINGLE_RATING("Single Rating"),
     ASSISTANT("Assistant"),
     ADMIN("Admin");
 

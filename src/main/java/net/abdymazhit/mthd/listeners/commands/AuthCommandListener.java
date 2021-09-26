@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   22.09.2021
+ * @version   26.09.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -124,11 +124,9 @@ public class AuthCommandListener extends ListenerAdapter {
                 if(discord_id != null) {
                     MTHD.getInstance().guild.retrieveMemberById(discord_id).queue(member -> {
                         // Удалить роли старого пользователя
-                        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
-                            for(Role role : member.getRoles()) {
-                                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                                    MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
-                                }
+                        for(Role role : member.getRoles()) {
+                            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
+                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
                             }
                         }
 
