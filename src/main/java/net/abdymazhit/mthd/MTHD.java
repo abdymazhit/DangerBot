@@ -45,7 +45,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   26.09.2021
+ * @version   29.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -136,6 +136,7 @@ public class MTHD {
         System.out.println("Удачное подключение к Discord API!");
 
         database = new Database();
+        gameManager = new GameManager();
         authChannel = new AuthChannel();
         adminChannel = new AdminChannel();
         staffChannel = new StaffChannel();
@@ -149,7 +150,6 @@ public class MTHD {
         utils = new Utils();
         mthdManager = new MTHDManager();
         liveGamesManager = new LiveGamesManager();
-        gameManager = new GameManager();
 
 //        Обновить команды, только при изменении/добавлении команды
 //        updateCommands();

@@ -20,7 +20,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер сервера
  *
- * @version   26.09.2021
+ * @version   29.09.2021
  * @author    Islam Abdymazhit
  */
 public class MTHDManager {
@@ -37,18 +37,19 @@ public class MTHDManager {
 
         List<UserAccount> teamMembers = getUsersAsTeamMembers();
         List<UserAccount> teamLeader = getUsersAsTeamLeaders();
+
         configureUsersRoles(usersDiscordIdsNames, playersDiscordIdsNames, teamMembers, teamLeader);
     }
 
     /**
-     * Получает имена всех команд
-     * @return Имена всех команд
+     * Получает имена существующих команд
+     * @return Имена существующих команд
      */
     private List<String> getTeamsNames() {
         List<String> teamsNames = new ArrayList<>();
         try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            ResultSet resultSet = connection.createStatement().executeQuery("SELECT name FROM teams WHERE is_deleted is null;");
+            ResultSet resultSet = MTHD.getInstance().database.getConnection().createStatement()
+                    .executeQuery("SELECT name FROM teams WHERE is_deleted is null;");
             while(resultSet.next()) {
                 String name = resultSet.getString("name");
                 teamsNames.add(name);
@@ -60,8 +61,8 @@ public class MTHDManager {
     }
 
     /**
-     * Настраивает голосовые каналы для команд
-     * @param teamsNames Имена всех команд
+     * Настраивает голосовые каналы для существующих команд
+     * @param teamsNames Имена существующих команд
      */
     private void configureVoiceChannelsForTeams(List<String> teamsNames) {
         List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Team Rating", true);
@@ -69,18 +70,25 @@ public class MTHDManager {
             throw new IllegalArgumentException("Критическая ошибка! Категория Team Rating не существует!");
         }
 
-        Map<String, Role> teamNamesRoles = new HashMap<>();
+        Map<String, Role> teamsNamesRoles = new HashMap<>();
         for(String teamName : teamsNames) {
             List<Role> roles = MTHD.getInstance().guild.getRolesByName(teamName, true);
-            if(!roles.isEmpty()) {
-                teamNamesRoles.put(teamName, roles.get(0));
-            } else {
+            if(roles.isEmpty()) {
                 try {
-                    Role role = MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
-                            .setColor(10070709).submit().get();
-                    teamNamesRoles.put(teamName, role);
+                    Role role = MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole())
+                            .setName(teamName).setColor(10070709).submit().get();
+                    teamsNamesRoles.put(teamName, role);
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
+                }
+            } else {
+                if(roles.size() == 1) {
+                    teamsNamesRoles.put(teamName, roles.get(0));
+                } else {
+                    for(int i = 0; i < roles.size() - 1; i++) {
+                        roles.get(i).delete().queue();
+                    }
+                    teamsNamesRoles.put(teamName, roles.get(roles.size() - 1));
                 }
             }
         }
@@ -91,7 +99,7 @@ public class MTHDManager {
                && !role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
                && !role.equals(UserRole.LEADER.getRole()) && !role.equals(UserRole.MEMBER.getRole())
                && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.TEST.getRole())) {
-                if(!teamNamesRoles.containsKey(role.getName())) {
+                if(!teamsNamesRoles.containsKey(role.getName())) {
                     role.delete().queue();
                 }
             }
@@ -116,11 +124,13 @@ public class MTHDManager {
 
             if(!hasVoiceChannel) {
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamName, true);
-                if(!teamRoles.isEmpty()) {
+                if(teamRoles.size() == 1) {
                     category.createVoiceChannel(teamName)
                             .addPermissionOverride(teamRoles.get(0), EnumSet.of(Permission.VIEW_CHANNEL), null)
                             .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                             .queue();
+                } else {
+                    throw new IllegalArgumentException("Критическая ошибка! Команда " + teamName + " не имеет роли или имеет больше 1 роли!");
                 }
             }
         }
@@ -154,6 +164,10 @@ public class MTHDManager {
         return usersDiscordIdsNames;
     }
 
+    /**
+     * Получает discord id и имена всех игроков Single Rating
+     * @return Discord id и имена всех игроков Single Rating
+     */
     private Map<String, String> getPlayersDiscordIdsNames() {
         Map<String, String> playersDiscordIdsNames = new HashMap<>();
         try {
@@ -184,8 +198,7 @@ public class MTHDManager {
                 SELECT tm.member_id id, u.discord_id discord_id, t.name team_name
                 FROM teams_members as tm
                 INNER JOIN teams as t ON t.id = tm.team_id
-                INNER JOIN users as u ON u.id = tm.member_id AND u.discord_id is not null;
-                """);
+                INNER JOIN users as u ON u.id = tm.member_id AND u.discord_id is not null;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String discordId = resultSet.getString("discord_id");
@@ -214,8 +227,7 @@ public class MTHDManager {
             ResultSet resultSet = connection.createStatement().executeQuery("""
                 SELECT t.leader_id id, u.discord_id discord_id, t.name team_name
                 FROM teams as t
-                INNER JOIN users as u ON u.id = t.leader_id AND t.is_deleted is null AND u.discord_id is not null;
-                """);
+                INNER JOIN users as u ON u.id = t.leader_id AND t.is_deleted is null AND u.discord_id is not null;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String discordId = resultSet.getString("discord_id");
@@ -233,86 +245,103 @@ public class MTHDManager {
         return userAccounts;
     }
 
+    /**
+     * Настраивает роли всех пользователей
+     * @param usersDiscordIdsNames Discord id и имена всех пользователей
+     * @param playersDiscordIdsNames Discord id и имена игроков Single Rating
+     * @param teamMembers Все участники команд
+     * @param teamLeaders Все лидеры команд
+     */
     private void configureUsersRoles(Map<String, String> usersDiscordIdsNames, Map<String, String> playersDiscordIdsNames, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
         MTHD.getInstance().guild.loadMembers().onSuccess(members -> {
             for(Member member : members) {
-                String discordId = member.getId();
-                if(!usersDiscordIdsNames.containsKey(discordId)) {
-                    for(Role role : member.getRoles()) {
-                        if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                           && !role.equals(MTHD.getInstance().guild.getBotRole())) {
-                            MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                if(!member.getUser().isBot()) {
+                    String discordId = member.getId();
+                    if(!usersDiscordIdsNames.containsKey(discordId)) {
+                        for(Role role : member.getRoles()) {
+                            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
+                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                            }
                         }
-                    }
-                } else {
-                    MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
-
-                    if(!playersDiscordIdsNames.containsKey(discordId)) {
-                        MTHD.getInstance().guild.removeRoleFromMember(member, UserRole.SINGLE_RATING.getRole()).queue();
                     } else {
-                        MTHD.getInstance().guild.addRoleToMember(member, UserRole.SINGLE_RATING.getRole()).queue();
-                    }
+                        MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
 
-                    configureUserTeamRole(discordId, teamMembers, teamLeaders);
+                        // Изменить ник пользователю
+                        if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
+                            MTHD.getInstance().guild.modifyNickname(member, usersDiscordIdsNames.get(discordId)).queue();
+                        }
+
+                        if(!playersDiscordIdsNames.containsKey(discordId)) {
+                            MTHD.getInstance().guild.removeRoleFromMember(member, UserRole.SINGLE_RATING.getRole()).queue();
+                        } else {
+                            MTHD.getInstance().guild.addRoleToMember(member, UserRole.SINGLE_RATING.getRole()).queue();
+                        }
+
+                        configureUserTeamRole(member, teamMembers, teamLeaders);
+                    }
                 }
             }
         });
     }
 
-    private void configureUserTeamRole(String discordId, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
+    /**
+     * Настраивает роли пользователя
+     * @param member Пользователь
+     * @param teamMembers Все участники команд
+     * @param teamLeaders Все лидеры команд
+     */
+    private void configureUserTeamRole(Member member, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
         for(UserAccount userAccount : teamMembers) {
-            if(userAccount.discordId.equals(discordId)) {
+            if(userAccount.discordId.equals(member.getId())) {
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(userAccount.teamName, true);
-                if(!teamRoles.isEmpty()) {
-                    MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.MEMBER.getRole()).queue();
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
+                if(teamRoles.size() == 1) {
+                    MTHD.getInstance().guild.addRoleToMember(member, UserRole.MEMBER.getRole()).queue();
+                    MTHD.getInstance().guild.addRoleToMember(member, teamRoles.get(0)).queue();
+                } else {
+                    throw new IllegalArgumentException("Критическая ошибка! Команда " + userAccount.teamName + " не имеет роли или имеет больше 1 роли!");
                 }
 
-                MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member -> {
-                    for(Role role : member.getRoles()) {
-                        if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                           && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.MEMBER.getRole())
-                           && !role.equals(UserRole.SINGLE_RATING.getRole())) {
-                            if(!role.getName().equals(userAccount.teamName)) {
-                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
-                            }
+                for(Role role : member.getRoles()) {
+                    if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
+                       && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.MEMBER.getRole())
+                       && !role.equals(UserRole.SINGLE_RATING.getRole())) {
+                        if(!role.getName().equals(userAccount.teamName)) {
+                            MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
                         }
                     }
-                });
+                }
                 return;
             }
         }
 
         for(UserAccount userAccount : teamLeaders) {
-            if(userAccount.discordId.equals(discordId)) {
+            if(userAccount.discordId.equals(member.getId())) {
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(userAccount.teamName, true);
-                if(!teamRoles.isEmpty()) {
-                    MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.LEADER.getRole()).queue();
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
+                if(teamRoles.size() == 1) {
+                    MTHD.getInstance().guild.addRoleToMember(member, UserRole.LEADER.getRole()).queue();
+                    MTHD.getInstance().guild.addRoleToMember(member, teamRoles.get(0)).queue();
+                } else {
+                    throw new IllegalArgumentException("Критическая ошибка! Команда " + userAccount.teamName + " не имеет роли или имеет больше 1 роли!");
                 }
 
-                MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member -> {
-                    for(Role role : member.getRoles()) {
-                        if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                           && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.LEADER.getRole())
-                           && !role.equals(UserRole.SINGLE_RATING.getRole())) {
-                            if(!role.getName().equals(userAccount.teamName)) {
-                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
-                            }
+                for(Role role : member.getRoles()) {
+                    if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
+                       && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.LEADER.getRole())
+                       && !role.equals(UserRole.SINGLE_RATING.getRole())) {
+                        if(!role.getName().equals(userAccount.teamName)) {
+                            MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
                         }
                     }
-                });
+                }
                 return;
             }
         }
 
-        MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member -> {
-            for(Role role : member.getRoles()) {
-                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                   && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())) {
-                    MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(null, ignore(UNKNOWN_ROLE));
-                }
+        for(Role role : member.getRoles()) {
+            if (!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
+                && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())) {
+                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(null, ignore(UNKNOWN_ROLE));
             }
-        });
+        }
     }
 }

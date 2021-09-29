@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков в команду
  *
- * @version   26.09.2021
+ * @version   29.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickChannel extends Channel {
@@ -142,6 +142,11 @@ public class PlayersPickChannel extends Channel {
         updatePlayersMessage(textChannel);
     }
 
+    /**
+     * Выбирает игрока за команду
+     * @param playerName Имя игрока
+     * @param teamId Id команды
+     */
     public void pickPlayerToTeam(String playerName, int teamId) {
         UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
         if(playerAccount == null) {
@@ -172,6 +177,10 @@ public class PlayersPickChannel extends Channel {
         createCountdownTask(textChannel);
     }
 
+    /**
+     * Создает обратный отсчет
+     * @param textChannel Канал выбора игроков в команду
+     */
     private void createCountdownTask(TextChannel textChannel) {
         if(gameCategoryManager.game.players.size() == 0) {
             gameCategoryManager.setGameState(GameState.MAP_CHOICE);

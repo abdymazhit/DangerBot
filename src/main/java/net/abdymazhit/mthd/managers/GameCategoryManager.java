@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   26.09.2021
+ * @version   29.09.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategoryManager {
@@ -214,9 +214,9 @@ public class GameCategoryManager {
                     }
                 } else {
                     if(channel.getName().equals("team_" + game.firstTeamCaptain.username)) {
-                        hasFirstTeamVoiceChannel = true;
+                        channel.delete().queue();
                     } else if(channel.getName().equals("team_" + game.secondTeamCaptain.username)) {
-                        hasSecondTeamVoiceChannel = true;
+                        channel.delete().queue();
                     } else {
                         channel.delete().queue();
                     }

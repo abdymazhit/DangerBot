@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора карты
  *
- * @version   26.09.2021
+ * @version   29.09.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -84,6 +84,7 @@ public class MapChoiceChannel extends Channel {
         if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
             MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant ->
                     category.createTextChannel("map-choice").setPosition(2)
+                            .setSlowmode(5)
                             .addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
                             .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
                             .addPermissionOverride(gameCategoryManager.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))

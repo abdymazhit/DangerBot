@@ -9,6 +9,8 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.TextChannel;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,7 +20,7 @@ import java.util.List;
 /**
  * Канал игроков
  *
- * @version   26.09.2021
+ * @version   29.09.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChannel extends Channel {
@@ -123,17 +125,22 @@ public class PlayersChannel extends Channel {
     public List<Player> getTopPlayers() {
         List<Player> players = new ArrayList<>();
         try {
-            ResultSet resultSet = MTHD.getInstance().database.getConnection().createStatement().executeQuery("""
-                WITH PLAYERS AS(SELECT *, RANK() OVER(ORDER BY points DESC) AS RATING FROM players)
-                SELECT u.id, u.username, p.points FROM users as u
-                INNER JOIN players as p ON p.player_id = u.id
-                WHERE RATING <= 20 AND p.is_deleted IS NULL;""");
+            Connection connection = MTHD.getInstance().database.getConnection();
+            ResultSet resultSet = connection.createStatement().executeQuery("""
+                WITH PLAYERS AS(SELECT *, RANK() OVER(ORDER BY points DESC) RATING FROM players)
+                SELECT player_id, points FROM PLAYERS WHERE RATING <= 20 AND is_deleted IS NULL;""");
             while(resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String username = resultSet.getString("username");
+                int id = resultSet.getInt("player_id");
                 int points = resultSet.getInt("points");
-                Player player = new Player(id, username, points);
-                players.add(player);
+
+                PreparedStatement preparedStatement = connection.prepareStatement("SELECT username FROM users WHERE id = ?;");
+                preparedStatement.setInt(1, id);
+                ResultSet usernameResultSet = preparedStatement.executeQuery();
+                if(usernameResultSet.next()) {{
+                    String username = usernameResultSet.getString("username");
+                    Player player = new Player(id, username, points);
+                    players.add(player);
+                }}
             }
         } catch (SQLException e) {
             e.printStackTrace();
