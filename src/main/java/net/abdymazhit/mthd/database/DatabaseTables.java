@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -160,6 +160,7 @@ public record DatabaseTables(Connection connection) {
                         id serial not null AUTO_INCREMENT,
                         player_id int not null,
                         format varchar(50) not null,
+                        joined_at timestamp not null,
                         PRIMARY KEY (id)
                     );
             """);
@@ -458,6 +459,7 @@ public record DatabaseTables(Connection connection) {
                         team_id int not null,
                         format varchar(50) not null,
                         captain_id int not null,
+                        joined_at timestamp not null,
                         PRIMARY KEY (id)
                     );
             """);

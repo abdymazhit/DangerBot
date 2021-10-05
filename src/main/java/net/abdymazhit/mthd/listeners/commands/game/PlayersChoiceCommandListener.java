@@ -3,6 +3,7 @@ package net.abdymazhit.mthd.listeners.commands.game;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.GameState;
+import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -11,11 +12,13 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Команда выбора игроков на игру
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -27,13 +30,13 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
     public void onMessageReceived(MessageReceivedEvent event) {
         MessageChannel messageChannel = event.getChannel();
         Message message = event.getMessage();
-        Member captain = event.getMember();
+        Member member = event.getMember();
 
-        if(captain == null) return;
+        if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
         for(GameCategoryManager gameCategoryManager : MTHD.getInstance().gameManager.gameCategories) {
-            choicePlayer(gameCategoryManager, messageChannel, message, captain);
+            choicePlayer(gameCategoryManager, messageChannel, message, member);
         }
     }
 
@@ -42,9 +45,9 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
      * @param gameCategoryManager Категория игры
      * @param messageChannel Канал сообщений
      * @param message Сообщение
-     * @param captain Начавщий игру
+     * @param member Написавший команду
      */
-    private void choicePlayer(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member captain) {
+    private void choicePlayer(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member member) {
         if(gameCategoryManager.playersChoiceChannel == null) return;
         if(gameCategoryManager.playersChoiceChannel.channelId == null) return;
 
@@ -63,7 +66,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                int captainId = MTHD.getInstance().database.getUserId(captain.getId());
+                int captainId = MTHD.getInstance().database.getUserId(member.getId());
                 if(captainId < 0) {
                     message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
                     return;
@@ -74,8 +77,8 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(!captain.getRoles().contains(gameCategoryManager.firstTeamRole) &&
-                   !captain.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                if(!member.getRoles().contains(gameCategoryManager.firstTeamRole) &&
+                   !member.getRoles().contains(gameCategoryManager.secondTeamRole)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -157,7 +160,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                int captainId = MTHD.getInstance().database.getUserId(captain.getId());
+                int captainId = MTHD.getInstance().database.getUserId(member.getId());
                 if(captainId < 0) {
                     message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
                     return;
@@ -168,8 +171,8 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(!captain.getRoles().contains(gameCategoryManager.firstTeamRole) &&
-                   !captain.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                if(!member.getRoles().contains(gameCategoryManager.firstTeamRole) &&
+                   !member.getRoles().contains(gameCategoryManager.secondTeamRole)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -212,6 +215,32 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
 
                 message.reply("Вы успешно удалили игрока из игры!").queue();
                 gameCategoryManager.playersChoiceChannel.updateGamePlayersMessage();
+            }  else if(contentRaw.equals("!cancel")) {
+                if(!member.getRoles().contains(UserRole.ADMIN.getRole()) && !member.getRoles().contains(UserRole.ASSISTANT.getRole())) {
+                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                    return;
+                }
+
+                int cancellerId = MTHD.getInstance().database.getUserId(member.getId());
+                if(cancellerId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                message.reply("Вы успешно отменили игру!").queue();
+                MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
+
+                if(gameCategoryManager.playersChoiceChannel.timer != null) {
+                    gameCategoryManager.playersChoiceChannel.timer.cancel();
+                }
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategoryManager.game);
+
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                    }
+                }, 7000);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

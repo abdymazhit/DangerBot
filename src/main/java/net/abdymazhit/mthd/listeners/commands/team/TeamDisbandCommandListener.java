@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Команда удалить команду
  *
- * @version   23.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamDisbandCommandListener {
@@ -97,12 +97,12 @@ public class TeamDisbandCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                "UPDATE teams SET is_deleted = true WHERE id = ?;");
+                "UPDATE teams SET is_deleted = true WHERE id = ? AND is_deleted is null;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.executeUpdate();
 
             PreparedStatement selectLeaderStatement = connection.prepareStatement(
-                "SELECT discord_id FROM users WHERE id = (SELECT leader_id FROM teams WHERE id = ?);");
+                "SELECT discord_id FROM users WHERE id = (SELECT leader_id FROM teams WHERE id = ? AND is_deleted is null);");
             selectLeaderStatement.setInt(1, teamId);
             ResultSet leaderResultSet = selectLeaderStatement.executeQuery();
             if(leaderResultSet.next()) {

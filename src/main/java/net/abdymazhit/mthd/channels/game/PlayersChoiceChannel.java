@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков на игру
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -32,6 +32,9 @@ public class PlayersChoiceChannel extends Channel {
 
     /** Сообщение отмены игры */
     public String channelGameCancelMessageId;
+
+    /** Таймер выбора игроков */
+    public Timer timer;
 
     /** Время выбора игроков */
     private static final int choiceTime = 120;
@@ -71,7 +74,8 @@ public class PlayersChoiceChannel extends Channel {
                                 channelId = textChannel.getId();
 
                                 AtomicInteger time = new AtomicInteger(choiceTime);
-                                new Timer().schedule(new TimerTask() {
+                                timer = new Timer();
+                                timer.schedule(new TimerTask() {
                                     @Override
                                     public void run() {
                                         if(time.get() <= 0) {

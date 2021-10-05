@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Отвечает за работу с базой данных
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -84,13 +84,14 @@ public class Database {
         return playersNames;
     }
 
-    public List<String> getSinglePlayersNames(int teamId) {
+    public List<String> getSinglePlayersNames(int liveGameId, int teamId) {
         List<String> playersNames = new ArrayList<>();
         try {
             if(teamId == 0) {
                 PreparedStatement captainStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
                     SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games as slg ON u.id = slg.first_team_captain_id;""");
+                    INNER JOIN single_live_games as slg ON u.id = slg.first_team_captain_id AND slg.id = ?;""");
+                captainStatement.setInt(1, liveGameId);
                 ResultSet captainResultSet = captainStatement.executeQuery();
                 while(captainResultSet.next()) {
                     playersNames.add(captainResultSet.getString("username"));
@@ -98,7 +99,8 @@ public class Database {
             } else {
                 PreparedStatement captainStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
                     SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games as slg ON u.id = slg.second_team_captain_id;""");
+                    INNER JOIN single_live_games as slg ON u.id = slg.second_team_captain_id AND slg.id = ?;""");
+                captainStatement.setInt(1, liveGameId);
                 ResultSet captainResultSet = captainStatement.executeQuery();
                 while(captainResultSet.next()) {
                     playersNames.add(captainResultSet.getString("username"));
@@ -107,8 +109,9 @@ public class Database {
 
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
                     SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games_players as slgp ON slgp.team_id = ? AND u.id = slgp.player_id;""");
+                    INNER JOIN single_live_games_players as slgp ON slgp.team_id = ? AND u.id = slgp.player_id AND slgp.live_game_id = ?;""");
             preparedStatement.setInt(1, teamId);
+            preparedStatement.setInt(2, liveGameId);
             ResultSet resultSet = preparedStatement.executeQuery();
             while(resultSet.next()) {
                 playersNames.add(resultSet.getString("username"));
@@ -291,7 +294,7 @@ public class Database {
      */
     public String getTeamName(int teamId) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT name FROM teams WHERE id = ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT name FROM teams WHERE id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, teamId);
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -421,7 +424,8 @@ public class Database {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("""
                         SELECT points FROM players as p
-                        INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND p.id = slgp.player_id AND slgp.team_id = ?;""");
+                        INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ?
+                        AND p.player_id = slgp.player_id AND p.is_deleted is null AND slgp.team_id = ?;""");
             preparedStatement.setInt(1, liveGameId);
             preparedStatement.setInt(2, teamId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -433,11 +437,13 @@ public class Database {
             if(teamId == 0) {
                 preparedStatement2 = connection.prepareStatement("""
                         SELECT points FROM players as p
-                        INNER JOIN single_live_games as slg ON slg.id = ? AND p.id = slg.first_team_captain_id;""");
+                        INNER JOIN single_live_games as slg ON slg.id = ?
+                        AND p.player_id = slg.first_team_captain_id AND p.is_deleted is null;""");
             } else {
                 preparedStatement2 = connection.prepareStatement("""
                         SELECT points FROM players as p
-                        INNER JOIN single_live_games as slg ON slg.id = ? AND p.id = slg.second_team_captain_id;""");
+                        INNER JOIN single_live_games as slg ON slg.id = ?
+                        AND p.player_id = slg.second_team_captain_id AND p.is_deleted is null;""");
             }
             preparedStatement2.setInt(1, liveGameId);
             ResultSet resultSet2 = preparedStatement2.executeQuery();
@@ -447,6 +453,7 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return points;
     }
 
@@ -480,7 +487,7 @@ public class Database {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT 1 FROM players WHERE player_id = ?;");
+                    "SELECT 1 FROM players WHERE player_id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, playerId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {

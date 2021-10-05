@@ -9,6 +9,7 @@ import net.abdymazhit.mthd.customs.Game;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
+import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
@@ -24,7 +25,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   29.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategoryManager {
@@ -213,12 +214,22 @@ public class GameCategoryManager {
                         channel.delete().queue();
                     }
                 } else {
-                    if(channel.getName().equals("team_" + game.firstTeamCaptain.username)) {
-                        channel.delete().queue();
-                    } else if(channel.getName().equals("team_" + game.secondTeamCaptain.username)) {
-                        channel.delete().queue();
+                    if(game.gameState.equals(GameState.PLAYERS_CHOICE)) {
+                        if(channel.getName().equals("team_" + game.firstTeamCaptain.username)) {
+                            channel.delete().queue();
+                        } else if(channel.getName().equals("team_" + game.secondTeamCaptain.username)) {
+                            channel.delete().queue();
+                        } else {
+                            channel.delete().queue();
+                        }
                     } else {
-                        channel.delete().queue();
+                        if(channel.getName().equals("team_" + game.firstTeamCaptain.username)) {
+                            hasFirstTeamVoiceChannel = true;
+                        } else if(channel.getName().equals("team_" + game.secondTeamCaptain.username)) {
+                            hasSecondTeamVoiceChannel = true;
+                        } else {
+                            channel.delete().queue();
+                        }
                     }
                 }
             }
@@ -385,8 +396,14 @@ public class GameCategoryManager {
                         .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
                         .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
 
+                if(players == null) {
+                    players = new ArrayList<>();
+                }
+
                 for(String discordId : playersDiscordIds) {
-                    MTHD.getInstance().guild.retrieveMemberById(discordId).queue(players::add);
+                    if(discordId != null) {
+                        MTHD.getInstance().guild.retrieveMemberById(discordId).queue(players::add);
+                    }
                 }
                 for(Member member : players) {
                     createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
@@ -415,9 +432,11 @@ public class GameCategoryManager {
                         .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
 
                 for(Member member : firstTeamMembers) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
+                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
                 }
-                createAction.queue();
+                ChannelAction<VoiceChannel> finalCreateAction = createAction;
+                MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
+                        finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue());
             }
         }
     }
@@ -427,7 +446,7 @@ public class GameCategoryManager {
         if(category != null) {
             for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
                 if(voiceChannel.getName().equals("team_" + game.firstTeamCaptain.username)) {
-                    voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue();
+                    voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue();
                     break;
                 }
             }
@@ -442,6 +461,7 @@ public class GameCategoryManager {
         if(category != null) {
             if(game.rating.equals(Rating.TEAM_RATING)) {
                 category.createVoiceChannel(secondTeamRole.getName()).setPosition(3)
+                        .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                         .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
                         .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
                         .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
@@ -453,9 +473,11 @@ public class GameCategoryManager {
                         .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
 
                 for(Member member : secondTeamMembers) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
+                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
                 }
-                createAction.queue();
+                ChannelAction<VoiceChannel> finalCreateAction = createAction;
+                MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
+                        finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue());
             }
         }
     }
@@ -465,7 +487,7 @@ public class GameCategoryManager {
         if(category != null) {
             for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
                 if(voiceChannel.getName().equals("team_" + game.secondTeamCaptain.username)) {
-                    voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue();
+                    voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue();
                     break;
                 }
             }
@@ -492,7 +514,9 @@ public class GameCategoryManager {
             preparedStatement.setInt(1, gameState.getId());
             preparedStatement.setInt(2, game.id);
             preparedStatement.executeUpdate();
+
             MTHD.getInstance().teamLiveGamesChannel.updateLiveGamesMessages();
+            MTHD.getInstance().singleLiveGamesChannel.updateLiveGamesMessages();
         } catch (SQLException e) {
             e.printStackTrace();
         }

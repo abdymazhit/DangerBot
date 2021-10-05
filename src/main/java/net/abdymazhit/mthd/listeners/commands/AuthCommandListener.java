@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -137,10 +137,9 @@ public class AuthCommandListener extends ListenerAdapter {
                     });
                 }
 
-                PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = ?, username = ? WHERE username LIKE ?;", Statement.RETURN_GENERATED_KEYS);
+                PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = ? WHERE username LIKE ? AND discord_id IS NULL;", Statement.RETURN_GENERATED_KEYS);
                 statement.setString(1, discordId);
                 statement.setString(2, username);
-                statement.setString(3, username);
                 statement.executeUpdate();
 
                 PreparedStatement idStatement = connection.prepareStatement("SELECT id FROM users WHERE username = ?;");

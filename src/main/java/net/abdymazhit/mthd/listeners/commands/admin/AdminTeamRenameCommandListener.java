@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Администраторская команда переименования команды
  *
- * @version   22.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamRenameCommandListener {
@@ -103,7 +103,7 @@ public class AdminTeamRenameCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                "UPDATE teams SET name = ? WHERE id = ?;");
+                "UPDATE teams SET name = ? WHERE id = ? AND is_deleted is null;");
             updateStatement.setString(1, toName);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();

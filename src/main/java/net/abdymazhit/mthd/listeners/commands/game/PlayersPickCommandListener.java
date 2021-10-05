@@ -3,6 +3,7 @@ package net.abdymazhit.mthd.listeners.commands.game;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.GameState;
+import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -14,11 +15,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Команда выбора игроков в команду
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickCommandListener extends ListenerAdapter {
@@ -30,13 +33,13 @@ public class PlayersPickCommandListener extends ListenerAdapter {
     public void onMessageReceived(MessageReceivedEvent event) {
         MessageChannel messageChannel = event.getChannel();
         Message message = event.getMessage();
-        Member captain = event.getMember();
+        Member member = event.getMember();
 
-        if(captain == null) return;
+        if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
         for(GameCategoryManager gameCategoryManager : MTHD.getInstance().gameManager.gameCategories) {
-            choicePlayer(gameCategoryManager, messageChannel, message, captain);
+            choicePlayer(gameCategoryManager, messageChannel, message, member);
         }
     }
 
@@ -45,9 +48,9 @@ public class PlayersPickCommandListener extends ListenerAdapter {
      * @param gameCategoryManager Категория игры
      * @param messageChannel Канал сообщений
      * @param message Сообщение
-     * @param captain Начавщий игру
+     * @param member Написавший команду
      */
-    private void choicePlayer(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member captain) {
+    private void choicePlayer(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member member) {
         if(gameCategoryManager.playersPickChannel == null) return;
         if(gameCategoryManager.playersPickChannel.channelId == null) return;
 
@@ -66,7 +69,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                int captainId = MTHD.getInstance().database.getUserId(captain.getId());
+                int captainId = MTHD.getInstance().database.getUserId(member.getId());
                 if(captainId < 0) {
                     message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
                     return;
@@ -80,6 +83,11 @@ public class PlayersPickCommandListener extends ListenerAdapter {
 
                 String playerName = command[1];
 
+                if(!member.equals(gameCategoryManager.playersPickChannel.currentPickerCaptain)) {
+                    message.reply("Ошибка! Сейчас не ваша очередь бана или Вы не являетесь капитаном команды!").queue();
+                    return;
+                }
+
                 UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
                 if(playerAccount == null) {
                     message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
@@ -92,7 +100,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(captain == gameCategoryManager.game.firstTeamCaptainMember) {
+                if(member == gameCategoryManager.game.firstTeamCaptainMember) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
                         if(gameCategoryManager.game.firstTeamPlayers.size() > 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
@@ -104,7 +112,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                             return;
                         }
                     }
-                } else if(captain == gameCategoryManager.game.secondTeamCaptainMember) {
+                } else if(member == gameCategoryManager.game.secondTeamCaptainMember) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
                         if(gameCategoryManager.game.secondTeamPlayers.size() > 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
@@ -124,7 +132,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                 }
 
                 String errorMessage;
-                if(captain == gameCategoryManager.game.firstTeamCaptainMember) {
+                if(member == gameCategoryManager.game.firstTeamCaptainMember) {
                     errorMessage = MTHD.getInstance().database.addPlayerToTeam(0, playerAccount.id);
                 } else {
                     errorMessage = MTHD.getInstance().database.addPlayerToTeam(1, playerAccount.id);
@@ -134,16 +142,39 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                     return;
                 }
 
-
                 message.reply("Вы успешно добавили игрока в команду!").queue();
 
-                if(captain == gameCategoryManager.game.firstTeamCaptainMember) {
-                    MTHD.getInstance().guild.retrieveMemberById(playerAccount.discordId).queue(gameCategoryManager::addToFirstTeamVoiceChannel);
-                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 0);
+                if(member == gameCategoryManager.game.firstTeamCaptainMember) {
+                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 0, playerAccount.discordId);
                 } else {
-                    MTHD.getInstance().guild.retrieveMemberById(playerAccount.discordId).queue(gameCategoryManager::addToSecondTeamVoiceChannel);
-                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 1);
+                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 1, playerAccount.discordId);
                 }
+            } else if(contentRaw.equals("!cancel")) {
+                if(!member.getRoles().contains(UserRole.ADMIN.getRole()) && !member.getRoles().contains(UserRole.ASSISTANT.getRole())) {
+                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                    return;
+                }
+
+                int cancellerId = MTHD.getInstance().database.getUserId(member.getId());
+                if(cancellerId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                message.reply("Вы успешно отменили игру!").queue();
+                MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
+
+                if(gameCategoryManager.playersPickChannel.timer != null) {
+                    gameCategoryManager.playersPickChannel.timer.cancel();
+                }
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategoryManager.game);
+
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                    }
+                }, 7000);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

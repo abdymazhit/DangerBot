@@ -11,13 +11,15 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 
 /**
  * Канал поиска игры команд
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameChannel extends Channel {
@@ -65,6 +67,9 @@ public class TeamFindGameChannel extends Channel {
             return;
         }
 
+        removeInactiveTeams("4x2");
+        removeInactiveTeams("6x2");
+
         int count4x2 = getTeamsCountInGameSearchByFormat("4x2");
         int count6x2 = getTeamsCountInGameSearchByFormat("6x2");
 
@@ -73,6 +78,8 @@ public class TeamFindGameChannel extends Channel {
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
             Доступные форматы игры: 4x2 , 6x2
+            
+            Обратите внимание, если в течении 20 минут не нашлась игра, Вы будете удалены из поиска! Вам придется заново зайти в поиск игры.
 
             Команд в поиске игры 4x2: `%teams4x2Count%`
             Команд в поиске игры 6x2: `%teams6x2Count%`
@@ -90,6 +97,30 @@ public class TeamFindGameChannel extends Channel {
             textChannel.editMessageEmbedsById(channelMessageId, embedBuilder.build()).queue();
         }
         embedBuilder.clear();
+    }
+
+    private void removeInactiveTeams(String format) {
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement(
+                    "SELECT team_id, joined_at FROM teams_in_game_search WHERE format = ?;");
+            preparedStatement.setString(1, format);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                int teamId = resultSet.getInt("team_id");
+
+                Timestamp timestamp = resultSet.getTimestamp("joined_at");
+                Timestamp currentTimestamp = Timestamp.from(Instant.now());
+
+                if(currentTimestamp.getTime() - timestamp.getTime() >= 1200000) {
+                    PreparedStatement statement = MTHD.getInstance().database.getConnection().prepareStatement(
+                            "DELETE FROM teams_in_game_search WHERE team_id = ?;");
+                    statement.setInt(1, teamId);
+                    statement.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

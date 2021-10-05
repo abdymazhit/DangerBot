@@ -11,11 +11,13 @@ import net.dv8tion.jda.api.entities.GuildChannel;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Менеджер игры
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -124,8 +126,8 @@ public class GameManager {
 
                 Game game = new Game(Rating.SINGLE_RATING, playersIds, id, firstTeamCaptainId,
                         secondTeamCaptainId, format, selectedMap, state, assistantId, startedAt);
-                game.firstTeamPlayers = MTHD.getInstance().database.getSinglePlayersNames(0);
-                game.secondTeamPlayers = MTHD.getInstance().database.getSinglePlayersNames(1);
+                game.firstTeamPlayers = MTHD.getInstance().database.getSinglePlayersNames(game.id, 0);
+                game.secondTeamPlayers = MTHD.getInstance().database.getSinglePlayersNames(game.id, 1);
                 liveGames.add(game);
             }
         } catch (SQLException e) {
@@ -145,15 +147,18 @@ public class GameManager {
                 List<Category> categories = MTHD.getInstance().guild.getCategoriesByName("Game-" + game.id, true);
                 if(categories.size() == 1) {
                     gameCategories.add(new GameCategoryManager(game, categories.get(0)));
+                    MTHD.getInstance().liveGamesManager.addLiveGame(game);
                     gameCategoriesIds.remove(Integer.valueOf(game.id));
                 }
             } else {
                 MTHD.getInstance().guild.createCategory("Game-" + game.id).queue(
                         category -> {
                             gameCategories.add(new GameCategoryManager(game, category));
+                            MTHD.getInstance().liveGamesManager.addLiveGame(game);
                             gameCategoriesIds.remove(Integer.valueOf(game.id));
                         });
             }
+
         }
 
         for(int id : gameCategoriesIds) {
@@ -162,7 +167,13 @@ public class GameManager {
                 for(GuildChannel guildChannel : category.getChannels()) {
                     guildChannel.delete().queue();
                 }
-                category.delete().queue();
+
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        category.delete().queue();
+                    }
+                }, 1000);
             }
         }
     }
@@ -177,7 +188,13 @@ public class GameManager {
             for(GuildChannel channel : category.getChannels()) {
                 channel.delete().queue();
             }
-            category.delete().queue();
+
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    category.delete().queue();
+                }
+            }, 1000);
 
             for(GameCategoryManager gameCategoryManager : gameCategories) {
                 if(gameCategoryManager.categoryId.equals(category.getId())) {

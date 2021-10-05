@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал игры
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
@@ -61,8 +61,8 @@ public class GameChannel extends Channel {
         }
 
         if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-            MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(
-                    assistant -> category.createTextChannel("game").setPosition(2)
+            MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant ->
+                    category.createTextChannel("game").setPosition(2)
                             .addPermissionOverride(gameCategoryManager.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
                             .addPermissionOverride(gameCategoryManager.secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
                             .addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null)
@@ -80,14 +80,14 @@ public class GameChannel extends Channel {
                 ChannelAction<TextChannel> createAction = category.createTextChannel("game").setPosition(2)
                         .addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
                         .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                        .addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null);
+                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
 
                 for(Member member : gameCategoryManager.players) {
                     createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
                 }
 
-                createAction.queue(textChannel -> {
+                createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null)
+                        .queue(textChannel -> {
                     channelId = textChannel.getId();
                     if(gameCategoryManager.game.gameState.equals(GameState.GAME_CREATION)) {
                         sendChannelMessage(gameCategoryManager, textChannel, assistant);
@@ -102,6 +102,7 @@ public class GameChannel extends Channel {
     /**
      * Отправляет сообщение канала
      * @param gameCategoryManager Категория игры
+     * @param textChannel Канал игры
      * @param assistant Помощник
      */
     private void sendChannelMessage(GameCategoryManager gameCategoryManager, TextChannel textChannel, Member assistant) {
@@ -141,62 +142,40 @@ public class GameChannel extends Channel {
                         secondTeamInviteStrings.append("`/game summon ").append(username).append("`\n");
                     }
 
+                    String description = """
+                            У вас (%assistant%) есть 10 минут для создания игры!
+                            Оставшееся время для для создания карты: `%time% сек.`
+                            
+                            Игра: BedWars Hard
+                            Формат игры: %format%
+                            Название карты: %map_name%
+                            
+                            Настройки сервера:
+                            `/game flag allow-warp false`
+                            `/game flag kick-on-lose true`
+                            `/game flag final-dm true`
+                            
+                            Команды для приглашения игроков %first_team%
+                            %first_team_invites%
+                            Команды для приглашения игроков %second_team%
+                            %second_team_invites%
+                            """
+                            .replace("%assistant%", assistant.getAsMention())
+                            .replace("%format%", gameCategoryManager.game.format)
+                            .replace("%map_name%", gameCategoryManager.game.gameMap.getName())
+                            .replace("%first_team_invites%", firstTeamInviteStrings)
+                            .replace("%second_team_invites%", secondTeamInviteStrings);
                     if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-                        embedBuilder.setDescription("""
-                            У вас (%assistant%) есть 10 минут для создания игры!
-                            Оставшееся время для для создания карты: `%time% сек.`
-                            
-                            Игра: BedWars Hard
-                            Формат игры: %format%
-                            Название карты: %map_name%
-                            
-                            Настройки сервера:
-                            `/game flag allow-warp false`
-                            `/game flag kick-on-lose true`
-                            `/game flag final-dm true`
-                            
-                            Команды для приглашения игроков %first_team%
-                            %first_team_invites%
-                            Команды для приглашения игроков %second_team%
-                            %second_team_invites%
-                            """
-                                .replace("%time%", String.valueOf(time))
-                                .replace("%assistant%", assistant.getAsMention())
-                                .replace("%format%", gameCategoryManager.game.format)
-                                .replace("%map_name%", gameCategoryManager.game.gameMap.getName())
+                        description = description.replace("%time%", String.valueOf(time))
                                 .replace("%first_team%", gameCategoryManager.firstTeamRole.getAsMention())
-                                .replace("%second_team%", gameCategoryManager.secondTeamRole.getAsMention())
-                                .replace("%first_team_invites%", firstTeamInviteStrings)
-                                .replace("%second_team_invites%", secondTeamInviteStrings));
+                                .replace("%second_team%", gameCategoryManager.secondTeamRole.getAsMention());
                     } else {
-                        embedBuilder.setDescription("""
-                            У вас (%assistant%) есть 10 минут для создания игры!
-                            Оставшееся время для для создания карты: `%time% сек.`
-                            
-                            Игра: BedWars Hard
-                            Формат игры: %format%
-                            Название карты: %map_name%
-                            
-                            Настройки сервера:
-                            `/game flag allow-warp false`
-                            `/game flag kick-on-lose true`
-                            `/game flag final-dm true`
-                            
-                            Команды для приглашения игроков %first_team%
-                            %first_team_invites%
-                            Команды для приглашения игроков %second_team%
-                            %second_team_invites%
-                            """
-                                .replace("%time%", String.valueOf(time))
-                                .replace("%assistant%", assistant.getAsMention())
-                                .replace("%format%", gameCategoryManager.game.format)
-                                .replace("%map_name%", gameCategoryManager.game.gameMap.getName())
+                        description = description.replace("%time%", String.valueOf(time))
                                 .replace("%first_team%", "team_" + gameCategoryManager.game.firstTeamCaptain.username)
-                                .replace("%second_team%", "team_" + gameCategoryManager.game.secondTeamCaptain.username)
-                                .replace("%first_team_invites%", firstTeamInviteStrings)
-                                .replace("%second_team_invites%", secondTeamInviteStrings));
+                                .replace("%second_team%", "team_" + gameCategoryManager.game.secondTeamCaptain.username);
                     }
 
+                    embedBuilder.setDescription(description);
                     embedBuilder.addField("Начать игру", """
                             Обратите внимание, вы должны ввести команду только после начала игры в самом VimeWorld! Введите `!start` для начала игры""", false);
 
@@ -223,13 +202,13 @@ public class GameChannel extends Channel {
         }
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(3092790);
 
         if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
             embedBuilder.setTitle(gameCategoryManager.game.firstTeam.name + " vs " + gameCategoryManager.game.secondTeam.name);
         } else {
             embedBuilder.setTitle("team_" + gameCategoryManager.game.firstTeamCaptain.username + " vs team_" + gameCategoryManager.game.secondTeamCaptain.username);
         }
-        embedBuilder.setColor(3092790);
 
         StringBuilder firstTeamPlayersStrings = new StringBuilder();
         for(String username : gameCategoryManager.game.firstTeamPlayers) {
@@ -249,9 +228,8 @@ public class GameChannel extends Channel {
             embedBuilder.addField("Команда team_" + gameCategoryManager.game.secondTeamCaptain.username, String.valueOf(secondTeamPlayersStrings), true);
         }
 
-        embedBuilder.addField("Отмена игры", "Данная команда доступна только для администрации. " +
-                                             "Для отмены игры введите `!cancel`", false);
-        embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча администратор " +
+        embedBuilder.addField("Отмена игры", "Данная команда доступна только для администрации. Для отмены игры введите `!cancel`", false);
+        embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча помощник " +
                                                            "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
         embedBuilder.addField("Помощник игры", gameCategoryManager.game.assistantAccount.username, false);
 

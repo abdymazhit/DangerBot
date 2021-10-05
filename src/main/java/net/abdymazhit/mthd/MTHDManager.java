@@ -20,7 +20,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер сервера
  *
- * @version   29.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHDManager {
@@ -225,8 +225,7 @@ public class MTHDManager {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             ResultSet resultSet = connection.createStatement().executeQuery("""
-                SELECT t.leader_id id, u.discord_id discord_id, t.name team_name
-                FROM teams as t
+                SELECT t.leader_id id, u.discord_id discord_id, t.name team_name FROM teams as t
                 INNER JOIN users as u ON u.id = t.leader_id AND t.is_deleted is null AND u.discord_id is not null;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");

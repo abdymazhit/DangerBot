@@ -16,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -47,6 +47,8 @@ public class GameCommandsListener extends ListenerAdapter {
      */
     private void processGame(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member assistant) {
         if(gameCategoryManager.gameChannel == null) return;
+        if(gameCategoryManager.gameChannel.channelId == null) return;
+
         if(gameCategoryManager.gameChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.equals("!start")) {
@@ -75,7 +77,7 @@ public class GameCommandsListener extends ListenerAdapter {
                 MTHD.getInstance().liveGamesManager.addLiveGame(gameCategoryManager.game);
                 gameCategoryManager.gameChannel.sendGameStartMessage();
             } else if(contentRaw.equals("!cancel")) {
-                if(!assistant.getRoles().contains(UserRole.ADMIN.getRole())) {
+                if(!assistant.getRoles().contains(UserRole.ADMIN.getRole()) && !assistant.getRoles().contains(UserRole.ASSISTANT.getRole())) {
                     message.reply("Ошибка! У вас нет прав для этого действия!").queue();
                     return;
                 }

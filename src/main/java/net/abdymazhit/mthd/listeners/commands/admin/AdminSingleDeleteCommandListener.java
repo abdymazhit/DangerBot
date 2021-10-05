@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * Администраторская команда удаления игрока из Single Rating
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminSingleDeleteCommandListener {
@@ -88,7 +88,7 @@ public class AdminSingleDeleteCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                    "UPDATE players SET is_deleted = true WHERE player_id = ?;");
+                    "UPDATE players SET is_deleted = true WHERE player_id = ? AND is_deleted is null;");
             deleteStatement.setInt(1, playerId);
             deleteStatement.executeUpdate();
 

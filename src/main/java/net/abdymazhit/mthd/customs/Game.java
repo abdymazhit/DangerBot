@@ -11,6 +11,7 @@ import net.abdymazhit.mthd.enums.Rating;
 import net.dv8tion.jda.api.entities.Member;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -18,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Представляет собой игру
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -136,6 +137,7 @@ public class Game {
         this.secondTeamCaptain = new UserAccount(secondTeamCaptainId);
         this.format = format;
         this.assistantAccount = new UserAccount(assistantId);
+        this.startedAt = Timestamp.from(Instant.now());
     }
 
     /**
@@ -157,6 +159,7 @@ public class Game {
         this.secondTeamCaptain = new UserAccount(secondTeamCaptainId);
         this.format = format;
         this.assistantAccount = new UserAccount(assistantId);
+        this.startedAt = Timestamp.from(Instant.now());
     }
 
     /**
@@ -235,7 +238,6 @@ public class Game {
         JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
         for(JsonElement infoElement : infoArray) {
             JsonObject infoObject = infoElement.getAsJsonObject();
-
             int vimeId = infoObject.get("id").getAsInt();
             firstTeamPlayersVimeId.add(vimeId);
         }

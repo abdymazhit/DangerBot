@@ -17,7 +17,7 @@ import java.time.Instant;
 /**
  * Команда передать права лидера
  *
- * @version   22.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener {
@@ -108,7 +108,7 @@ public class TeamTransferCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                "UPDATE teams SET leader_id = ? WHERE id = ?;");
+                "UPDATE teams SET leader_id = ? WHERE id = ? AND is_deleted is null;");
             updateStatement.setInt(1, toId);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();

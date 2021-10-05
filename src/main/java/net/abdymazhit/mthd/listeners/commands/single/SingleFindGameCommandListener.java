@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners.commands;
+package net.abdymazhit.mthd.listeners.commands.single;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.UserRole;
@@ -9,13 +9,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Команда поиск игры
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleFindGameCommandListener extends ListenerAdapter {
@@ -114,7 +115,7 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                message.reply("Ваша команда успешно удалена из поиска игры!").queue();
+                message.reply("Вы успешно удалены из поиска игры!").queue();
                 MTHD.getInstance().singleFindGameChannel.updatePlayersInGameSearchCountMessage();
                 MTHD.getInstance().gameManager.singleGameManager.tryStartGame();
             } else {
@@ -135,18 +136,26 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "INSERT INTO players_in_game_search (player_id, format) SELECT ?, ? " +
-                    "WHERE NOT EXISTS (SELECT 1 FROM players_in_game_search WHERE player_id = ?);", Statement.RETURN_GENERATED_KEYS);
+                    "INSERT INTO players_in_game_search (player_id, format, joined_at) SELECT ?, ?, ? " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM players_in_game_search WHERE player_id = ?);",
+                    Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, playerId);
             preparedStatement.setString(2, format);
-            preparedStatement.setInt(3, playerId);
+            preparedStatement.setTimestamp(3, Timestamp.from(Instant.now()));
+            preparedStatement.setInt(4, playerId);
             preparedStatement.executeUpdate();
             ResultSet resultSet = preparedStatement.getGeneratedKeys();
             if(resultSet.next()) {
                 // Вернуть значение, что игрок успешно добавлен в поиск игры
                 return null;
             } else {
-                return "Ошибка! Вы уже находитесь в поиске игры!";
+                PreparedStatement updateStatement = connection.prepareStatement(
+                        "UPDATE players_in_game_search SET joined_at = ? WHERE player_id = ? AND format = ?");
+                updateStatement.setTimestamp(1, Timestamp.from(Instant.now()));
+                updateStatement.setInt(2, playerId);
+                updateStatement.setString(3, format);
+                updateStatement.executeUpdate();
+                return "Ваше время захода в поиск игры обновлено!";
             }
         } catch (SQLException e) {
             e.printStackTrace();

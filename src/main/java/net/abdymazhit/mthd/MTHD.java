@@ -21,7 +21,9 @@ import net.abdymazhit.mthd.listeners.commands.game.MapChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.game.PlayersChoiceCommandListener;
 import net.abdymazhit.mthd.listeners.commands.game.PlayersPickCommandListener;
 import net.abdymazhit.mthd.listeners.commands.single.SingleCommandsListener;
+import net.abdymazhit.mthd.listeners.commands.single.SingleFindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
+import net.abdymazhit.mthd.listeners.commands.team.TeamFindGameCommandListener;
 import net.abdymazhit.mthd.managers.GameManager;
 import net.abdymazhit.mthd.managers.LiveGamesManager;
 import net.dv8tion.jda.api.JDA;
@@ -45,7 +47,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   29.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -136,7 +138,6 @@ public class MTHD {
         System.out.println("Удачное подключение к Discord API!");
 
         database = new Database();
-        gameManager = new GameManager();
         authChannel = new AuthChannel();
         adminChannel = new AdminChannel();
         staffChannel = new StaffChannel();
@@ -150,6 +151,7 @@ public class MTHD {
         utils = new Utils();
         mthdManager = new MTHDManager();
         liveGamesManager = new LiveGamesManager();
+        gameManager = new GameManager();
 
 //        Обновить команды, только при изменении/добавлении команды
 //        updateCommands();

@@ -4,6 +4,7 @@ import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
+import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -15,11 +16,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Команда выбора карты
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -31,13 +34,13 @@ public class MapChoiceCommandListener extends ListenerAdapter {
     public void onMessageReceived(MessageReceivedEvent event) {
         MessageChannel messageChannel = event.getChannel();
         Message message = event.getMessage();
-        Member captain = event.getMember();
+        Member member = event.getMember();
 
-        if(captain == null) return;
+        if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
         for(GameCategoryManager gameCategoryManager : MTHD.getInstance().gameManager.gameCategories) {
-            choiceMap(gameCategoryManager, messageChannel, message, captain);
+            choiceMap(gameCategoryManager, messageChannel, message, member);
         }
     }
 
@@ -46,10 +49,11 @@ public class MapChoiceCommandListener extends ListenerAdapter {
      * @param gameCategoryManager Категория игры
      * @param messageChannel Канал сообщений
      * @param message Сообщение
-     * @param captain Капитан команды
+     * @param member Написавший команду
      */
-    private void choiceMap(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member captain) {
+    private void choiceMap(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member member) {
         if(gameCategoryManager.mapChoiceChannel == null) return;
+        if(gameCategoryManager.mapChoiceChannel.channelId == null) return;
 
         if(gameCategoryManager.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
@@ -57,7 +61,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 String[] command = contentRaw.split(" ");
 
                 if(command.length == 1) {
-                    message.reply("Ошибка! Укажите имя игрока!").queue();
+                    message.reply("Ошибка! Укажите название карты!").queue();
                     return;
                 }
 
@@ -115,18 +119,18 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 }
 
                 if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-                    if(!captain.getRoles().contains(gameCategoryManager.firstTeamRole) &&
-                       !captain.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                    if(!member.getRoles().contains(gameCategoryManager.firstTeamRole) &&
+                       !member.getRoles().contains(gameCategoryManager.secondTeamRole)) {
                         message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                         return;
                     }
 
-                    if(!captain.getRoles().contains(gameCategoryManager.mapChoiceChannel.currentBannerTeamRole)) {
+                    if(!member.getRoles().contains(gameCategoryManager.mapChoiceChannel.currentBannerTeamRole)) {
                         message.reply("Ошибка! Сейчас не ваша очередь бана!").queue();
                         return;
                     }
                 } else {
-                    if(!captain.equals(gameCategoryManager.mapChoiceChannel.currentBannerCaptain)) {
+                    if(!member.equals(gameCategoryManager.mapChoiceChannel.currentBannerCaptain)) {
                         message.reply("Ошибка! Сейчас не ваша очередь бана или Вы не являетесь капитаном команды!").queue();
                         return;
                     }
@@ -137,7 +141,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                int captainId = MTHD.getInstance().database.getUserId(captain.getId());
+                int captainId = MTHD.getInstance().database.getUserId(member.getId());
                 if(captainId < 0) {
                     message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
                     return;
@@ -162,6 +166,32 @@ public class MapChoiceCommandListener extends ListenerAdapter {
 
                 message.reply("Вы успешно забанили карту!").queue();
                 gameCategoryManager.mapChoiceChannel.banMap(banningGameMap);
+            } else if(contentRaw.equals("!cancel")) {
+                if(!member.getRoles().contains(UserRole.ADMIN.getRole()) && !member.getRoles().contains(UserRole.ASSISTANT.getRole())) {
+                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+                    return;
+                }
+
+                int cancellerId = MTHD.getInstance().database.getUserId(member.getId());
+                if(cancellerId < 0) {
+                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                    return;
+                }
+
+                message.reply("Вы успешно отменили игру!").queue();
+                MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
+
+                if(gameCategoryManager.mapChoiceChannel.timer != null) {
+                    gameCategoryManager.mapChoiceChannel.timer.cancel();
+                }
+                MTHD.getInstance().liveGamesManager.removeLiveGame(gameCategoryManager.game);
+
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                    }
+                }, 7000);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

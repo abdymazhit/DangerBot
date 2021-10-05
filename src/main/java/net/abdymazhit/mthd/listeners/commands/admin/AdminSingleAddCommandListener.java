@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * Администраторская команда добавления игрока в Single Rating
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminSingleAddCommandListener {
@@ -71,7 +71,6 @@ public class AdminSingleAddCommandListener {
 
         if(playerAccount.discordId != null) {
             MTHD.getInstance().guild.addRoleToMember(playerAccount.discordId, UserRole.SINGLE_RATING.getRole()).queue();
-
         }
 
         message.reply("Игрок успешно добавлен в Single Rating! Имя игрока: " + playerName).queue();

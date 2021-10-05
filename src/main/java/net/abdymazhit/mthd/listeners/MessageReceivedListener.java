@@ -16,7 +16,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_MESSAGE;
 /**
  * Очищает сообщения канала
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -145,7 +145,7 @@ public class MessageReceivedListener extends ListenerAdapter {
                             if(gameCategoryManager.mapChoiceChannel.channelMapsMessageId != null) {
                                 if(!message.getId().equals(gameCategoryManager.mapChoiceChannel.channelMessageId) &&
                                    !message.getId().equals(gameCategoryManager.mapChoiceChannel.channelMapsMessageId)) {
-                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
                                     break;
                                 }
                             } else {
@@ -165,7 +165,7 @@ public class MessageReceivedListener extends ListenerAdapter {
                                         break;
                                     }
                                 } else {
-                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                                    message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
                                     break;
                                 }
                             }

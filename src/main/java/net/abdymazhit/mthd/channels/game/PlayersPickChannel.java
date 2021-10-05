@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков в команду
  *
- * @version   29.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickChannel extends Channel {
@@ -85,16 +85,16 @@ public class PlayersPickChannel extends Channel {
 
         MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant -> {
             ChannelAction<TextChannel> createAction = category.createTextChannel("players-pick").setPosition(2)
+                    .setSlowmode(5)
                     .addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
                     .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                    .addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null);
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
 
             for(Member member : gameCategoryManager.players) {
-                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
+                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
             }
 
-            createAction.queue(textChannel -> {
+            createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null).queue(textChannel -> {
                 channelId = textChannel.getId();
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Первая стадия игры - Выбор игроков");
@@ -105,7 +105,7 @@ public class PlayersPickChannel extends Channel {
                         Обратите внимание, если Вы не успеете выбрать игрока за отведенное время, тогда для вашей команды будет выбран случайный игрок.
           
                         Выбрать игрока
-                        `!pick <ПОРЯДКОВЫЙ НОМЕР> или <НИК>`"""
+                        `!pick <НИК>`"""
                         .replace("%first_captain%", firstTeamCaptain.getAsMention())
                         .replace("%second_captain%", secondTeamCaptain.getAsMention()));
                 textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
@@ -119,7 +119,24 @@ public class PlayersPickChannel extends Channel {
      * Выбирает игрока
      * @param player Игрок
      */
-    public void pickPlayer(String player, int teamId) {
+    public void pickPlayer(String player, int teamId, String discordId) {
+        if(discordId != null) {
+            if(teamId == 0) {
+                MTHD.getInstance().guild.retrieveMemberById(discordId).queue(gameCategoryManager::addToFirstTeamVoiceChannel);
+            } else {
+                MTHD.getInstance().guild.retrieveMemberById(discordId).queue(gameCategoryManager::addToSecondTeamVoiceChannel);
+            }
+        } else {
+            UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(player);
+            if(playerAccount != null) {
+                if(teamId == 0) {
+                    MTHD.getInstance().guild.retrieveMemberById(playerAccount.discordId).queue(gameCategoryManager::addToFirstTeamVoiceChannel);
+                } else {
+                    MTHD.getInstance().guild.retrieveMemberById(playerAccount.discordId).queue(gameCategoryManager::addToSecondTeamVoiceChannel);
+                }
+            }
+        }
+
         for(String name : gameCategoryManager.game.players) {
             if(name.equalsIgnoreCase(player)) {
                 gameCategoryManager.game.players.remove(name);
@@ -223,10 +240,10 @@ public class PlayersPickChannel extends Channel {
                                 String playerName = gameCategoryManager.game.players.get(new Random().nextInt(gameCategoryManager.game.players.size()));
                                 if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
                                     pickPlayerToTeam(playerName, 0);
-                                    pickPlayer(playerName, 0);
+                                    pickPlayer(playerName, 0, null);
                                 } else {
                                     pickPlayerToTeam(playerName, 1);
-                                    pickPlayer(playerName, 1);
+                                    pickPlayer(playerName, 1, null);
                                 }
                                 cancel();
                             }
@@ -249,10 +266,10 @@ public class PlayersPickChannel extends Channel {
                                 String playerName = gameCategoryManager.game.players.get(new Random().nextInt(gameCategoryManager.game.players.size()));
                                 if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
                                     pickPlayerToTeam(playerName, 0);
-                                    pickPlayer(playerName, 0);
+                                    pickPlayer(playerName, 0, null);
                                 } else {
                                     pickPlayerToTeam(playerName, 1);
-                                    pickPlayer(playerName, 1);
+                                    pickPlayer(playerName, 1, null);
                                 }
                                 cancel();
                             }

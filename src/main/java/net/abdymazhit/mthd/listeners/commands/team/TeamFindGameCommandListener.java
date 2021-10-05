@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.listeners.commands;
+package net.abdymazhit.mthd.listeners.commands.team;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Team;
@@ -11,13 +11,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Команда поиск игры
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameCommandListener extends ListenerAdapter {
@@ -166,19 +167,27 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "INSERT INTO teams_in_game_search (team_id, format, captain_id) SELECT ?, ?, ? " +
+                "INSERT INTO teams_in_game_search (team_id, format, captain_id, joined_at) SELECT ?, ?, ?, ? " +
                 "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.setString(2, format);
             preparedStatement.setInt(3, captainId);
-            preparedStatement.setInt(4, teamId);
+            preparedStatement.setTimestamp(4, Timestamp.from(Instant.now()));
+            preparedStatement.setInt(5, teamId);
             preparedStatement.executeUpdate();
             ResultSet resultSet = preparedStatement.getGeneratedKeys();
             if(resultSet.next()) {
                 // Вернуть значение, что команда успешно добавлена в поиск игры
                 return null;
             } else {
-                return "Ошибка! Ваша команда уже находится в поиске игры!";
+                PreparedStatement updateStatement = connection.prepareStatement(
+                        "UPDATE teams_in_game_search SET joined_at = ?, captain_id = ? WHERE team_id = ? AND format = ?");
+                updateStatement.setTimestamp(1, Timestamp.from(Instant.now()));
+                updateStatement.setInt(2, captainId);
+                updateStatement.setInt(3, teamId);
+                updateStatement.setString(4, format);
+                updateStatement.executeUpdate();
+                return "Ваше время захода в поиск игры обновлено!";
             }
         } catch (SQLException e) {
             e.printStackTrace();

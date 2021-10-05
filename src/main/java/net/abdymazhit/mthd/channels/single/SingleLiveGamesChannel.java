@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Канал активных игр Single рейтинга
  *
- * @version   26.09.2021
+ * @version   05.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleLiveGamesChannel extends Channel {
@@ -60,6 +60,11 @@ public class SingleLiveGamesChannel extends Channel {
      * Обновляет сообщения активных игр
      */
     public void updateLiveGamesMessages() {
+        if(channelId == null) return;
+
+        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
+        if(textChannel == null) return;
+
         List<LiveGame> games = getLiveGames();
 
         Map<LiveGame, String> channelLiveGamesMessages = new HashMap<>(channelLiveGamesMessagesId);
@@ -78,17 +83,13 @@ public class SingleLiveGamesChannel extends Channel {
             }
 
             if(!isSent) {
-                sendLiveGamesMessage(liveGame, null);
+                sendLiveGamesMessage(textChannel, liveGame, null);
             } else {
-                sendLiveGamesMessage(liveGame, channelLiveGamesMessagesId.get(neededGame));
+                sendLiveGamesMessage(textChannel, liveGame, channelLiveGamesMessagesId.get(neededGame));
             }
         }
 
-        if(channelId == null) return;
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал live-games не существует!");
+        if(channelId == null) {
             return;
         }
 
@@ -101,20 +102,14 @@ public class SingleLiveGamesChannel extends Channel {
 
     /**
      * Отправляет информационное сообщение о активной игре
+     * @param textChannel Канал активных игр
      * @param liveGame Активная игра
+     * @param messageId Id сообщения активных игр
      */
-    private void sendLiveGamesMessage(LiveGame liveGame, String messageId) {
-        if(channelId == null) return;
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал live-games не существует!");
-            return;
-        }
-
+    private void sendLiveGamesMessage(TextChannel textChannel, LiveGame liveGame, String messageId) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("""
-            ```              %first_team_captain%   vs   %second_team_captain%              ```"""
+            ```           team_%first_team_captain%   vs   team_%second_team_captain%           ```"""
                 .replace("%first_team_captain%", liveGame.firstTeamCaptainName)
                 .replace("%second_team_captain%", liveGame.secondTeamCaptainName));
         embedBuilder.setColor(3092790);
@@ -138,19 +133,18 @@ public class SingleLiveGamesChannel extends Channel {
         List<LiveGame> games = new ArrayList<>();
         try {
             ResultSet resultSet = MTHD.getInstance().database.getConnection().createStatement().executeQuery("""
-                    SELECT slg.id, u1.username firstTeamCaptainName, u2.username secondTeamCaptainName, slg.format, u.username as assistantName, slg.game_state
-                    FROM single_live_games as slg
-                    INNER JOIN players as p1 ON p1.player_id = slg.first_team_captain_id
-                    INNER JOIN players as p2 ON p2.player_id = slg.second_team_captain_id
-                    INNER JOIN users as u1 ON u1.id = slg.first_team_captain_id
-                    INNER JOIN users as u2 ON u1.id = slg.second_team_captain_id
-                    INNER JOIN users as u ON u.id = slg.assistant_id;""");
+                SELECT id, first_team_captain_id, second_team_captain_id,
+                format, assistant_id, game_state FROM single_live_games""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");
-                String firstTeamCaptainName = resultSet.getString("firstTeamCaptainName");
-                String secondTeamCaptainName = resultSet.getString("secondTeamCaptainName");
                 String format = resultSet.getString("format");
-                String assistantName = resultSet.getString("assistantName");
+                int firstTeamCaptainId = resultSet.getInt("first_team_captain_id");
+                int secondTeamCaptainId = resultSet.getInt("second_team_captain_id");
+                int assistantId = resultSet.getInt("assistant_id");
+
+                String firstTeamCaptainName = MTHD.getInstance().database.getUserName(firstTeamCaptainId);
+                String secondTeamCaptainName = MTHD.getInstance().database.getUserName(secondTeamCaptainId);
+                String assistantName = MTHD.getInstance().database.getUserName(assistantId);
 
                 GameState gameState = null;
                 for(GameState state : GameState.values()) {
