@@ -1,9 +1,11 @@
-package net.abdymazhit.mthd;
+package net.abdymazhit.mthd.utils;
 
 import com.google.gson.JsonArray;
 import net.abdymazhit.mthd.customs.Player;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
+import net.abdymazhit.mthd.enums.GameResult;
+import net.abdymazhit.mthd.enums.LeagueImage;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import org.apache.http.HttpEntity;
@@ -16,13 +18,20 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Date;
 
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   26.09.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -30,11 +39,27 @@ public class Utils {
     /** Объект, отвечает за создание embed сообщений */
     private final EmbedBuilder embedBuilder;
 
+    /** Шрифт имени игрока */
+    private Font nameFont;
+
+    /** Шрифт цифр и остальной информации */
+    private Font grayFont;
+
+    /** Серый цвет */
+    private Color grayColor;
+
     /**
      * Инициализирует инструменты
      */
     public Utils() {
         embedBuilder = new EmbedBuilder();
+        try {
+            nameFont = Font.createFont(Font.TRUETYPE_FONT, new File("./info/akzidenzgroteskpro-boldex.ttf")).deriveFont(34f);
+            grayFont = Font.createFont(Font.TRUETYPE_FONT, new File("./info/SFUIDisplay-Regular.ttf")).deriveFont(23f);
+            grayColor = new Color(255, 255, 255, 204);
+        } catch (FontFormatException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -216,42 +241,110 @@ public class Utils {
     }
 
     /**
-     * Получает информационное embed сообщение игрока
+     * Получает изображение информации игрока
      * @param player Игрок
-     * @return Информационное embed сообщение игрока
+     * @return Изображение информации игрока
      */
-    public MessageEmbed getPlayerInfoMessageEmbed(Player player) {
-        embedBuilder.setColor(3092790);
-        String rating = """
-            >>> ```
-            %points%
-            ```"""
-                .replace("%points%", String.valueOf(player.points));
-        embedBuilder.addField("Рейтинг", rating, true);
+    public File getPlayerInfoImage(Player player) {
+        try {
+            BufferedImage sourceImage = ImageIO.read(Paths.get("./info/player.jpg").toFile());
+            Graphics2D graphics2D = (Graphics2D) sourceImage.getGraphics();
 
-        String wins = """
-            >>> ```
-            %wins%
-            ```"""
-                .replace("%wins%", String.valueOf(player.wins));
-        embedBuilder.addField("Побед", wins, true);
+            graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP);
+            graphics2D.setFont(nameFont);
+            graphics2D.drawString(player.username, 30, 65);
 
-        String games = """
-            >>> ```
-            %games%
-            ```""".replace("%games%", String.valueOf(player.games));
-        embedBuilder.addField("Всего игр", games, true);
+            graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+            graphics2D.setFont(grayFont);
+            graphics2D.setColor(grayColor);
 
-        String name = """
-            ```
-            \040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%player_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040
-            ```"""
-                .replace("%player_name%", player.username);
-        embedBuilder.setDescription(name);
+            int hours;
+            if(player.latestActive != null) {
+                Timestamp timestamp = Timestamp.from(Instant.now());
+                long milliseconds = timestamp.getTime() - player.latestActive.getTime();
+                hours = (int) (milliseconds / (60 * 60 * 1000));
+            } else {
+                hours = 0;
+            }
 
-        MessageEmbed messageEmbed = embedBuilder.build();
-        embedBuilder.clear();
+            graphics2D.drawString(hours + "h ago", 160, 102);
+            graphics2D.drawString(String.valueOf(player.points), 30, 219);
+            graphics2D.drawString(String.valueOf(player.games), 165, 219);
+            graphics2D.drawString(String.valueOf(player.wins), 307, 219);
+            graphics2D.drawString(String.valueOf(player.games - player.wins), 425, 219);
 
-        return messageEmbed;
+            if(player.games == 0) {
+                graphics2D.drawString("0%", 554, 219);
+            } else {
+                graphics2D.drawString((player.wins * 100 / player.games) + "%", 554, 219);
+            }
+
+            int x = 30;
+            if(player.lastGameResults.size() >= 5) {
+                for(int i = 0; i < 5; i++) {
+                    graphics2D.setColor(player.lastGameResults.get(i).getColor());
+                    graphics2D.drawString(player.lastGameResults.get(i).getCharacter(), x, 335);
+
+                    if(player.lastGameResults.get(i).equals(GameResult.WIN)) {
+                        x += 30;
+                    } else {
+                        x += 22;
+                    }
+                }
+            } else {
+                for(int i = 0; i < player.lastGameResults.size(); i++) {
+                    graphics2D.setColor(player.lastGameResults.get(i).getColor());
+                    graphics2D.drawString(player.lastGameResults.get(i).getCharacter(), x, 335);
+
+                    if(player.lastGameResults.get(i).equals(GameResult.WIN)) {
+                        x += 30;
+                    } else {
+                        x += 22;
+                    }
+                }
+            }
+
+            graphics2D.drawImage(getLeagueImage(player.points).getImage(), 652, 30, null);
+
+            // Очистка памяти
+            graphics2D.dispose();
+
+            File file = new File("./info/image.png");
+            ImageIO.write(sourceImage, "png", file);
+
+            return file;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Получает изображение лиги
+     * @param points Очки
+     * @return Изображение лиги
+     */
+    private LeagueImage getLeagueImage(int points) {
+        if(points <= 800) {
+            return LeagueImage.LEAGUE_1;
+        } else if(points <= 950) {
+            return LeagueImage.LEAGUE_2;
+        } else if(points <= 1100) {
+            return LeagueImage.LEAGUE_3;
+        } else if(points <= 1250) {
+            return LeagueImage.LEAGUE_4;
+        } else if(points <= 1400) {
+            return LeagueImage.LEAGUE_5;
+        } else if(points <= 1550) {
+            return LeagueImage.LEAGUE_6;
+        } else if(points <= 1700) {
+            return LeagueImage.LEAGUE_7;
+        } else if(points <= 1850) {
+            return LeagueImage.LEAGUE_8;
+        } else if(points <= 2000) {
+            return LeagueImage.LEAGUE_9;
+        } else {
+            return LeagueImage.LEAGUE_10;
+        }
     }
 }

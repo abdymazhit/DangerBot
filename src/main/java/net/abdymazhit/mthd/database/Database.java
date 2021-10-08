@@ -5,15 +5,15 @@ import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.customs.Player;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
+import net.abdymazhit.mthd.enums.GameResult;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Отвечает за работу с базой данных
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -375,11 +375,11 @@ public class Database {
     }
 
     /**
-     * Получает игрока Single Rating
+     * Получает информацию о игроке Single Rating
      * @param playerId Id игрока
-     * @return Игрок Single Rating
+     * @return Информация о игроке Single Rating
      */
-    public Player getSinglePlayer(int playerId) {
+    public Player getSinglePlayerInfo(int playerId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("""
@@ -393,7 +393,80 @@ public class Database {
                 int points = resultSet.getInt("points");
                 int games = resultSet.getInt("games");
                 int wins = resultSet.getInt("wins");
-                return new Player(playerId, username, points, games, wins);
+
+                Map<Timestamp, GameResult> lastGameResultsWithTime = new HashMap<>();
+
+                PreparedStatement firstCaptainLastGamesResults = connection.prepareStatement("""
+                    SELECT winner_team_id, finished_at FROM single_finished_games_history WHERE first_team_captain_id = ?;""");
+                firstCaptainLastGamesResults.setInt(1, playerId);
+                ResultSet firstCaptainLastGamesResultsResultSet = firstCaptainLastGamesResults.executeQuery();
+                while(firstCaptainLastGamesResultsResultSet.next()) {
+                    Timestamp finishedAt = firstCaptainLastGamesResultsResultSet.getTimestamp("finished_at");
+                    int winnerTeamId = firstCaptainLastGamesResultsResultSet.getInt("winner_team_id");
+                    if(winnerTeamId == 0) {
+                        lastGameResultsWithTime.put(finishedAt, GameResult.WIN);
+                    } else {
+                        lastGameResultsWithTime.put(finishedAt, GameResult.LOSE);
+                    }
+                }
+
+                PreparedStatement secondCaptainLastGamesResults = connection.prepareStatement("""
+                    SELECT winner_team_id, finished_at FROM single_finished_games_history WHERE second_team_captain_id = ?;""");
+                secondCaptainLastGamesResults.setInt(1, playerId);
+                ResultSet secondCaptainLastGamesResultsResultSet = secondCaptainLastGamesResults.executeQuery();
+                while(secondCaptainLastGamesResultsResultSet.next()) {
+                    Timestamp finishedAt = secondCaptainLastGamesResultsResultSet.getTimestamp("finished_at");
+                    int winnerTeamId = secondCaptainLastGamesResultsResultSet.getInt("winner_team_id");
+                    if(winnerTeamId == 1) {
+                        lastGameResultsWithTime.put(finishedAt, GameResult.WIN);
+                    } else {
+                        lastGameResultsWithTime.put(finishedAt, GameResult.LOSE);
+                    }
+                }
+
+                PreparedStatement playersLastGamesResults = connection.prepareStatement("""
+                    SELECT finished_game_id, team_id FROM single_finished_games_players_history WHERE player_id = ?;""");
+                playersLastGamesResults.setInt(1, playerId);
+                ResultSet playersLastGamesResultsResultSet = playersLastGamesResults.executeQuery();
+                while(playersLastGamesResultsResultSet.next()) {
+                    int finishedGameId = playersLastGamesResultsResultSet.getInt("finished_game_id");
+                    int teamId = playersLastGamesResultsResultSet.getInt("team_id");
+
+                    PreparedStatement playerGameInfo = connection.prepareStatement("""
+                        SELECT winner_team_id, finished_at FROM single_finished_games_history WHERE id = ?;""");
+                    playerGameInfo.setInt(1, finishedGameId);
+                    ResultSet playerGameInfoResultSet = playerGameInfo.executeQuery();
+                    while(playerGameInfoResultSet.next()) {
+                        Timestamp finishedAt = playerGameInfoResultSet.getTimestamp("finished_at");
+                        int winnerTeamId = playerGameInfoResultSet.getInt("winner_team_id");
+                        if(winnerTeamId == teamId) {
+                            lastGameResultsWithTime.put(finishedAt, GameResult.WIN);
+                        } else {
+                            lastGameResultsWithTime.put(finishedAt, GameResult.LOSE);
+                        }
+                    }
+                }
+
+                List<Map.Entry<Timestamp, GameResult>> list = new LinkedList<>(lastGameResultsWithTime.entrySet());
+                list.sort(Map.Entry.comparingByKey());
+
+                Timestamp latestTime = null;
+                List<GameResult> lastGameResults = new ArrayList<>();
+                if(list.size() >= 5) {
+                    latestTime = list.get(list.size() - 1).getKey();
+                    for(int i = list.size() - 1; i >= list.size() - 5; i--) {
+                        lastGameResults.add(list.get(i).getValue());
+                    }
+                } else {
+                    if(!list.isEmpty()) {
+                        latestTime = list.get(list.size() - 1).getKey();
+                        for(int i = list.size() - 1; i >= 0; i--) {
+                            lastGameResults.add(list.get(i).getValue());
+                        }
+                    }
+                }
+
+                return new Player(playerId, username, points, games, wins, lastGameResults, latestTime);
             }
         } catch (SQLException e) {
             e.printStackTrace();

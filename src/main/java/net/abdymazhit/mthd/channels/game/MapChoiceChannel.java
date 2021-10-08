@@ -12,10 +12,12 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,7 +27,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
 /**
  * Канал выбора карты
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -119,8 +121,8 @@ public class MapChoiceChannel extends Channel {
                     description = description.replace("%first_team%", gameCategoryManager.firstTeamRole.getAsMention())
                             .replace("%second_team%", gameCategoryManager.secondTeamRole.getAsMention());
                 } else {
-                    description = description.replace("%first_captain%", gameCategoryManager.game.firstTeamCaptainMember.getAsMention())
-                            .replace("%second_captain%", gameCategoryManager.game.secondTeamCaptainMember.getAsMention());
+                    description = description.replace("%first_team%", gameCategoryManager.game.firstTeamCaptainMember.getAsMention())
+                            .replace("%second_team%", gameCategoryManager.game.secondTeamCaptainMember.getAsMention());
                 }
 
                 embedBuilder.setDescription(description);
@@ -200,21 +202,23 @@ public class MapChoiceChannel extends Channel {
         }
 
         BufferedImage image = new BufferedImage(((maps.length / 2) + 1) * 710,624 * 2, BufferedImage.TYPE_INT_ARGB);
+        Graphics graphics = image.getGraphics();
         int x = 0;
         boolean isSecondLine = false;
         for(int i = 0; i < maps.length; i++) {
             int index = (maps.length / 2) + 1;
             if(i < index) {
-                image.getGraphics().drawImage(images.get(maps[i]), x, 0, null);
+                graphics.drawImage(images.get(maps[i]), x, 0, null);
             } else {
                 if(!isSecondLine) {
                     x = 0;
                 }
                 isSecondLine = true;
-                image.getGraphics().drawImage(images.get(maps[i]), x, 624, null);
+                graphics.drawImage(images.get(maps[i]), x, 624, null);
             }
             x += 710;
         }
+        graphics.dispose();
 
         try {
             if(timer != null) {

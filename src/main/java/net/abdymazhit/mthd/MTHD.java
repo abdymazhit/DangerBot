@@ -26,6 +26,7 @@ import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamFindGameCommandListener;
 import net.abdymazhit.mthd.managers.GameManager;
 import net.abdymazhit.mthd.managers.LiveGamesManager;
+import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -47,7 +48,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {

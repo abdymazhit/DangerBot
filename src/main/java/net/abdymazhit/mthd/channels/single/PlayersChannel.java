@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Канал игроков
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChannel extends Channel {
@@ -46,7 +46,7 @@ public class PlayersChannel extends Channel {
         }
 
         category.createTextChannel("players").setPosition(0)
-                .setSlowmode(5)
+                .setSlowmode(30)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))

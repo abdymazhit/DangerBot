@@ -14,10 +14,13 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static net.dv8tion.jda.api.exceptions.ErrorResponseException.ignore;
+import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
+
 /**
  * Менеджер игры
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameManager {
@@ -186,7 +189,7 @@ public class GameManager {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
         if(category != null) {
             for(GuildChannel channel : category.getChannels()) {
-                channel.delete().queue();
+                channel.delete().queue(null, ignore(UNKNOWN_CHANNEL));
             }
 
             new Timer().schedule(new TimerTask() {

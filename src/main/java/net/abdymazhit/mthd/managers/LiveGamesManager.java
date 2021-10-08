@@ -19,7 +19,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -100,8 +100,10 @@ public class LiveGamesManager {
                 for(LatestGame latestGame : latestGames) {
                     if(latestGame.getGame().equals("BWH")) {
                         for(Game game : liveGames) {
-                            if(latestGame.getMap().getName().equals(game.gameMap.getName())) {
-                                games.add(latestGame);
+                            if(latestGame.getGame() != null) {
+                                if(latestGame.getMap().getName().equals(game.gameMap.getName())) {
+                                    games.add(latestGame);
+                                }
                             }
                         }
                     }

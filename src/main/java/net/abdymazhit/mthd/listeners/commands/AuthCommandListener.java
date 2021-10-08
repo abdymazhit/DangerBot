@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   05.10.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -167,6 +167,7 @@ public class AuthCommandListener extends ListenerAdapter {
 
             setTeamRoleIsLeader(discordId, userId);
             setTeamRoleIsMember(discordId, userId);
+            setSingleRatingRole(discordId, userId);
 
             // Вернуть значение, что пользователь добавлен
             return true;
@@ -218,6 +219,26 @@ public class AuthCommandListener extends ListenerAdapter {
                     MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.MEMBER.getRole()).queue();
                     MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
                 }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Установить роль Single Rating
+     * @param discordId Id дискорда
+     * @param userId Id пользователя
+     */
+    public void setSingleRatingRole(String discordId, int userId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT 1 FROM players WHERE player_id = ? AND is_deleted is null;");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.SINGLE_RATING.getRole()).queue();
             }
         } catch (SQLException e) {
             e.printStackTrace();

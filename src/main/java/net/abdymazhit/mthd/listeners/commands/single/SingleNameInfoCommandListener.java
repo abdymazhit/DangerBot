@@ -5,13 +5,14 @@ import net.abdymazhit.mthd.customs.Player;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+
+import java.io.File;
 
 /**
  * Команда посмотреть информацию о игроке по названию
  *
- * @version   26.09.2021
+ * @version   08.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleNameInfoCommandListener {
@@ -50,17 +51,17 @@ public class SingleNameInfoCommandListener {
             return;
         }
 
-        Player player = MTHD.getInstance().database.getSinglePlayer(playerId);
+        Player player = MTHD.getInstance().database.getSinglePlayerInfo(playerId);
         if(player == null) {
             message.reply("Ошибка! Игрок не владеет статусом Single Rating!").queue();
             return;
         }
 
-        MessageEmbed messageEmbed = MTHD.getInstance().utils.getPlayerInfoMessageEmbed(player);
-        if(messageEmbed == null) {
+        File infoFile = MTHD.getInstance().utils.getPlayerInfoImage(player);
+        if(infoFile == null) {
             message.reply("Ошибка! По неизвестной причине получить информацию о Вас не получилось! Свяжитесь с разработчиком бота!").queue();
         } else {
-            message.replyEmbeds(messageEmbed).queue();
+            message.reply(infoFile).queue();
         }
     }
 }
