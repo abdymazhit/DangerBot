@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков в команду
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickChannel extends Channel {
@@ -166,9 +166,7 @@ public class PlayersPickChannel extends Channel {
      */
     public void pickPlayerToTeam(String playerName, int teamId) {
         UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
-        if(playerAccount == null) {
-            return;
-        }
+        if(playerAccount == null) return;
 
         MTHD.getInstance().database.addPlayerToTeam(teamId, playerAccount.id);
     }
@@ -191,7 +189,18 @@ public class PlayersPickChannel extends Channel {
             timer.cancel();
         }
 
-        createCountdownTask(textChannel);
+        if(gameCategoryManager.game.players.size() == 1) {
+            String playerName = gameCategoryManager.game.players.get(0);
+            if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
+                pickPlayerToTeam(playerName, 0);
+                pickPlayer(playerName, 0, null);
+            } else {
+                pickPlayerToTeam(playerName, 1);
+                pickPlayer(playerName, 1, null);
+            }
+        } else {
+            createCountdownTask(textChannel);
+        }
     }
 
     /**
@@ -203,14 +212,14 @@ public class PlayersPickChannel extends Channel {
             gameCategoryManager.setGameState(GameState.MAP_CHOICE);
 
             if(channelPlayersMessageId == null) {
-                textChannel.sendMessageEmbeds(getPlayersPickMessage(0, true)).queue(message -> new Timer().schedule(new TimerTask() {
+                textChannel.sendMessageEmbeds(getPlayersPickMessage(-1)).queue(message -> new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
                         gameCategoryManager.createMapsChoiceChannel();
                     }
                 }, 7000));
             } else {
-                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(0, true)).queue(message -> new Timer().schedule(new TimerTask() {
+                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(-1)).queue(message -> new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
                         gameCategoryManager.createMapsChoiceChannel();
@@ -224,7 +233,7 @@ public class PlayersPickChannel extends Channel {
             }
 
             if(channelPlayersMessageId == null) {
-                textChannel.sendMessageEmbeds(getPlayersPickMessage(roundTime, false)).queue(message -> {
+                textChannel.sendMessageEmbeds(getPlayersPickMessage(roundTime)).queue(message -> {
                     channelPlayersMessageId = message.getId();
 
                     AtomicInteger time =  new AtomicInteger(roundTime);
@@ -233,7 +242,7 @@ public class PlayersPickChannel extends Channel {
                         @Override
                         public void run() {
                             if(time.get() % 2 == 0) {
-                                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(time.get(), false)).queue();
+                                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(time.get())).queue();
                             }
 
                             if(time.get() <= 0) {
@@ -252,14 +261,14 @@ public class PlayersPickChannel extends Channel {
                     }, 0, 1000);
                 });
             } else {
-                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(roundTime, false)).queue(message -> {
+                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(roundTime)).queue(message -> {
                     AtomicInteger time =  new AtomicInteger(roundTime);
                     timer = new Timer();
                     timer.schedule(new TimerTask() {
                         @Override
                         public void run() {
                             if(time.get() % 2 == 0) {
-                                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(time.get(), false)).queue();
+                                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(time.get())).queue();
                             }
 
                             if(time.get() <= 0) {
@@ -286,16 +295,16 @@ public class PlayersPickChannel extends Channel {
      * @param time Время до выбора
      * @return Сообщение о выборе игроков
      */
-    private MessageEmbed getPlayersPickMessage(int time, boolean isStartingMapChoice) {
+    private MessageEmbed getPlayersPickMessage(int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(3092790);
 
         StringBuilder players1String = new StringBuilder();
         StringBuilder players2String = new StringBuilder();
+
         for(int i = 0; i < gameCategoryManager.game.firstTeamPlayers.size(); i++) {
             players1String.append("`").append(gameCategoryManager.game.firstTeamPlayers.get(i)).append("`").append("\n");
         }
-
         for(int i = 0; i < gameCategoryManager.game.secondTeamPlayers.size(); i++) {
             players2String.append("`").append(gameCategoryManager.game.secondTeamPlayers.get(i)).append("`").append("\n");
         }
@@ -303,7 +312,7 @@ public class PlayersPickChannel extends Channel {
         embedBuilder.addField("Команда " + gameCategoryManager.game.firstTeamCaptain.username, players1String.toString(), true);
         embedBuilder.addField("Команда " + gameCategoryManager.game.secondTeamCaptain.username, players2String.toString(), true);
 
-        if(!isStartingMapChoice) {
+        if(time >= 0) {
             if(currentPickerCaptain.getNickname() != null) {
                 embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
                         .replace("%captain%", currentPickerCaptain.getNickname()));

@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategoryManager {
@@ -383,33 +383,35 @@ public class GameCategoryManager {
      */
     private void createChatChannel() {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
-        if(category != null) {
-            if(game.rating.equals(Rating.TEAM_RATING)) {
-                category.createTextChannel("chat").setPosition(0)
-                        .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                        .queue();
-            } else {
-                ChannelAction<TextChannel> createAction = category.createTextChannel("chat").setPosition(0)
-                        .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+        if(category == null) return;
+        if(game.rating.equals(Rating.TEAM_RATING)) {
+            ChannelAction<TextChannel> createAction = category.createTextChannel("chat").setPosition(0)
+                    .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+            MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
+                    createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue());
+        } else {
+            ChannelAction<TextChannel> createAction = category.createTextChannel("chat").setPosition(0)
+                    .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
 
-                if(players == null) {
-                    players = new ArrayList<>();
-                }
-
-                for(String discordId : playersDiscordIds) {
-                    if(discordId != null) {
-                        MTHD.getInstance().guild.retrieveMemberById(discordId).queue(players::add);
-                    }
-                }
-                for(Member member : players) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
-                }
-                createAction.queue();
+            if(players == null) {
+                players = new ArrayList<>();
             }
+
+            for(String discordId : playersDiscordIds) {
+                if(discordId != null) {
+                    MTHD.getInstance().guild.retrieveMemberById(discordId).queue(players::add);
+                }
+            }
+            for(Member member : players) {
+                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
+            }
+            ChannelAction<TextChannel> finalCreateAction = createAction;
+            MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
+                    finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue());
         }
     }
 
@@ -418,37 +420,45 @@ public class GameCategoryManager {
      */
     private void createFirstTeamVoiceChannel() {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
-        if(category != null) {
-            if(game.rating.equals(Rating.TEAM_RATING)) {
-                category.createVoiceChannel(firstTeamRole.getName()).setPosition(2)
-                        .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                        .queue();
-            } else {
-                ChannelAction<VoiceChannel> createAction = category.createVoiceChannel("team_" + game.firstTeamCaptain.username).setPosition(0)
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                        .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
+        if(category == null) return;
+        if(game.rating.equals(Rating.TEAM_RATING)) {
+            category.createVoiceChannel(firstTeamRole.getName()).setPosition(2)
+                    .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                    .queue();
+        } else {
+            ChannelAction<VoiceChannel> createAction = category.createVoiceChannel("team_" + game.firstTeamCaptain.username).setPosition(0)
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                    .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
 
-                for(Member member : firstTeamMembers) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
-                }
-                ChannelAction<VoiceChannel> finalCreateAction = createAction;
-                MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
-                        finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue());
+            for(Member member : firstTeamMembers) {
+                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
             }
+            ChannelAction<VoiceChannel> finalCreateAction = createAction;
+            MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
+                    finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue(voiceChannel -> {
+                for(Member member1 : firstTeamMembers) {
+                    MTHD.getInstance().guild.moveVoiceMember(member1, voiceChannel).queue();
+                }
+                MTHD.getInstance().guild.moveVoiceMember(game.firstTeamCaptainMember, voiceChannel).queue();
+            }));
         }
     }
 
+    /**
+     * Добавляет участника в голосовой канал первой команды
+     * @param member Участник
+     */
     public void addToFirstTeamVoiceChannel(Member member) {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
-        if(category != null) {
-            for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
-                if(voiceChannel.getName().equals("team_" + game.firstTeamCaptain.username)) {
-                    voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue();
-                    break;
-                }
+        if(category == null) return;
+        for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
+            if(voiceChannel.getName().equals("team_" + game.firstTeamCaptain.username)) {
+                voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue();
+                MTHD.getInstance().guild.moveVoiceMember(member, voiceChannel).queue();
+                break;
             }
         }
     }
@@ -458,38 +468,46 @@ public class GameCategoryManager {
      */
     private void createSecondTeamVoiceChannel() {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
-        if(category != null) {
-            if(game.rating.equals(Rating.TEAM_RATING)) {
-                category.createVoiceChannel(secondTeamRole.getName()).setPosition(3)
-                        .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                        .queue();
-            } else {
-                ChannelAction<VoiceChannel> createAction = category.createVoiceChannel("team_" + game.secondTeamCaptain.username).setPosition(0)
-                        .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                        .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
+        if(category == null) return;
+        if(game.rating.equals(Rating.TEAM_RATING)) {
+            category.createVoiceChannel(secondTeamRole.getName()).setPosition(3)
+                    .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT))
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                    .queue();
+        } else {
+            ChannelAction<VoiceChannel> createAction = category.createVoiceChannel("team_" + game.secondTeamCaptain.username).setPosition(0)
+                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                    .addPermissionOverride(game.secondTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(game.firstTeamCaptainMember, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.VOICE_CONNECT));
 
-                for(Member member : secondTeamMembers) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
-                }
-                ChannelAction<VoiceChannel> finalCreateAction = createAction;
-                MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
-                        finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue());
+            for(Member member : secondTeamMembers) {
+                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
             }
+            ChannelAction<VoiceChannel> finalCreateAction = createAction;
+            MTHD.getInstance().guild.retrieveMemberById(game.assistantAccount.discordId).queue(member ->
+                    finalCreateAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), null).queue(voiceChannel -> {
+                        for(Member member1 : secondTeamMembers) {
+                            MTHD.getInstance().guild.moveVoiceMember(member1, voiceChannel).queue();
+                        }
+                        MTHD.getInstance().guild.moveVoiceMember(game.firstTeamCaptainMember, voiceChannel).queue();
+                    }));
         }
     }
 
+    /**
+     * Добавляет участника в голосовой канал второй команды
+     * @param member Участник
+     */
     public void addToSecondTeamVoiceChannel(Member member) {
         Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
-        if(category != null) {
-            for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
-                if(voiceChannel.getName().equals("team_" + game.secondTeamCaptain.username)) {
-                    voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue();
-                    break;
-                }
+        if(category == null) return;
+        for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
+            if(voiceChannel.getName().equals("team_" + game.secondTeamCaptain.username)) {
+                voiceChannel.getManager().putPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue();
+                MTHD.getInstance().guild.moveVoiceMember(member, voiceChannel).queue();
+                break;
             }
         }
     }
@@ -502,14 +520,11 @@ public class GameCategoryManager {
         game.gameState = gameState;
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-
             PreparedStatement preparedStatement;
             if(game.rating.equals(Rating.TEAM_RATING)) {
-                preparedStatement = connection.prepareStatement(
-                        "UPDATE team_live_games SET game_state = ? WHERE id = ?;");
+                preparedStatement = connection.prepareStatement("UPDATE team_live_games SET game_state = ? WHERE id = ?;");
             } else {
-                preparedStatement = connection.prepareStatement(
-                        "UPDATE single_live_games SET game_state = ? WHERE id = ?;");
+                preparedStatement = connection.prepareStatement("UPDATE single_live_games SET game_state = ? WHERE id = ?;");
             }
             preparedStatement.setInt(1, gameState.getId());
             preparedStatement.setInt(2, game.id);
@@ -523,8 +538,8 @@ public class GameCategoryManager {
     }
 
     /**
-     * Устанавливает стадию игры
-     * @param gameMap Выбранная карта
+     * Устанавливает карту игры
+     * @param gameMap Карта
      */
     public void setGameMap(GameMap gameMap) {
         game.gameMap = gameMap;
@@ -532,11 +547,9 @@ public class GameCategoryManager {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement;
             if(game.rating.equals(Rating.TEAM_RATING)) {
-                preparedStatement = connection.prepareStatement(
-                        "UPDATE team_live_games SET map_name = ? WHERE id = ?;");
+                preparedStatement = connection.prepareStatement("UPDATE team_live_games SET map_name = ? WHERE id = ?;");
             } else {
-                preparedStatement = connection.prepareStatement(
-                        "UPDATE single_live_games SET map_name = ? WHERE id = ?;");
+                preparedStatement = connection.prepareStatement("UPDATE single_live_games SET map_name = ? WHERE id = ?;");
             }
             preparedStatement.setString(1, gameMap.getName());
             preparedStatement.setInt(2, game.id);
