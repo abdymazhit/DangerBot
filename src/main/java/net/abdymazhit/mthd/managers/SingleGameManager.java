@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Менеджер Single Rating игр
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public record SingleGameManager(GameManager gameManager) {
@@ -75,38 +75,17 @@ public record SingleGameManager(GameManager gameManager) {
             // Недостаточно игроков для начала игры
             if (playersList.size() < 8) return;
 
-            int firstTeamCaptainId = -1;
-            int secondTeamCaptainId = -1;
-
-            Map<Integer, Integer> playersPoints = new HashMap<>();
-
-            for (PlayerInGameSearch player : playersList) {
-                PreparedStatement captainStatement = connection.prepareStatement(
-                        "SELECT points FROM players WHERE player_id = ? AND is_deleted is null;");
-                captainStatement.setInt(1, player.id);
-                ResultSet captainResultSet = captainStatement.executeQuery();
-                if (captainResultSet.next()) {
-                    int points = captainResultSet.getInt("points");
-                    playersPoints.put(player.id, points);
-                }
-            }
-
-            List<Map.Entry<Integer, Integer>> list = new LinkedList<>(playersPoints.entrySet());
-            list.sort(Map.Entry.comparingByValue());
-            for (int i = list.size() - 1; i >= 0; i--) {
-                if (firstTeamCaptainId == -1) {
-                    firstTeamCaptainId = list.get(i).getKey();
-                } else {
-                    secondTeamCaptainId = list.get(i).getKey();
-                    break;
-                }
-            }
+            List<PlayerInGameSearch> newPlayersList = new ArrayList<>(playersList);
+            Random random = new Random();
+            PlayerInGameSearch firstTeamCaptain = newPlayersList.get(random.nextInt(newPlayersList.size()));
+            newPlayersList.remove(firstTeamCaptain);
+            PlayerInGameSearch secondTeamCaptain = newPlayersList.get(random.nextInt(newPlayersList.size()));
 
             PreparedStatement assistantsStatement = connection.prepareStatement("SELECT assistant_id FROM available_assistants;");
             ResultSet assistantsResultSet = assistantsStatement.executeQuery();
             if (assistantsResultSet.next()) {
                 int assistantId = assistantsResultSet.getInt("assistant_id");
-                startGame(playersList, firstTeamCaptainId, secondTeamCaptainId, playersList.get(0).format, assistantId);
+                startGame(playersList, firstTeamCaptain.id, secondTeamCaptain.id, playersList.get(0).format, assistantId);
             }
         } catch (SQLException e) {
             e.printStackTrace();

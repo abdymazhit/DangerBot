@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Канал активных игр
  *
- * @version   26.09.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLiveGamesChannel extends Channel {
@@ -115,8 +115,8 @@ public class TeamLiveGamesChannel extends Channel {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("""
             ```              %first_team%   vs   %second_team%              ```"""
-            .replace("%first_team%", liveGame.firstTeamName)
-            .replace("%second_team%", liveGame.secondTeamName));
+            .replace("%first_team%", liveGame.firstTeamName.replace("_", "\\_"))
+            .replace("%second_team%", liveGame.secondTeamName.replace("_", "\\_")));
         embedBuilder.setColor(3092790);
         embedBuilder.addField("Формат", liveGame.format, true);
         embedBuilder.addField("Помощник", liveGame.assistantName, true);

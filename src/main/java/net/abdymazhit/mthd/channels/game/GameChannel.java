@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал игры
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
@@ -36,7 +36,7 @@ public class GameChannel extends Channel {
     public Timer timer;
 
     /** Время создания игры */
-    private static final int gameCreationTime = 600;
+    private static final int gameCreationTime = 120;
 
     /**
      * Инициализирует канал игры
@@ -112,19 +112,12 @@ public class GameChannel extends Channel {
             @Override
             public void run() {
                 if(time.get() <= 0) {
-                    textChannel.sendMessage("Вы не успели начать игру в течении 10 минут! Игра отменяется...")
-                        .queue(message -> channelGameCancelMessageId = message.getId());
-                    MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
-                            if(category != null) {
-                                MTHD.getInstance().gameManager.deleteGame(category.getId());
-                            }
-                        }
-                    }, 7000);
-                    cancel();
+                    gameCategoryManager.setGameState(GameState.GAME);
+                    if(timer != null) {
+                        timer.cancel();
+                    }
+                    MTHD.getInstance().liveGamesManager.addLiveGame(gameCategoryManager.game);
+                    sendGameStartMessage();
                 }
 
                 if(time.get() % 2 == 0) {
@@ -143,12 +136,12 @@ public class GameChannel extends Channel {
                     }
 
                     String description = """
-                            У вас (%assistant%) есть 10 минут для создания игры!
-                            Оставшееся время для для создания карты: `%time% сек.`
+                            Помощник (%assistant%) должен создать игру!
+                            Игра перейдет в стадию игры через `%time% сек.`
                             
                             Игра: BedWars Hard
                             Формат игры: %format%
-                            Название карты: %map_name%
+                            Название карты: `%map_name%`
                             
                             Настройки сервера:
                             `/game flag allow-warp false`
@@ -158,8 +151,7 @@ public class GameChannel extends Channel {
                             Команды для приглашения игроков %first_team%
                             %first_team_invites%
                             Команды для приглашения игроков %second_team%
-                            %second_team_invites%
-                            """
+                            %second_team_invites%"""
                             .replace("%assistant%", assistant.getAsMention())
                             .replace("%format%", gameCategoryManager.game.format)
                             .replace("%map_name%", gameCategoryManager.game.gameMap.getName())
@@ -171,13 +163,12 @@ public class GameChannel extends Channel {
                                 .replace("%second_team%", gameCategoryManager.secondTeamRole.getAsMention());
                     } else {
                         description = description.replace("%time%", String.valueOf(time))
-                                .replace("%first_team%", "team_" + gameCategoryManager.game.firstTeamCaptain.username)
-                                .replace("%second_team%", "team_" + gameCategoryManager.game.secondTeamCaptain.username);
+                                .replace("%first_team%", "team_" + gameCategoryManager.game.firstTeamCaptain.username
+                                        .replace("_", "\\_"))
+                                .replace("%second_team%", "team_" + gameCategoryManager.game.secondTeamCaptain.username
+                                        .replace("_", "\\_"));
                     }
-
                     embedBuilder.setDescription(description);
-                    embedBuilder.addField("Начать игру", """
-                            Обратите внимание, вы должны ввести команду только после начала игры в самом VimeWorld! Введите `!start` для начала игры""", false);
 
                     if(channelMessageId == null) {
                         textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
@@ -205,9 +196,11 @@ public class GameChannel extends Channel {
         embedBuilder.setColor(3092790);
 
         if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-            embedBuilder.setTitle(gameCategoryManager.game.firstTeam.name + " vs " + gameCategoryManager.game.secondTeam.name);
+            embedBuilder.setTitle(gameCategoryManager.game.firstTeam.name + " vs " + gameCategoryManager.game.secondTeam.name +
+                                  " [" + gameCategoryManager.game.gameMap.getName()+ "]");
         } else {
-            embedBuilder.setTitle("team_" + gameCategoryManager.game.firstTeamCaptain.username + " vs team_" + gameCategoryManager.game.secondTeamCaptain.username);
+            embedBuilder.setTitle("team_" + gameCategoryManager.game.firstTeamCaptain.username + " vs team_" + gameCategoryManager.game.secondTeamCaptain.username +
+                                  " [" + gameCategoryManager.game.gameMap.getName() + "]");
         }
 
         StringBuilder firstTeamPlayersStrings = new StringBuilder();
@@ -229,7 +222,7 @@ public class GameChannel extends Channel {
         }
 
         embedBuilder.addField("Отмена игры", "Данная команда доступна только для администрации. Для отмены игры введите `!cancel`", false);
-        embedBuilder.addField("Ручная установка id матча", "Если случилась какая-та ошибка и боту не удалось найти id матча помощник " +
+        embedBuilder.addField("Ручная установка результата", "Если случилась какая-то ошибка и боту не удалось найти id матча помощник " +
                                                            "должен вручную установить id матча. Для ручной установки id матча введите `!finish <ID>`", false);
         embedBuilder.addField("Помощник игры", gameCategoryManager.game.assistantAccount.username, false);
 

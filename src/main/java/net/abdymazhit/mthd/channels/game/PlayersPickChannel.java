@@ -315,10 +315,10 @@ public class PlayersPickChannel extends Channel {
         if(time >= 0) {
             if(currentPickerCaptain.getNickname() != null) {
                 embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
-                        .replace("%captain%", currentPickerCaptain.getNickname()));
+                        .replace("%captain%", currentPickerCaptain.getNickname().replace("_", "\\_")));
             } else {
                 embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
-                        .replace("%captain%", currentPickerCaptain.getEffectiveName()));
+                        .replace("%captain%", currentPickerCaptain.getEffectiveName().replace("_", "\\_")));
             }
             embedBuilder.setDescription("Оставшееся время для выбора игрока: `%time% сек.`"
                     .replace("%time%", String.valueOf(time)));

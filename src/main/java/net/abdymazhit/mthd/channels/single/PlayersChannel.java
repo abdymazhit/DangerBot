@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Канал игроков
  *
- * @version   08.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChannel extends Channel {
@@ -128,7 +128,7 @@ public class PlayersChannel extends Channel {
             Connection connection = MTHD.getInstance().database.getConnection();
             ResultSet resultSet = connection.createStatement().executeQuery("""
                 WITH PLAYERS AS(SELECT *, RANK() OVER(ORDER BY points DESC) RATING FROM players)
-                SELECT player_id, points FROM PLAYERS WHERE RATING <= 21 AND is_deleted IS NULL;""");
+                SELECT player_id, points FROM PLAYERS WHERE RATING <= 20 AND is_deleted IS NULL;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("player_id");
                 int points = resultSet.getInt("points");

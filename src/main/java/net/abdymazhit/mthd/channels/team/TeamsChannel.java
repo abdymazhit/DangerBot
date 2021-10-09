@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -122,7 +122,7 @@ public class TeamsChannel extends Channel {
         try {
             ResultSet resultSet = MTHD.getInstance().database.getConnection().createStatement().executeQuery("""
                 WITH TEAMS AS(SELECT *, RANK() OVER(ORDER BY points DESC) RATING FROM teams)
-                SELECT id, name, points FROM TEAMS WHERE RATING <= 21 AND is_deleted IS NULL;""");
+                SELECT id, name, points FROM TEAMS WHERE RATING <= 20 AND is_deleted IS NULL;""");
             while(resultSet.next()) {
                 Team team = new Team(resultSet.getInt(1));
                 team.name = resultSet.getString("name");

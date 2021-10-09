@@ -1,9 +1,8 @@
 package net.abdymazhit.mthd.listeners.commands.game;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.managers.GameCategoryManager;
-import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.UserRole;
+import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -16,7 +15,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -51,32 +50,7 @@ public class GameCommandsListener extends ListenerAdapter {
 
         if(gameCategoryManager.gameChannel.channelId.equals(messageChannel.getId())) {
             String contentRaw = message.getContentRaw();
-            if(contentRaw.equals("!start")) {
-                if(!assistant.getRoles().contains(UserRole.ADMIN.getRole()) &&
-                   !assistant.getRoles().contains(UserRole.ASSISTANT.getRole())) {
-                    message.reply("Ошибка! У вас нет прав для этого действия!").queue();
-                    return;
-                }
-
-                int cancellerId = MTHD.getInstance().database.getUserId(assistant.getId());
-                if(cancellerId < 0) {
-                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
-                    return;
-                }
-
-                if(!assistant.getRoles().contains(UserRole.ADMIN.getRole())) {
-                    if(cancellerId != gameCategoryManager.game.assistantAccount.id) {
-                        message.reply("Ошибка! Только помощник этой игры может начать игру!").queue();
-                        return;
-                    }
-                }
-
-                message.reply("Вы успешно начали игру!").queue();
-                gameCategoryManager.setGameState(GameState.GAME);
-                gameCategoryManager.gameChannel.timer.cancel();
-                MTHD.getInstance().liveGamesManager.addLiveGame(gameCategoryManager.game);
-                gameCategoryManager.gameChannel.sendGameStartMessage();
-            } else if(contentRaw.equals("!cancel")) {
+            if(contentRaw.equals("!cancel")) {
                 if(!assistant.getRoles().contains(UserRole.ADMIN.getRole()) && !assistant.getRoles().contains(UserRole.ASSISTANT.getRole())) {
                     message.reply("Ошибка! У вас нет прав для этого действия!").queue();
                     return;

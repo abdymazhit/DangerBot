@@ -31,7 +31,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   08.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -112,7 +112,7 @@ public class Utils {
             **Ваш ник:** `%username%`
             **Уровень:** `%level% [%percent%%]`
             **Статус:** `%rank%`"""
-            .replace("%username%", username)
+            .replace("%username%", username.replace("_", "\\_"))
             .replace("%level%", level)
             .replace("%percent%", String.valueOf((int) (Double.parseDouble(percent) * 100)))
             .replace("%rank%", rank);
@@ -231,7 +231,7 @@ public class Utils {
             ```
             \040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040%team_name%\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040\040
             ```"""
-            .replace("%team_name%", team.name);
+            .replace("%team_name%", team.name.replace("_", "\\_"));
         embedBuilder.setDescription(name);
 
         MessageEmbed messageEmbed = embedBuilder.build();

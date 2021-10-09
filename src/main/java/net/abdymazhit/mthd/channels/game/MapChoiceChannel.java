@@ -305,14 +305,14 @@ public class MapChoiceChannel extends Channel {
         if(time >= 0) {
             if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
                 embedBuilder.setTitle("Команда %team% должна забанить карту!"
-                        .replace("%team%", currentBannerTeamRole.getName()));
+                        .replace("%team%", currentBannerTeamRole.getName().replace("_", "\\_")));
             } else {
                 if(currentBannerCaptain.getNickname() != null) {
                     embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
-                            .replace("%captain%", currentBannerCaptain.getNickname()));
+                            .replace("%captain%", currentBannerCaptain.getNickname().replace("_", "\\_")));
                 } else {
                     embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
-                            .replace("%captain%", currentBannerCaptain.getEffectiveName()));
+                            .replace("%captain%", currentBannerCaptain.getEffectiveName().replace("_", "\\_")));
                 }
             }
 
