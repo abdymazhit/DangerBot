@@ -4,34 +4,34 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.*;
 
 /**
  * Представляет собой карту
  *
- * @version   22.09.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public enum GameMap {
-    ACTUON(1, "Актуон", "Actuon", "4x2"),
-    AQUARIUM(2, "Аквариум", "Aquarium", "4x2"),
-    LOCKS(3, "Замки", "Locks", "4x2"),
-    FERNIGAD(4, "Фернигад", "Fernigad", "4x2"),
-    FROKUS(5, "Фрокус 2.0", "Frokus", "4x2"),
-    JUNGLIOS(6, "Джунглиос", "Junglios", "4x2"),
-    CRIMENTIS(7, "Криментис", "Crimentis", "4x2"),
-    KRITAZ(8, "Критаз", "Kritaz", "4x2"),
-    AWAKENING(9, "Пробуждение", "Awakening", "4x2"),
-    TROSTER(10, "Тростер", "Troster", "4x2"),
-    JUNO(11, "Юнона", "Juno", "4x2"),
-    ZELNES(12, "Зелнес", "Zelnes", "4x2"),
-    REKLAS(13, "Реклас", "Reklas", "4x2"),
-    FORTIS_XL(1, "Фортис XL", "FortisXL", "6x2"),
-    CRIMENTIS_XL(2, "Криментис XL", "CrimentisXL", "6x2"),
-    ZIMPERIA_XL(3, "Зимперия XL", "ZimperiaXL", "6x2"),
-    MERBES_XL(4, "Мэрбес", "MerbesXL", "6x2"),
-    FERNIGAD_XL(5, "Фернигад XL", "FernigadXL", "6x2");
+    ACTUON("Актуон", "Actuon", "4x2"),
+    AQUARIUM("Аквариум", "Aquarium", "4x2"),
+    LOCKS("Замки", "Locks", "4x2"),
+    FERNIGAD("Фернигад", "Fernigad", "4x2"),
+    FROKUS("Фрокус 2.0", "Frokus", "4x2"),
+    JUNGLIOS("Джунглиос", "Junglios", "4x2"),
+    CRIMENTIS("Криментис", "Crimentis", "4x2"),
+    KRITAZ("Критаз", "Kritaz", "4x2"),
+    AWAKENING("Пробуждение", "Awakening", "4x2"),
+    TROSTER("Тростер", "Troster", "4x2"),
+    JUNO("Юнона", "Juno", "4x2"),
+    ZELNES("Зелнес", "Zelnes", "4x2"),
+    REKLAS("Реклас", "Reklas", "4x2"),
+    FORTIS_XL("Фортис XL", "FortisXL", "6x2"),
+    CRIMENTIS_XL("Криментис XL", "CrimentisXL", "6x2"),
+    ZIMPERIA_XL("Зимперия XL", "ZimperiaXL", "6x2"),
+    MERBES_XL("Мэрбес", "MerbesXL", "6x2"),
+    FERNIGAD_XL("Фернигад XL", "FernigadXL", "6x2");
 
-    private final int id;
     private final String name;
     private BufferedImage normalImage;
     private BufferedImage pickImage;
@@ -39,13 +39,11 @@ public enum GameMap {
 
     /**
      * Инициализирует карту
-     * @param id Id карты
      * @param name Название карты
      * @param fileName Название файла
      * @param format Формат игры
      */
-    GameMap(int id, String name, String fileName, String format) {
-        this.id = id;
+    GameMap(String name, String fileName, String format) {
         this.name = name;
         try {
             if(format.equals("4x2")) {
@@ -60,14 +58,6 @@ public enum GameMap {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * Получает id карты
-     * @return Id карты
-     */
-    public int getId() {
-        return id;
     }
 
     /**
@@ -102,13 +92,51 @@ public enum GameMap {
         return banImage;
     }
 
-    public static GameMap[] values4x2() {
-        return new GameMap[] { GameMap.ACTUON, GameMap.AQUARIUM, GameMap.LOCKS, GameMap.FERNIGAD, GameMap.FROKUS,
-            GameMap.JUNGLIOS, GameMap.CRIMENTIS, GameMap.KRITAZ, GameMap.AWAKENING, GameMap.TROSTER,
-            GameMap.JUNO, GameMap.ZELNES, GameMap.REKLAS};
+    /**
+     * Получает рандомные 5 карт 4x2 формата
+     * @return Рандомные 5 карт 4x2 формата
+     */
+    public static List<GameMap> getRandom4x2Maps() {
+        List<GameMap> maps = new ArrayList<>();
+        maps.add(ACTUON);
+        maps.add(AQUARIUM);
+        maps.add(LOCKS);
+        maps.add(FERNIGAD);
+        maps.add(FROKUS);
+        maps.add(JUNGLIOS);
+        maps.add(CRIMENTIS);
+        maps.add(KRITAZ);
+        maps.add(AWAKENING);
+        maps.add(TROSTER);
+        maps.add(JUNO);
+        maps.add(ZELNES);
+        maps.add(REKLAS);
+
+        Random random = new Random();
+        while(maps.size() > 5) {
+            maps.remove(random.nextInt(maps.size()));
+        }
+
+        return maps;
     }
 
-    public static GameMap[] values6x2() {
-        return new GameMap[] { GameMap.FORTIS_XL, GameMap.CRIMENTIS_XL, GameMap.ZIMPERIA_XL, GameMap.MERBES_XL, GameMap.FERNIGAD_XL};
+    /**
+     * Получает рандомные 3 карты 6x2 формата
+     * @return Рандомные 3 карты 6x2 формата
+     */
+    public static List<GameMap> getRandom6x2Maps() {
+        List<GameMap> maps = new ArrayList<>();
+        maps.add(FORTIS_XL);
+        maps.add(CRIMENTIS_XL);
+        maps.add(ZIMPERIA_XL);
+        maps.add(MERBES_XL);
+        maps.add(FERNIGAD_XL);
+
+        Random random = new Random();
+        while(maps.size() > 3) {
+            maps.remove(random.nextInt(maps.size()));
+        }
+
+        return maps;
     }
 }

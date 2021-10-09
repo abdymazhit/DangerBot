@@ -12,7 +12,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 import static net.dv8tion.jda.api.exceptions.ErrorResponseException.ignore;
 import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
@@ -20,7 +19,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер сервера
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHDManager {
@@ -74,13 +73,8 @@ public class MTHDManager {
         for(String teamName : teamsNames) {
             List<Role> roles = MTHD.getInstance().guild.getRolesByName(teamName, true);
             if(roles.isEmpty()) {
-                try {
-                    Role role = MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole())
-                            .setName(teamName).setColor(10070709).submit().get();
-                    teamsNamesRoles.put(teamName, role);
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                }
+                MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole())
+                        .setName(teamName).setColor(10070709).queue(role -> teamsNamesRoles.put(teamName, role));
             } else {
                 if(roles.size() == 1) {
                     teamsNamesRoles.put(teamName, roles.get(0));

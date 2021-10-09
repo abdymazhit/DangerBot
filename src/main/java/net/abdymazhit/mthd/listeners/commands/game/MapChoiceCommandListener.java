@@ -22,7 +22,7 @@ import java.util.TimerTask;
 /**
  * Команда выбора карты
  *
- * @version   05.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -78,33 +78,18 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 String mapName = command[1];
 
                 GameMap banningGameMap = null;
-                if(gameCategoryManager.game.format.equals("4x2")) {
-                    for(GameMap gameMap : GameMap.values4x2()) {
-                        if(gameMap.getName().equalsIgnoreCase(mapName)) {
-                            banningGameMap = gameMap;
-                            break;
-                        } else {
-                            try{
-                                if(gameMap.getId() == Integer.parseInt(mapName)) {
-                                    banningGameMap = gameMap;
-                                    break;
-                                }
-                            } catch(NumberFormatException ignored) { }
-                        }
-                    }
-                } else if(gameCategoryManager.game.format.equals("6x2")) {
-                    for(GameMap gameMap : GameMap.values6x2()) {
-                        if(gameMap.getName().equalsIgnoreCase(mapName)) {
-                            banningGameMap = gameMap;
-                            break;
-                        } else {
-                            try{
-                                if(gameMap.getId() == Integer.parseInt(mapName)) {
-                                    banningGameMap = gameMap;
-                                    break;
-                                }
-                            } catch(NumberFormatException ignored) { }
-                        }
+                for(int i = 0;  i < gameCategoryManager.mapChoiceChannel.gameAllMaps.size(); i++) {
+                    GameMap gameMap = gameCategoryManager.mapChoiceChannel.gameAllMaps.get(i);
+                    if(gameMap.getName().equalsIgnoreCase(mapName)) {
+                        banningGameMap = gameMap;
+                        break;
+                    } else {
+                        try{
+                            if(i + 1 == Integer.parseInt(mapName)) {
+                                banningGameMap = gameMap;
+                                break;
+                            }
+                        } catch(NumberFormatException ignored) { }
                     }
                 }
 

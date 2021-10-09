@@ -27,7 +27,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
 /**
  * Канал выбора карты
  *
- * @version   08.10.2021
+ * @version   09.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -36,7 +36,10 @@ public class MapChoiceChannel extends Channel {
     private final GameCategoryManager gameCategoryManager;
 
     /** Список доступных карт */
-    public final List<GameMap> gameMaps;
+    public List<GameMap> gameMaps;
+
+    /** Список выбираемых карт */
+    public List<GameMap> gameAllMaps;
 
     /** Роль текущей банющей команды */
     public Role currentBannerTeamRole;
@@ -63,6 +66,7 @@ public class MapChoiceChannel extends Channel {
     public MapChoiceChannel(GameCategoryManager gameCategoryManager) {
         this.gameCategoryManager = gameCategoryManager;
         gameMaps = new ArrayList<>();
+        gameAllMaps = new ArrayList<>();
         isMapsMessageSending = true;
 
         Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
@@ -81,9 +85,13 @@ public class MapChoiceChannel extends Channel {
         }
 
         if(gameCategoryManager.game.format.equals("4x2")) {
-            Collections.addAll(gameMaps, GameMap.values4x2());
+            List<GameMap> random4x2Maps = GameMap.getRandom4x2Maps();
+            gameMaps = new ArrayList<>(random4x2Maps);
+            gameAllMaps = new ArrayList<>(random4x2Maps);
         } else if(gameCategoryManager.game.format.equals("6x2")) {
-            Collections.addAll(gameMaps, GameMap.values6x2());
+            List<GameMap> random6x2Maps = GameMap.getRandom6x2Maps();
+            gameMaps = new ArrayList<>(random6x2Maps);
+            gameAllMaps = new ArrayList<>(random6x2Maps);
         }
 
         MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant -> {
@@ -175,24 +183,16 @@ public class MapChoiceChannel extends Channel {
             }
         }
 
-        GameMap[] maps = new GameMap[0];
-        if(gameCategoryManager.game.format.equals("4x2")) {
-            maps = GameMap.values4x2();
-        } else if(gameCategoryManager.game.format.equals("6x2")) {
-            maps = GameMap.values6x2();
-        }
-
         Map<GameMap, BufferedImage> images = new HashMap<>();
-
         if(gameMaps.size() == 1) {
             images.put(gameMaps.get(0), gameMaps.get(0).getPickImage());
-            for(GameMap gameMap : maps) {
+            for(GameMap gameMap : gameAllMaps) {
                 if(!images.containsKey(gameMap)) {
                     images.put(gameMap, gameMap.getBanImage());
                 }
             }
         } else {
-            for(GameMap gameMap : maps) {
+            for(GameMap gameMap : gameAllMaps) {
                 if(gameMaps.contains(gameMap)) {
                     images.put(gameMap, gameMap.getNormalImage());
                 } else {
@@ -201,21 +201,11 @@ public class MapChoiceChannel extends Channel {
             }
         }
 
-        BufferedImage image = new BufferedImage(((maps.length / 2) + 1) * 710,624 * 2, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(gameAllMaps.size() * 710,624, BufferedImage.TYPE_INT_ARGB);
         Graphics graphics = image.getGraphics();
         int x = 0;
-        boolean isSecondLine = false;
-        for(int i = 0; i < maps.length; i++) {
-            int index = (maps.length / 2) + 1;
-            if(i < index) {
-                graphics.drawImage(images.get(maps[i]), x, 0, null);
-            } else {
-                if(!isSecondLine) {
-                    x = 0;
-                }
-                isSecondLine = true;
-                graphics.drawImage(images.get(maps[i]), x, 624, null);
-            }
+        for(GameMap gameAllMap : gameAllMaps) {
+            graphics.drawImage(images.get(gameAllMap), x, 0, null);
             x += 710;
         }
         graphics.dispose();
@@ -243,9 +233,7 @@ public class MapChoiceChannel extends Channel {
             gameCategoryManager.setGameMap(gameMaps.get(0));
 
             isMapsMessageSending = true;
-            textChannel.editMessageById(channelMapsMessageId, """
-                    Карта игры успешно выбрана! Название карты: %map_name%. Переход к созданию игры..."""
-                .replace("%map_name%", gameMaps.get(0).getName()))
+            textChannel.editMessageEmbedsById(channelMapsMessageId, getBanPickMessage(-1))
                 .retainFiles(new ArrayList<>()).addFile(file).queue(message -> {
                     isMapsMessageSending = false;
                     new Timer().schedule(new TimerTask() {
@@ -314,48 +302,35 @@ public class MapChoiceChannel extends Channel {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(3092790);
 
-        if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-            embedBuilder.setTitle("Команда %team% должна забанить карту!"
-                    .replace("%team%", currentBannerTeamRole.getName()));
+        if(time >= 0) {
+            if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+                embedBuilder.setTitle("Команда %team% должна забанить карту!"
+                        .replace("%team%", currentBannerTeamRole.getName()));
+            } else {
+                if(currentBannerCaptain.getNickname() != null) {
+                    embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
+                            .replace("%captain%", currentBannerCaptain.getNickname()));
+                } else {
+                    embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
+                            .replace("%captain%", currentBannerCaptain.getEffectiveName()));
+                }
+            }
+
+            embedBuilder.setDescription("Оставшееся время для бана карты: `%time% сек.`"
+                    .replace("%time%", String.valueOf(time)));
         } else {
-            if(currentBannerCaptain.getNickname() != null) {
-                embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
-                        .replace("%captain%", currentBannerCaptain.getNickname()));
-            } else {
-                embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
-                        .replace("%captain%", currentBannerCaptain.getEffectiveName()));
+            embedBuilder.setTitle("Карта успешно выбрана! Переход к созданию игры...");
+        }
+
+        StringBuilder mapsString = new StringBuilder();
+
+        for(int i = 0; i < gameAllMaps.size(); i++) {
+            GameMap gameMap = gameAllMaps.get(i);
+            if(gameMaps.contains(gameMap)) {
+                mapsString.append(i + 1).append(". ").append(gameMap.getName()).append("\n");
             }
         }
-
-        embedBuilder.setDescription("Оставшееся время для бана карты: `%time% сек.`"
-                .replace("%time%", String.valueOf(time)));
-
-        StringBuilder maps1String = new StringBuilder();
-        StringBuilder maps2String = new StringBuilder();
-
-        GameMap[] maps = new GameMap[0];
-        if(gameCategoryManager.game.format.equals("4x2")) {
-            maps = GameMap.values4x2();
-        } else if(gameCategoryManager.game.format.equals("6x2")) {
-            maps = GameMap.values6x2();
-        }
-
-        for(int i = 0; i < maps.length; i++) {
-            int index = (maps.length / 2) + 1;
-            GameMap gameMap = maps[i];
-            if(i < index) {
-                if(gameMaps.contains(gameMap)) {
-                    maps1String.append(gameMap.getId()).append(". ").append(gameMap.getName()).append("\n");
-                }
-            } else {
-                if(gameMaps.contains(gameMap)) {
-                    maps2String.append(gameMap.getId()).append(". ").append(gameMap.getName()).append("\n");
-                }
-            }
-        }
-
-        embedBuilder.addField("Первая строка", maps1String.toString(), true);
-        embedBuilder.addField("Вторая строка", maps2String.toString(), true);
+        embedBuilder.addField("Доступные карты", mapsString.toString(), true);
 
         MessageEmbed messageEmbed = embedBuilder.build();
         embedBuilder.clear();
