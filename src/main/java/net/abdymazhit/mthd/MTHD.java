@@ -14,12 +14,12 @@ import net.abdymazhit.mthd.channels.team.TeamsChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
-import net.abdymazhit.mthd.listeners.commands.*;
+import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
+import net.abdymazhit.mthd.listeners.commands.LeaveCommandListener;
+import net.abdymazhit.mthd.listeners.commands.ReadyCommandListener;
+import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
-import net.abdymazhit.mthd.listeners.commands.game.GameCommandsListener;
-import net.abdymazhit.mthd.listeners.commands.game.MapChoiceCommandListener;
-import net.abdymazhit.mthd.listeners.commands.game.PlayersChoiceCommandListener;
-import net.abdymazhit.mthd.listeners.commands.game.PlayersPickCommandListener;
+import net.abdymazhit.mthd.listeners.commands.game.*;
 import net.abdymazhit.mthd.listeners.commands.single.SingleCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.single.SingleFindGameCommandListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
@@ -48,7 +48,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   08.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -196,6 +196,8 @@ public class MTHD {
 
         commandsAction = commandsAction.addCommands(new CommandData("leave", "Выход с аккаунта"));
 
+        commandsAction = commandsAction.addCommands(new CommandData("ready", "Готовность к игре"));
+
         commandsAction.queue();
     }
 
@@ -206,6 +208,7 @@ public class MTHD {
     private void addEventListeners(JDA jda) {
         jda.addEventListener(new AuthCommandListener());
         jda.addEventListener(new LeaveCommandListener());
+        jda.addEventListener(new ReadyCommandListener());
         jda.addEventListener(new MessageReceivedListener());
 
         jda.addEventListener(new TeamCommandsListener());
@@ -217,6 +220,7 @@ public class MTHD {
         jda.addEventListener(new AdminCommandsListener());
         jda.addEventListener(new StaffCommandListener());
 
+        jda.addEventListener(new ReadyCommandsListener());
         jda.addEventListener(new PlayersPickCommandListener());
         jda.addEventListener(new PlayersChoiceCommandListener());
         jda.addEventListener(new MapChoiceCommandListener());

@@ -3,10 +3,7 @@ package net.abdymazhit.mthd.managers;
 import com.google.gson.*;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Game;
-import net.abdymazhit.mthd.customs.serialization.LatestGame;
-import net.abdymazhit.mthd.customs.serialization.Match;
-import net.abdymazhit.mthd.customs.serialization.Player;
-import net.abdymazhit.mthd.customs.serialization.Team;
+import net.abdymazhit.mthd.customs.serialization.*;
 import net.abdymazhit.mthd.enums.Rating;
 
 import java.sql.Timestamp;
@@ -19,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   08.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -100,7 +97,7 @@ public class LiveGamesManager {
                 for(LatestGame latestGame : latestGames) {
                     if(latestGame.getGame().equals("BWH")) {
                         for(Game game : liveGames) {
-                            if(latestGame.getGame() != null) {
+                            if(latestGame.getMap() != null && game.gameMap != null) {
                                 if(latestGame.getMap().getName().equals(game.gameMap.getName())) {
                                     games.add(latestGame);
                                 }
@@ -144,6 +141,8 @@ public class LiveGamesManager {
             liveGame.setFirstTeamPlayersIds();
             liveGame.setSecondTeamPlayersIds();
         }
+
+        if(match.getPlayers() == null) return;
 
         for(Player player : match.getPlayers()) {
             if(player.getId().equals(liveGame.firstTeamPlayersVimeId.get(0))) {

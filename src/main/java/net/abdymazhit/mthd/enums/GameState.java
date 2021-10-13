@@ -3,14 +3,15 @@ package net.abdymazhit.mthd.enums;
 /**
  * Представляет собой стадию игры
  *
- * @version   21.09.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public enum GameState {
-    PLAYERS_CHOICE(0, "Выбор игроков"),
-    MAP_CHOICE(1, "Выбор карты"),
-    GAME_CREATION(2, "Создание сервера"),
-    GAME(3, "Игра");
+    READY(0, "Готовность"),
+    PLAYERS_CHOICE(1, "Выбор игроков"),
+    MAP_CHOICE(2, "Выбор карты"),
+    GAME_CREATION(3, "Создание сервера"),
+    GAME(4, "Игра");
 
     private final int id;
     private final String name;

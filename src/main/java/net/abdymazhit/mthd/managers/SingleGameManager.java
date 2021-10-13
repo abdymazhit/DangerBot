@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Менеджер Single Rating игр
  *
- * @version   09.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public record SingleGameManager(GameManager gameManager) {
@@ -113,7 +113,7 @@ public record SingleGameManager(GameManager gameManager) {
             preparedStatement.setString(3, format);
             preparedStatement.setInt(4, assistantId);
             preparedStatement.setTimestamp(5, Timestamp.from(Instant.now()));
-            preparedStatement.setInt(6, GameState.PLAYERS_CHOICE.getId());
+            preparedStatement.setInt(6, GameState.READY.getId());
             preparedStatement.setInt(7, firstTeamCaptainId);
             preparedStatement.setInt(8, secondTeamCaptainId);
             preparedStatement.executeUpdate();

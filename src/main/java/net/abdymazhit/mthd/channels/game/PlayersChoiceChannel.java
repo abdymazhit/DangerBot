@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков на игру
  *
- * @version   05.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -133,7 +133,7 @@ public class PlayersChoiceChannel extends Channel {
      */
     private void sendChannelMessage(TextChannel textChannel, int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Первая стадия игры - Выбор игроков на игру");
+        embedBuilder.setTitle("Вторая стадия игры - Выбор игроков на игру");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
             Начавшие поиск игры команд (%first_team% и %second_team%) должны решить, кто из игроков будет играть в этой игре!

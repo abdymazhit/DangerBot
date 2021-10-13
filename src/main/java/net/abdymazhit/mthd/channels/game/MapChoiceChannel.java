@@ -27,7 +27,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
 /**
  * Канал выбора карты
  *
- * @version   09.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -114,7 +114,7 @@ public class MapChoiceChannel extends Channel {
             createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null).queue(textChannel -> {
                 channelId = textChannel.getId();
                 EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setTitle("Вторая стадия игры - Выбор карты");
+                embedBuilder.setTitle("Третья стадия игры - Выбор карты");
                 embedBuilder.setColor(3092790);
 
                 String description = """
@@ -305,14 +305,14 @@ public class MapChoiceChannel extends Channel {
         if(time >= 0) {
             if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
                 embedBuilder.setTitle("Команда %team% должна забанить карту!"
-                        .replace("%team%", currentBannerTeamRole.getName().replace("_", "\\_")));
+                        .replace("%team%", currentBannerTeamRole.getName()));
             } else {
                 if(currentBannerCaptain.getNickname() != null) {
                     embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
-                            .replace("%captain%", currentBannerCaptain.getNickname().replace("_", "\\_")));
+                            .replace("%captain%", currentBannerCaptain.getNickname()));
                 } else {
                     embedBuilder.setTitle("Капитан %captain% должен забанить карту!"
-                            .replace("%captain%", currentBannerCaptain.getEffectiveName().replace("_", "\\_")));
+                            .replace("%captain%", currentBannerCaptain.getEffectiveName()));
                 }
             }
 

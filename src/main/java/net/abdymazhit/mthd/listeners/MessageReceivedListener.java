@@ -16,7 +16,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_MESSAGE;
 /**
  * Очищает сообщения канала
  *
- * @version   05.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -166,6 +166,30 @@ public class MessageReceivedListener extends ListenerAdapter {
                                     }
                                 } else {
                                     message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if(gameCategoryManager.readyChannel != null) {
+                if(gameCategoryManager.readyChannel.channelId != null) {
+                    if(messageChannel.getId().equals(gameCategoryManager.readyChannel.channelId)) {
+                        if(gameCategoryManager.readyChannel.channelMessageId != null) {
+                            if(!message.getId().equals(gameCategoryManager.readyChannel.channelMessageId)) {
+                                if(gameCategoryManager.readyChannel.channelReadyMessageId != null) {
+                                    if(!message.getId().equals(gameCategoryManager.readyChannel.channelReadyMessageId)) {
+                                        if(event.getAuthor().isBot()) {
+                                            message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                                        } else {
+                                            message.delete().queue(null, ignore(UNKNOWN_MESSAGE));
+                                        }
+                                        break;
+                                    }
+                                } else {
+                                    if(!event.getAuthor().isBot()) {
+                                        message.delete().queue(null, ignore(UNKNOWN_MESSAGE));
+                                    }
                                     break;
                                 }
                             }

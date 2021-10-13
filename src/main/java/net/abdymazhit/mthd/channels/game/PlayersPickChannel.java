@@ -13,16 +13,13 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал выбора игроков в команду
  *
- * @version   09.10.2021
+ * @version   13.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickChannel extends Channel {
@@ -48,25 +45,6 @@ public class PlayersPickChannel extends Channel {
      */
     public PlayersPickChannel(GameCategoryManager gameCategoryManager) {
         this.gameCategoryManager = gameCategoryManager;
-        gameCategoryManager.game.players = new ArrayList<>();
-        gameCategoryManager.game.firstTeamPlayers = new ArrayList<>();
-        gameCategoryManager.game.firstTeamPlayers.add(gameCategoryManager.game.firstTeamCaptain.username);
-        gameCategoryManager.game.secondTeamPlayers = new ArrayList<>();
-        gameCategoryManager.game.secondTeamPlayers.add(gameCategoryManager.game.secondTeamCaptain.username);
-
-        try {
-            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
-            preparedStatement.setInt(1, gameCategoryManager.game.id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while(resultSet.next()) {
-                String username = resultSet.getString("username");
-                gameCategoryManager.game.players.add(username);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
         if(category == null) {
@@ -97,7 +75,7 @@ public class PlayersPickChannel extends Channel {
             createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null).queue(textChannel -> {
                 channelId = textChannel.getId();
                 EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setTitle("Первая стадия игры - Выбор игроков");
+                embedBuilder.setTitle("Вторая стадия игры - Выбор игроков");
                 embedBuilder.setColor(3092790);
                 embedBuilder.setDescription("""
                         Капитаны команд (%first_captain% и %second_captain%) должны выбрать игроков в свою команду!
@@ -315,10 +293,10 @@ public class PlayersPickChannel extends Channel {
         if(time >= 0) {
             if(currentPickerCaptain.getNickname() != null) {
                 embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
-                        .replace("%captain%", currentPickerCaptain.getNickname().replace("_", "\\_")));
+                        .replace("%captain%", currentPickerCaptain.getNickname()));
             } else {
                 embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
-                        .replace("%captain%", currentPickerCaptain.getEffectiveName().replace("_", "\\_")));
+                        .replace("%captain%", currentPickerCaptain.getEffectiveName()));
             }
             embedBuilder.setDescription("Оставшееся время для выбора игрока: `%time% сек.`"
                     .replace("%time%", String.valueOf(time)));
