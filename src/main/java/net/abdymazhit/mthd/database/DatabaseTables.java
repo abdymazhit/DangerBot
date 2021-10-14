@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   05.10.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -49,6 +49,8 @@ public record DatabaseTables(Connection connection) {
         createTeamFinishedGamesPlayersHistory();
 
         createAvailableAssistantsTable();
+
+        createPlayersBansTable();
     }
 
     /**
@@ -554,6 +556,24 @@ public record DatabaseTables(Connection connection) {
                     finished_game_id int not null,
                     team_id int not null,
                     player_id int not null,
+                    PRIMARY KEY (id));
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу заблокированных пользователей
+     */
+    private void createPlayersBansTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS players_bans (
+                    id serial not null AUTO_INCREMENT,
+                    player_id int not null,
+                    finished_at timestamp not null,
                     PRIMARY KEY (id));
             """);
             preparedStatement.executeUpdate();

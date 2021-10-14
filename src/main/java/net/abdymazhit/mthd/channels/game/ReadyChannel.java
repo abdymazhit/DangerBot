@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
@@ -13,16 +14,15 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал готовности к игре
  *
- * @version   13.10.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public class ReadyChannel extends Channel {
@@ -63,8 +63,9 @@ public class ReadyChannel extends Channel {
             return;
         }
 
+        unreadyList = new ArrayList<>();
+
         if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-            unreadyList = new ArrayList<>();
             unreadyList.add(gameCategoryManager.game.firstTeam.name);
             unreadyList.add(gameCategoryManager.game.secondTeam.name);
         } else {
@@ -73,9 +74,6 @@ public class ReadyChannel extends Channel {
             gameCategoryManager.game.firstTeamPlayers.add(gameCategoryManager.game.firstTeamCaptain.username);
             gameCategoryManager.game.secondTeamPlayers = new ArrayList<>();
             gameCategoryManager.game.secondTeamPlayers.add(gameCategoryManager.game.secondTeamCaptain.username);
-
-
-            unreadyList = new ArrayList<>();
 
             try {
                 PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
@@ -156,12 +154,20 @@ public class ReadyChannel extends Channel {
                             Все игроки должны подтвердить, что они готовы к игре!
                 
                             Обратите внимание, как только Вы станете готовым к игре, мы имеем полное право выдать Вам предупреждение, если Вы не сыграете эту игру!
+                            
+                            Также, игроки, которые не стали готовными к игре - получают блокировку аккаунта на 10 минут.
   
                             Стать готовым к игре
                             `/ready`""");
                 textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
                 embedBuilder.clear();
                 updateReadyMessage(textChannel);
+
+                MessageBuilder messageBuilder = new MessageBuilder();
+                messageBuilder.setContent("Готовность к игре");
+                messageBuilder.setTTS(true);
+                textChannel.sendMessage(messageBuilder.build()).queue();
+                messageBuilder.clear();
             });
         });
     }
@@ -220,6 +226,14 @@ public class ReadyChannel extends Channel {
 
                     if(time.get() <= 0) {
                         MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
+
+                        for(String unreadyName : unreadyList) {
+                            int playerId = MTHD.getInstance().database.getUserIdByUsername(unreadyName);
+                            if(playerId > 0) {
+                                banPlayer(playerId, 10);
+                            }
+                        }
+
                         new Timer().schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -269,5 +283,35 @@ public class ReadyChannel extends Channel {
         embedBuilder.clear();
 
         return messageEmbed;
+    }
+
+    /**
+     * Блокирует игрока
+     * @param playerId Id игрока
+     * @param minutes Время бана в минутах
+     */
+    private void banPlayer(int playerId, int minutes) {
+        try {
+            Timestamp timestamp = Timestamp.from(Instant.now().plusSeconds(minutes * 60L));
+
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                   INSERT INTO players_bans (player_id, finished_at) SELECT ?, ?
+                   WHERE NOT EXISTS (SELECT player_id FROM players_bans WHERE player_id = ?)""", Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setInt(1, playerId);
+            preparedStatement.setTimestamp(2, timestamp);
+            preparedStatement.setInt(3, playerId);
+            preparedStatement.executeUpdate();
+
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            if(!resultSet.next()) {
+                PreparedStatement updateStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                    UPDATE players_bans SET finished_at = ? WHERE player_id = ?""", Statement.RETURN_GENERATED_KEYS);
+                updateStatement.setTimestamp(1, timestamp);
+                updateStatement.setInt(2, playerId);
+                updateStatement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

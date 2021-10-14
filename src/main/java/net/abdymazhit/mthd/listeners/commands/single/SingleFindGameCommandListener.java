@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   05.10.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleFindGameCommandListener extends ListenerAdapter {
@@ -86,6 +86,32 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
                 if(playersInLiveGames.contains(playerId)) {
                     message.reply("Ошибка! Вы уже участвуете в игре!").queue();
                     return;
+                }
+
+                try {
+                    Connection connection = MTHD.getInstance().database.getConnection();
+                    PreparedStatement preparedStatement = connection.prepareStatement(
+                            "SELECT finished_at FROM players_bans WHERE player_id = ?;");
+                    preparedStatement.setInt(1, playerId);
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    if(resultSet.next()) {
+                        Timestamp finishedAt = resultSet.getTimestamp("finished_at");
+                        Timestamp now = Timestamp.from(Instant.now());
+
+                        int minutes = (int) (finishedAt.getTime() - now.getTime()) / 60000;
+
+                        if(minutes > 0) {
+                            message.reply("Вы заблокированы! До окончания бана: `" + minutes + "мин.`").queue();
+                            return;
+                        } else {
+                            PreparedStatement deleteStatement = connection.prepareStatement(
+                                    "DELETE FROM players_bans WHERE player_id = ?");
+                            deleteStatement.setInt(1, playerId);
+                            deleteStatement.executeUpdate();
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
 
                 String errorMessage = addPlayerToPlayersInGameSearch(playerId, format);

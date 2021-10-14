@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Канал активных игр Single рейтинга
  *
- * @version   13.10.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleLiveGamesChannel extends Channel {
@@ -108,10 +108,16 @@ public class SingleLiveGamesChannel extends Channel {
      */
     private void sendLiveGamesMessage(TextChannel textChannel, LiveGame liveGame, String messageId) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("""
+
+        if(liveGame.gameState.equals(GameState.READY)) {
+            embedBuilder.setTitle("""
+            ```           team_XXX   vs   team_XXX           ```""");
+        } else {
+            embedBuilder.setTitle("""
             ```           team_%first_team_captain%   vs   team_%second_team_captain%           ```"""
-                .replace("%first_team_captain%", liveGame.firstTeamCaptainName)
-                .replace("%second_team_captain%", liveGame.secondTeamCaptainName));
+                    .replace("%first_team_captain%", liveGame.firstTeamCaptainName)
+                    .replace("%second_team_captain%", liveGame.secondTeamCaptainName));
+        }
         embedBuilder.setColor(3092790);
         embedBuilder.addField("Формат", liveGame.format, true);
         embedBuilder.addField("Помощник", liveGame.assistantName, true);
