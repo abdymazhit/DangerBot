@@ -10,12 +10,13 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
  * Команда выхода
  *
- * @version   26.09.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public class LeaveCommandListener extends ListenerAdapter {
@@ -37,6 +38,22 @@ public class LeaveCommandListener extends ListenerAdapter {
             return;
         }
 
+        int playerId = MTHD.getInstance().database.getUserId(member.getId());
+        if(playerId < 0) {
+            for(Role role : member.getRoles()) {
+                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
+                    MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(unused -> { }, Throwable::printStackTrace);
+                }
+            }
+            event.reply("Вы успешно вышли с аккаунта!").setEphemeral(true).queue();
+            return;
+        }
+
+        if(isInGame(playerId)) {
+            event.reply("Ошибка! Вы не можете выйти, пока находитесь в поиске игры или уже находитесь в игре!").setEphemeral(true).queue();
+            return;
+        }
+
         boolean isDeleted = deleteUser(member.getId());
         if(!isDeleted) {
             event.reply("Ошибка! Попробуйте выйти позже!").setEphemeral(true).queue();
@@ -45,7 +62,7 @@ public class LeaveCommandListener extends ListenerAdapter {
 
         for(Role role : member.getRoles()) {
             if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(unused -> { }, Throwable::printStackTrace);
             }
         }
 
@@ -56,6 +73,48 @@ public class LeaveCommandListener extends ListenerAdapter {
 
         // Отправить сообщение о успешной авторизации
         event.reply("Вы успешно вышли с аккаунта!").setEphemeral(true).queue();
+    }
+
+    private boolean isInGame(int playerId) {
+        Connection connection = MTHD.getInstance().database.getConnection();
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM players_in_game_search WHERE player_id = ?;");
+            statement.setInt(1, playerId);
+            ResultSet resultSet = statement.executeQuery();
+            if(resultSet.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1 FROM single_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;""");
+            statement.setInt(1, playerId);
+            statement.setInt(2, playerId);
+            ResultSet resultSet = statement.executeQuery();
+            if(resultSet.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1 FROM single_live_games_players WHERE player_id = ?;""");
+            statement.setInt(1, playerId);
+            ResultSet resultSet = statement.executeQuery();
+            if(resultSet.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     /**

@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   08.10.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -100,7 +100,7 @@ public class AuthCommandListener extends ListenerAdapter {
         }
 
         // Изменить роль пользователя
-        MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).queue();
+        MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).submit();
 
         // Отправить сообщение о успешной авторизации
         event.replyEmbeds(MTHD.getInstance().utils.getAuthInfoMessageEmbed(username, level, percent, rank)).setEphemeral(true).queue();

@@ -16,7 +16,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_MESSAGE;
 /**
  * Очищает сообщения канала
  *
- * @version   13.10.2021
+ * @version   14.10.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -180,7 +180,9 @@ public class MessageReceivedListener extends ListenerAdapter {
                                 if(gameCategoryManager.readyChannel.channelReadyMessageId != null) {
                                     if(!message.getId().equals(gameCategoryManager.readyChannel.channelReadyMessageId)) {
                                         if(event.getAuthor().isBot()) {
-                                            message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                                            if(!message.isEphemeral()) {
+                                                message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                                            }
                                         } else {
                                             message.delete().queue(null, ignore(UNKNOWN_MESSAGE));
                                         }
