@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Администраторские команды
  *
- * @version   26.09.2021
+ * @version   15.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminCommandsListener extends ListenerAdapter {
@@ -38,6 +38,9 @@ public class AdminCommandsListener extends ListenerAdapter {
     /** Команда удаления игрока из Single Rating */
     private final AdminSingleDeleteCommandListener adminSingleDeleteCommandListener;
 
+    /** Команда просмотра информации о помощниках */
+    private final AdminAssistantsInfoCommandListener adminAssistantsInfoCommandListener;
+
     /**
      * Инициализирует команды
      */
@@ -50,6 +53,7 @@ public class AdminCommandsListener extends ListenerAdapter {
         this.adminTeamTransferCommandListener = new AdminTeamTransferCommandListener();
         this.adminSingleAddCommandListener = new AdminSingleAddCommandListener();
         this.adminSingleDeleteCommandListener = new AdminSingleDeleteCommandListener();
+        this.adminAssistantsInfoCommandListener = new AdminAssistantsInfoCommandListener();
     }
 
     /**
@@ -80,6 +84,8 @@ public class AdminCommandsListener extends ListenerAdapter {
                 adminSingleAddCommandListener.onCommandReceived(event);
             } else if(contentRaw.startsWith("!adminsingle delete")) {
                 adminSingleDeleteCommandListener.onCommandReceived(event);
+            } else if(contentRaw.equals("!staff")) {
+                adminAssistantsInfoCommandListener.onCommandReceived(event);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

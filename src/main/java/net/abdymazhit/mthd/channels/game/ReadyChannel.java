@@ -6,7 +6,6 @@ import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
@@ -22,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал готовности к игре
  *
- * @version   14.10.2021
+ * @version   15.10.2021
  * @author    Islam Abdymazhit
  */
 public class ReadyChannel extends Channel {
@@ -162,12 +161,6 @@ public class ReadyChannel extends Channel {
                 textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
                 embedBuilder.clear();
                 updateReadyMessage(textChannel);
-
-                MessageBuilder messageBuilder = new MessageBuilder();
-                messageBuilder.setContent("Готовность к игре");
-                messageBuilder.setTTS(true);
-                textChannel.sendMessage(messageBuilder.build()).queue();
-                messageBuilder.clear();
             });
         });
     }

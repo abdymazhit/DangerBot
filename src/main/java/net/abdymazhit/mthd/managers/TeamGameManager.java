@@ -18,7 +18,7 @@ import java.util.TimerTask;
 /**
  * Менеджер Team Rating игр
  *
- * @version   13.10.2021
+ * @version   15.10.2021
  * @author    Islam Abdymazhit
  */
 public record TeamGameManager(GameManager gameManager) {
@@ -111,7 +111,7 @@ public record TeamGameManager(GameManager gameManager) {
             preparedStatement.setString(5, format);
             preparedStatement.setInt(6, assistantId);
             preparedStatement.setTimestamp(7, Timestamp.from(Instant.now()));
-            preparedStatement.setInt(8, GameState.READY.getId());
+            preparedStatement.setInt(8, GameState.PLAYERS_CHOICE.getId());
             preparedStatement.setInt(9, firstTeamId);
             preparedStatement.setInt(10, secondTeamId);
             preparedStatement.executeUpdate();

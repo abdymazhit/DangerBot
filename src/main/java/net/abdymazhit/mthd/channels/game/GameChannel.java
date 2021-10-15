@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал игры
  *
- * @version   13.10.2021
+ * @version   15.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
@@ -115,12 +115,12 @@ public class GameChannel extends Channel {
 
                     StringBuilder firstTeamInviteStrings = new StringBuilder();
                     for(String username : gameCategoryManager.game.firstTeamPlayers) {
-                        firstTeamInviteStrings.append("`/game summon ").append(username).append("`\n");
+                        firstTeamInviteStrings.append("`/game summon ").append(username).append("`").append("\n");
                     }
 
                     StringBuilder secondTeamInviteStrings = new StringBuilder();
                     for(String username : gameCategoryManager.game.secondTeamPlayers) {
-                        secondTeamInviteStrings.append("`/game summon ").append(username).append("`\n");
+                        secondTeamInviteStrings.append("`/game summon ").append(username).append("`").append("\n");
                     }
 
                     String description = """

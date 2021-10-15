@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   13.10.2021
+ * @version   15.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategoryManager {
@@ -109,8 +109,11 @@ public class GameCategoryManager {
             .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
             .queue(category -> {
                 categoryId = category.getId();
-
-                createReadyChannel();
+                if(game.rating.equals(Rating.TEAM_RATING)) {
+                    createPlayersChoiceChannel();
+                } else {
+                    createReadyChannel();
+                }
             });
     }
 
@@ -352,9 +355,44 @@ public class GameCategoryManager {
      * Создает канал выбора игроков на игру
      */
     public void createPlayersChoiceChannel() {
-        createChatChannel();
-        createFirstTeamVoiceChannel();
-        createSecondTeamVoiceChannel();
+        Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
+        if(category == null) return;
+
+        boolean hasChatChannel = false;
+        boolean hasFirstTeamVoiceChannel = false;
+        boolean hasSecondTeamVoiceChannel = false;
+
+        for(GuildChannel channel : category.getChannels()) {
+            if(channel.getName().equals("chat")) {
+                hasChatChannel = true;
+            } else {
+                if(game.rating.equals(Rating.TEAM_RATING)) {
+                    if(channel.getName().equals(game.firstTeam.name)) {
+                        hasFirstTeamVoiceChannel = true;
+                    } else if(channel.getName().equals(game.secondTeam.name)) {
+                        hasSecondTeamVoiceChannel = true;
+                    }
+                } else {
+                    if(channel.getName().equals("team_" + game.firstTeamCaptain.username)) {
+                        hasFirstTeamVoiceChannel = true;
+                    } else if(channel.getName().equals("team_" + game.secondTeamCaptain.username)) {
+                        hasSecondTeamVoiceChannel = true;
+                    }
+                }
+            }
+        }
+
+        if(!hasChatChannel) {
+            createChatChannel();
+        }
+
+        if(!hasFirstTeamVoiceChannel) {
+            createFirstTeamVoiceChannel();
+        }
+
+        if(!hasSecondTeamVoiceChannel) {
+            createSecondTeamVoiceChannel();
+        }
 
         deleteReadyChannel();
         setGameState(GameState.PLAYERS_CHOICE);
@@ -365,9 +403,64 @@ public class GameCategoryManager {
      * Создает канал выбора игроков в команду
      */
     public void createPlayersPickChannel() {
-        createChatChannel();
-        createFirstTeamVoiceChannel();
-        createSecondTeamVoiceChannel();
+        game.players = new ArrayList<>();
+        game.firstTeamPlayers = new ArrayList<>();
+        game.firstTeamPlayers.add(game.firstTeamCaptain.username);
+        game.secondTeamPlayers = new ArrayList<>();
+        game.secondTeamPlayers.add(game.secondTeamCaptain.username);
+
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                    SELECT u.username as username FROM users as u
+                    INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
+            preparedStatement.setInt(1, game.id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()) {
+                String username = resultSet.getString("username");
+                game.players.add(username);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        Category category = MTHD.getInstance().guild.getCategoryById(categoryId);
+        if(category == null) return;
+
+        boolean hasChatChannel = false;
+        boolean hasFirstTeamVoiceChannel = false;
+        boolean hasSecondTeamVoiceChannel = false;
+
+        for(GuildChannel channel : category.getChannels()) {
+            if(channel.getName().equals("chat")) {
+                hasChatChannel = true;
+            } else {
+                if(game.rating.equals(Rating.TEAM_RATING)) {
+                    if(channel.getName().equals(game.firstTeam.name)) {
+                        hasFirstTeamVoiceChannel = true;
+                    } else if(channel.getName().equals(game.secondTeam.name)) {
+                        hasSecondTeamVoiceChannel = true;
+                    }
+                } else {
+                    if(channel.getName().equals("team_" + game.firstTeamCaptain.username)) {
+                        hasFirstTeamVoiceChannel = true;
+                    } else if(channel.getName().equals("team_" + game.secondTeamCaptain.username)) {
+                        hasSecondTeamVoiceChannel = true;
+                    }
+                }
+            }
+        }
+
+        if(!hasChatChannel) {
+            createChatChannel();
+        }
+
+        if(!hasFirstTeamVoiceChannel) {
+            createFirstTeamVoiceChannel();
+        }
+
+        if(!hasSecondTeamVoiceChannel) {
+            createSecondTeamVoiceChannel();
+        }
 
         deleteReadyChannel();
         setGameState(GameState.PLAYERS_CHOICE);
