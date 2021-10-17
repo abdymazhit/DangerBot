@@ -5,13 +5,16 @@ import java.sql.Timestamp;
 /**
  * Представляет собой помощника
  *
- * @version   15.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class Assistant {
 
     /** Id помощника */
     public int id;
+
+    /** Discord id помощника */
+    public String discordId;
 
     /** Имя помощника */
     public String username;
@@ -32,10 +35,12 @@ public class Assistant {
      * Инициализирует помощника
      * @param id Id помощника
      * @param username Имя помощника
+     * @param discordId Discord id помощника
      */
-    public Assistant(int id, String username) {
+    public Assistant(int id, String username, String discordId) {
         this.id = id;
         this.username = username;
+        this.discordId = discordId;
         this.games = 0;
         this.weeklyGames = 0;
         this.todayGames = 0;

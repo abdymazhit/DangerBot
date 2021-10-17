@@ -14,12 +14,13 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Команда авторизации
  *
- * @version   14.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -94,13 +95,15 @@ public class AuthCommandListener extends ListenerAdapter {
             return;
         }
 
+        boolean isPlayerBanned = isPlayerBanned(member.getId());
+        if(isPlayerBanned) {
+            MTHD.getInstance().guild.addRoleToMember(member, UserRole.BANNED.getRole()).submit();
+        }
+
         // Изменить пользователю ник
         if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
             member.modifyNickname(username).queue();
         }
-
-        // Изменить роль пользователя
-        MTHD.getInstance().guild.addRoleToMember(member, UserRole.AUTHORIZED.getRole()).submit();
 
         // Отправить сообщение о успешной авторизации
         event.replyEmbeds(MTHD.getInstance().utils.getAuthInfoMessageEmbed(username, level, percent, rank)).setEphemeral(true).queue();
@@ -124,11 +127,16 @@ public class AuthCommandListener extends ListenerAdapter {
                 if(discord_id != null) {
                     MTHD.getInstance().guild.retrieveMemberById(discord_id).queue(member -> {
                         // Удалить роли старого пользователя
+                        List<Role> rolesToAdd = new ArrayList<>();
+                        List<Role> rolesToRemove = new ArrayList<>();
                         for(Role role : member.getRoles()) {
                             if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue();
+                                rolesToRemove.add(role);
+                            } else {
+                                rolesToAdd.add(role);
                             }
                         }
+                        MTHD.getInstance().guild.modifyMemberRoles(member, rolesToAdd, rolesToRemove).submit();
 
                         // Изменить ник старого пользователя
                         if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
@@ -165,9 +173,17 @@ public class AuthCommandListener extends ListenerAdapter {
             statement.setTimestamp(3, Timestamp.from(Instant.now()));
             statement.executeUpdate();
 
-            setTeamRoleIsLeader(discordId, userId);
-            setTeamRoleIsMember(discordId, userId);
-            setSingleRatingRole(discordId, userId);
+            List<Role> teamRolesIsLeader = getTeamRoleIsLeader(userId);
+            List<Role> teamRolesIsMember = getTeamRoleIsMember(userId);
+            List<Role> singleRatingRole = getSingleRatingRole(userId);
+
+            List<Role> rolesToAdd = new ArrayList<>();
+            rolesToAdd.addAll(teamRolesIsLeader);
+            rolesToAdd.addAll(teamRolesIsMember);
+            rolesToAdd.addAll(singleRatingRole);
+            rolesToAdd.add(UserRole.AUTHORIZED.getRole());
+            MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member ->
+                    MTHD.getInstance().guild.modifyMemberRoles(member, rolesToAdd, new ArrayList<>()).submit());
 
             // Вернуть значение, что пользователь добавлен
             return true;
@@ -179,10 +195,11 @@ public class AuthCommandListener extends ListenerAdapter {
 
     /**
      * Установить роль команды, если пользователь является лидером
-     * @param discordId Id дискорда
      * @param userId Id пользователя
+     * @return Добавляемые роли
      */
-    public void setTeamRoleIsLeader(String discordId, int userId) {
+    public List<Role> getTeamRoleIsLeader(int userId) {
+        List<Role> roles = new ArrayList<>();
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
@@ -192,21 +209,23 @@ public class AuthCommandListener extends ListenerAdapter {
             if(resultSet.next()) {
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(resultSet.getString("name"), true);
                 if(teamRoles.size() == 1) {
-                    MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.LEADER.getRole()).queue();
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
+                    roles.add(UserRole.LEADER.getRole());
+                    roles.add(teamRoles.get(0));
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return roles;
     }
 
     /**
      * Установить роль команды, если пользователь является участником
-     * @param discordId Id дискорда
      * @param userId Id пользователя
+     * @return Добавляемые роли
      */
-    public void setTeamRoleIsMember(String discordId, int userId) {
+    public List<Role> getTeamRoleIsMember(int userId) {
+        List<Role> roles = new ArrayList<>();
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
@@ -216,21 +235,23 @@ public class AuthCommandListener extends ListenerAdapter {
             if(resultSet.next()) {
                 List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(resultSet.getString("name"), true);
                 if(teamRoles.size() == 1) {
-                    MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.MEMBER.getRole()).queue();
-                    MTHD.getInstance().guild.addRoleToMember(discordId, teamRoles.get(0)).queue();
+                    roles.add(UserRole.MEMBER.getRole());
+                    roles.add(teamRoles.get(0));
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return roles;
     }
 
     /**
      * Установить роль Single Rating
-     * @param discordId Id дискорда
      * @param userId Id пользователя
+     * @return Добавляемые роли
      */
-    public void setSingleRatingRole(String discordId, int userId) {
+    public List<Role> getSingleRatingRole(int userId) {
+        List<Role> roles = new ArrayList<>();
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
@@ -238,10 +259,32 @@ public class AuthCommandListener extends ListenerAdapter {
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
-                MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.SINGLE_RATING.getRole()).queue();
+                roles.add(UserRole.SINGLE_RATING.getRole());
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return roles;
+    }
+
+    /**
+     * Получает значение, заблокирован ли игрок
+     * @param discordId Discord id игрока
+     * @return Значение, заблокирован ли игрок
+     */
+    public boolean isPlayerBanned(String discordId) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT 1 FROM players_bans WHERE discord_id = ?;");
+            preparedStatement.setString(1, discordId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

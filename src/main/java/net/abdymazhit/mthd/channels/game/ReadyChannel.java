@@ -2,6 +2,7 @@ package net.abdymazhit.mthd.channels.game;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
@@ -13,15 +14,13 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
-import java.sql.*;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Канал готовности к игре
  *
- * @version   15.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class ReadyChannel extends Channel {
@@ -63,60 +62,9 @@ public class ReadyChannel extends Channel {
         }
 
         unreadyList = new ArrayList<>();
-
-        if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-            unreadyList.add(gameCategoryManager.game.firstTeam.name);
-            unreadyList.add(gameCategoryManager.game.secondTeam.name);
-        } else {
-            gameCategoryManager.game.players = new ArrayList<>();
-            gameCategoryManager.game.firstTeamPlayers = new ArrayList<>();
-            gameCategoryManager.game.firstTeamPlayers.add(gameCategoryManager.game.firstTeamCaptain.username);
-            gameCategoryManager.game.secondTeamPlayers = new ArrayList<>();
-            gameCategoryManager.game.secondTeamPlayers.add(gameCategoryManager.game.secondTeamCaptain.username);
-
-            try {
-                PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
-                preparedStatement.setInt(1, gameCategoryManager.game.id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while(resultSet.next()) {
-                    String username = resultSet.getString("username");
-                    gameCategoryManager.game.players.add(username);
-                    unreadyList.add(username);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games as slg ON slg.id = ? AND u.id = slg.first_team_captain_id;""");
-                preparedStatement.setInt(1, gameCategoryManager.game.id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while(resultSet.next()) {
-                    String username = resultSet.getString("username");
-                    unreadyList.add(username);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games as slg ON slg.id = ? AND u.id = slg.second_team_captain_id;""");
-                preparedStatement.setInt(1, gameCategoryManager.game.id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while(resultSet.next()) {
-                    String username = resultSet.getString("username");
-                    unreadyList.add(username);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+        unreadyList.addAll(gameCategoryManager.game.players);
+        unreadyList.add(gameCategoryManager.game.firstTeamCaptain.username);
+        unreadyList.add(gameCategoryManager.game.secondTeamCaptain.username);
 
         List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(
                 gameCategoryManager.game.firstTeamCaptain.discordId,
@@ -128,24 +76,26 @@ public class ReadyChannel extends Channel {
             return;
         }
 
+
         MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant -> {
             ChannelAction<TextChannel> createAction = category.createTextChannel("ready").setPosition(2).setSlowmode(5)
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-            if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-                createAction = createAction.addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
-                        .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
-                        .addPermissionOverride(gameCategoryManager.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
-                        .addPermissionOverride(gameCategoryManager.secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
-            } else {
-                createAction = createAction.addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.VIEW_CHANNEL), null);
-                for(Member member : gameCategoryManager.players) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
-                }
+            createAction = createAction.addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.VIEW_CHANNEL), null);
+            for(Member member : gameCategoryManager.players) {
+                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), null);
             }
 
             createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null).queue(textChannel -> {
                 channelId = textChannel.getId();
+
+                MessageEmbed messageEmbed = getPrivateMessage(category.getName(), gameCategoryManager.game.assistantAccount.username);
+                firstTeamCaptain.getUser().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(messageEmbed).queue());
+                secondTeamCaptain.getUser().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(messageEmbed).queue());
+                for(Member member : gameCategoryManager.players) {
+                    member.getUser().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(messageEmbed).queue());
+                }
+
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Первая стадия игры - Готовность к игре");
                 embedBuilder.setColor(3092790);
@@ -221,9 +171,9 @@ public class ReadyChannel extends Channel {
                         MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
 
                         for(String unreadyName : unreadyList) {
-                            int playerId = MTHD.getInstance().database.getUserIdByUsername(unreadyName);
-                            if(playerId > 0) {
-                                banPlayer(playerId, 10);
+                            UserAccount userAccount = MTHD.getInstance().database.getUserIdAndDiscordId(unreadyName);
+                            if(userAccount != null) {
+                                MTHD.getInstance().database.banPlayer(null, userAccount.id, userAccount.discordId, 10);
                             }
                         }
 
@@ -279,32 +229,25 @@ public class ReadyChannel extends Channel {
     }
 
     /**
-     * Блокирует игрока
-     * @param playerId Id игрока
-     * @param minutes Время бана в минутах
+     * Получает личное сообщение
+     * @param categoryName Название категории
+     * @param assistantName Имя помощника
+     * @return Личное сообщение
      */
-    private void banPlayer(int playerId, int minutes) {
-        try {
-            Timestamp timestamp = Timestamp.from(Instant.now().plusSeconds(minutes * 60L));
+    private MessageEmbed getPrivateMessage(String categoryName, String assistantName) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("У вас найдена игра!");
+        embedBuilder.setColor(3092790);
+        embedBuilder.setDescription("""
+            Просим Вас написать команду `/ready` для подтверждения готовности к игре!
+                                                                                                                 
+            Если Вы не станете готовым к игре в течении `2 минут`, то получите блокировку аккаунта на `10 минут`!""");
+        embedBuilder.addField("Id игры", categoryName, true);
+        embedBuilder.addField("Помощник", assistantName, true);
 
-            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                   INSERT INTO players_bans (player_id, finished_at) SELECT ?, ?
-                   WHERE NOT EXISTS (SELECT player_id FROM players_bans WHERE player_id = ?)""", Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setInt(1, playerId);
-            preparedStatement.setTimestamp(2, timestamp);
-            preparedStatement.setInt(3, playerId);
-            preparedStatement.executeUpdate();
+        MessageEmbed messageEmbed = embedBuilder.build();
+        embedBuilder.clear();
 
-            ResultSet resultSet = preparedStatement.getGeneratedKeys();
-            if(!resultSet.next()) {
-                PreparedStatement updateStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    UPDATE players_bans SET finished_at = ? WHERE player_id = ?""", Statement.RETURN_GENERATED_KEYS);
-                updateStatement.setTimestamp(1, timestamp);
-                updateStatement.setInt(2, playerId);
-                updateStatement.executeUpdate();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        return messageEmbed;
     }
 }

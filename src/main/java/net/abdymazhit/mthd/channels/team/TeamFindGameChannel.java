@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Канал поиска игры команд
  *
- * @version   05.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameChannel extends Channel {
@@ -45,16 +45,17 @@ public class TeamFindGameChannel extends Channel {
         }
 
         category.createTextChannel("find-game").setPosition(2)
-            .setSlowmode(5)
-            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue(textChannel -> {
-                channelId = textChannel.getId();
-                updateTeamsInGameSearchCountMessage();
-                updateAvailableAssistantsMessage();
-            });
+                .setSlowmode(5)
+                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(textChannel -> {
+                    channelId = textChannel.getId();
+                    updateTeamsInGameSearchCountMessage();
+                    updateAvailableAssistantsMessage();
+                });
     }
 
     /**

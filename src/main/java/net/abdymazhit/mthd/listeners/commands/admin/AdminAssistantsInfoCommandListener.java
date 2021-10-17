@@ -2,7 +2,9 @@ package net.abdymazhit.mthd.listeners.commands.admin;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Assistant;
+import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
@@ -15,7 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Администраторская команда просмотра информации о помощниках
  *
- * @version   15.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminAssistantsInfoCommandListener {
@@ -25,57 +27,93 @@ public class AdminAssistantsInfoCommandListener {
      */
     public void onCommandReceived(MessageReceivedEvent event) {
         Message message = event.getMessage();
+        Member adminMember = event.getMember();
 
-        if (event.getAuthor().isBot()) return;
+        if(event.getAuthor().isBot()) return;
+        if(adminMember == null) return;
 
-        Map<Integer, Assistant> assistants = getAssistantsInfo();
-
-        List<Assistant> assistantList = assistants.values().stream()
-                .sorted(Comparator.comparing(Assistant::getTodayGames)).collect(Collectors.toList());
-
-        List<Assistant> assistantListSorted = new ArrayList<>();
-        for(int i = assistantList.size() - 1; i >= 0; i--) {
-            assistantListSorted.add(assistantList.get(i));
+        if(!adminMember.getRoles().contains(UserRole.ADMIN.getRole())) {
+            message.reply("Ошибка! У вас нет прав для этого действия!").queue();
+            return;
         }
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("""
-            ```              Информация о помощниках              ```""");
-        embedBuilder.setColor(3092790);
-
-        StringBuilder namesString = new StringBuilder();
-        for(Assistant assistant : assistantListSorted) {
-            namesString.append(assistant.username.replace("_", "\\_")).append("\n");
+        if(!adminMember.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
+            message.reply("Ошибка! Вы не авторизованы!").queue();
+            return;
         }
-        embedBuilder.addField("Name", namesString.toString(), true);
 
-        StringBuilder allGamesString = new StringBuilder();
-        for(Assistant assistant : assistantListSorted) {
-            allGamesString.append(assistant.games).append("-")
-                    .append(assistant.weeklyGames).append("-")
-                    .append(assistant.todayGames).append("\n");
+        Map<Integer, Assistant> assistantsInfo = getAssistantsInfo();
+
+        List<Long> discordIds = new ArrayList<>();
+        for(Assistant assistant : assistantsInfo.values()) {
+            if(assistant.discordId != null) {
+                discordIds.add(Long.valueOf(assistant.discordId));
+            }
         }
-        embedBuilder.addField("All-Weekly-Today", allGamesString.toString(), true);
 
-        StringBuilder lastGameTimestampString = new StringBuilder();
-        for(Assistant assistant : assistantListSorted) {
-            Timestamp lastGameTimestamp = assistant.lastGameTimestamp;
+        MTHD.getInstance().guild.retrieveMembersByIds(discordIds).onSuccess(members -> {
+            Map<Integer, Assistant> assistants = new HashMap<>();
 
-            int hours;
-            if (lastGameTimestamp != null) {
-                Timestamp timestamp = Timestamp.from(Instant.now());
-                long milliseconds = timestamp.getTime() - lastGameTimestamp.getTime();
-                hours = (int) (milliseconds / (60 * 60 * 1000));
-            } else {
-                hours = 0;
+            for(Member member : members) {
+                if(member.getRoles().contains(UserRole.ASSISTANT.getRole())
+                   || member.getRoles().contains(UserRole.ADMIN.getRole())) {
+                    for(Assistant assistant : new HashMap<>(assistantsInfo).values()) {
+                        if(assistant.discordId != null) {
+                            if(assistant.discordId.equals(member.getId())) {
+                                assistants.put(assistant.id, assistant);
+                            }
+                        }
+                    }
+                }
             }
 
-            lastGameTimestampString.append(hours).append("h ago").append("\n");
-        }
-        embedBuilder.addField("Latest", lastGameTimestampString.toString(), true);
+            List<Assistant> assistantList = assistants.values().stream()
+                    .sorted(Comparator.comparing(Assistant::getTodayGames)).collect(Collectors.toList());
 
-        message.replyEmbeds(embedBuilder.build()).queue();
-        embedBuilder.clear();
+            List<Assistant> assistantListSorted = new ArrayList<>();
+            for(int i = assistantList.size() - 1; i >= 0; i--) {
+                assistantListSorted.add(assistantList.get(i));
+            }
+
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("""
+            ```              Информация о помощниках              ```""");
+            embedBuilder.setColor(3092790);
+
+            StringBuilder namesString = new StringBuilder();
+            for(Assistant assistant : assistantListSorted) {
+                namesString.append(assistant.username.replace("_", "\\_")).append("\n");
+            }
+            embedBuilder.addField("Name", namesString.toString(), true);
+
+            StringBuilder allGamesString = new StringBuilder();
+            for(Assistant assistant : assistantListSorted) {
+                allGamesString.append(assistant.games).append("-")
+                        .append(assistant.weeklyGames).append("-")
+                        .append(assistant.todayGames).append("\n");
+            }
+            embedBuilder.addField("All-Weekly-Today", allGamesString.toString(), true);
+
+            StringBuilder lastGameTimestampString = new StringBuilder();
+            for(Assistant assistant : assistantListSorted) {
+                Timestamp lastGameTimestamp = assistant.lastGameTimestamp;
+
+                int hours;
+                if (lastGameTimestamp != null) {
+                    Timestamp timestamp = Timestamp.from(Instant.now());
+                    long milliseconds = timestamp.getTime() - lastGameTimestamp.getTime();
+                    hours = (int) (milliseconds / (60 * 60 * 1000));
+                } else {
+                    hours = 0;
+                }
+
+                lastGameTimestampString.append(hours).append("h ago").append("\n");
+            }
+            embedBuilder.addField("Latest", lastGameTimestampString.toString(), true);
+
+            message.replyEmbeds(embedBuilder.build()).queue();
+            embedBuilder.clear();
+        });
     }
 
     /**
@@ -102,7 +140,8 @@ public class AdminAssistantsInfoCommandListener {
                     assistant = assistants.get(assistantId);
                 } else {
                     String username = MTHD.getInstance().database.getUserName(assistantId);
-                    assistant = new Assistant(assistantId, username);
+                    String discordId = MTHD.getInstance().database.getUserDiscordId(assistantId);
+                    assistant = new Assistant(assistantId, username, discordId);
                 }
 
                 if(finishedAt.after(weekAgo)) {

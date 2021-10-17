@@ -3,6 +3,7 @@ package net.abdymazhit.mthd.listeners.commands.game;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
+import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -15,7 +16,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   09.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -56,10 +57,25 @@ public class GameCommandsListener extends ListenerAdapter {
                     return;
                 }
 
-                int cancellerId = MTHD.getInstance().database.getUserId(assistant.getId());
-                if(cancellerId < 0) {
-                    message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
-                    return;
+                if(assistant.getRoles().contains(UserRole.ASSISTANT.getRole())) {
+                    int cancellerId = MTHD.getInstance().database.getUserId(assistant.getId());
+                    if(cancellerId < 0) {
+                        message.reply("Ошибка! Вы не зарегистрированы на сервере!").queue();
+                        return;
+                    }
+
+                    Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
+                    if(category == null) {
+                        message.reply("Ошибка! Категория игры не найдена!").queue();
+                        return;
+                    }
+
+                    int liveGameId = Integer.parseInt(category.getName().replace("Game-", ""));
+                    boolean isAssistant = MTHD.getInstance().database.isAssistant(liveGameId, cancellerId);
+                    if(!isAssistant) {
+                        message.reply("Ошибка! Вы не являетесь помощником этой игры!").queue();
+                        return;
+                    }
                 }
 
                 message.reply("Вы успешно отменили игру!").queue();

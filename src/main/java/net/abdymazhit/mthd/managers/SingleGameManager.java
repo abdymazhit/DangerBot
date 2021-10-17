@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Менеджер Single Rating игр
  *
- * @version   13.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public record SingleGameManager(GameManager gameManager) {
@@ -182,12 +182,22 @@ public record SingleGameManager(GameManager gameManager) {
 
                         if (winnerTeamId == 0) {
                             embedBuilder.setTitle("Побидетель: team_" + game.firstTeamCaptain.username);
-                            embedBuilder.addField("Рейтинг", "Рейтинг игроков team_" + game.firstTeamCaptain.username + ": +" + (firstTeamRating)
-                                                             + "\n" + "Рейтинг игроков team_" + game.secondTeamCaptain.username + ": " + (secondTeamRating), true);
+                            embedBuilder.addField("Рейтинг", """
+                                    Рейтинг игроков `team_%first_team%`: +%first_team_rating%
+                                    Рейтинг игроков `team_%second_team%`: %second_team_rating%"""
+                                    .replace("%first_team%", game.firstTeamCaptain.username)
+                                    .replace("%second_team%", game.secondTeamCaptain.username)
+                                    .replace("%first_team_rating%", String.valueOf(firstTeamRating))
+                                    .replace("%second_team_rating%", String.valueOf(secondTeamRating)), true);
                         } else if (winnerTeamId == 1) {
                             embedBuilder.setTitle("Побидетель: team_" + game.secondTeamCaptain.username);
-                            embedBuilder.addField("Рейтинг", "Рейтинг игроков team_" + game.secondTeamCaptain.username + ": +" + (secondTeamRating)
-                                                             + "\n" + "Рейтинг игроков team_" + game.firstTeamCaptain.username + ": " + (firstTeamRating), true);
+                            embedBuilder.addField("Рейтинг", """
+                                    Рейтинг игроков `team_%second_team%`: +%second_team_rating%
+                                    Рейтинг игроков `team_%first_team%`: %first_team_rating%"""
+                                    .replace("%first_team%", game.firstTeamCaptain.username)
+                                    .replace("%second_team%", game.secondTeamCaptain.username)
+                                    .replace("%first_team_rating%", String.valueOf(firstTeamRating))
+                                    .replace("%second_team_rating%", String.valueOf(secondTeamRating)), true);
                         }
 
                         embedBuilder.addField("Помощник", game.assistantAccount.username, false);

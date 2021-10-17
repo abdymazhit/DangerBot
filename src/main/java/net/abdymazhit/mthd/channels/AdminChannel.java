@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   15.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -75,6 +75,9 @@ public class AdminChannel extends Channel {
             
             Удалить игрока из Single Rating
             `!adminsingle delete <PLAYER_NAME>`
+            
+            Заблокировать игрока
+            `!ban <PLAYER_NAME> <TIME>m/h/d`
             
             Посмотреть информацию о помощниках
             `!staff`""");

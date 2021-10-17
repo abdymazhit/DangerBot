@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Канал поиска игры игроков
  *
- * @version   05.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleFindGameChannel extends Channel {
@@ -43,6 +43,7 @@ public class SingleFindGameChannel extends Channel {
 
         category.createTextChannel("find-game").setPosition(2)
                 .setSlowmode(5)
+                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.SINGLE_RATING.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))

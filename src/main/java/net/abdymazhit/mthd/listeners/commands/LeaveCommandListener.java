@@ -12,11 +12,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Команда выхода
  *
- * @version   14.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class LeaveCommandListener extends ListenerAdapter {
@@ -40,11 +42,18 @@ public class LeaveCommandListener extends ListenerAdapter {
 
         int playerId = MTHD.getInstance().database.getUserId(member.getId());
         if(playerId < 0) {
+            List<Role> rolesToAdd = new ArrayList<>();
+            List<Role> rolesToRemove = new ArrayList<>();
             for(Role role : member.getRoles()) {
-                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                    MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(unused -> { }, Throwable::printStackTrace);
+                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
+                   && !role.equals(UserRole.BANNED.getRole())) {
+                    rolesToRemove.add(role);
+                } else {
+                    rolesToAdd.add(role);
                 }
             }
+            MTHD.getInstance().guild.modifyMemberRoles(member, rolesToAdd, rolesToRemove).submit();
+
             event.reply("Вы успешно вышли с аккаунта!").setEphemeral(true).queue();
             return;
         }
@@ -60,11 +69,17 @@ public class LeaveCommandListener extends ListenerAdapter {
             return;
         }
 
+        List<Role> rolesToAdd = new ArrayList<>();
+        List<Role> rolesToRemove = new ArrayList<>();
         for(Role role : member.getRoles()) {
-            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
-                MTHD.getInstance().guild.removeRoleFromMember(member, role).queue(unused -> { }, Throwable::printStackTrace);
+            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
+               && !role.equals(UserRole.BANNED.getRole())) {
+                rolesToRemove.add(role);
+            } else {
+                rolesToAdd.add(role);
             }
         }
+        MTHD.getInstance().guild.modifyMemberRoles(member, rolesToAdd, rolesToRemove).submit();
 
         // Изменить пользователю ник
         if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
@@ -75,6 +90,11 @@ public class LeaveCommandListener extends ListenerAdapter {
         event.reply("Вы успешно вышли с аккаунта!").setEphemeral(true).queue();
     }
 
+    /**
+     * Проверяет, находится ли игрок в игре
+     * @param playerId Id игрока
+     * @return Значение, находится ли игрок в игре
+     */
     private boolean isInGame(int playerId) {
         Connection connection = MTHD.getInstance().database.getConnection();
 

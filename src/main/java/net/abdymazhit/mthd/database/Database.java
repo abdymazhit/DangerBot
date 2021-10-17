@@ -6,14 +6,17 @@ import net.abdymazhit.mthd.customs.Player;
 import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.GameResult;
+import net.abdymazhit.mthd.enums.UserRole;
 
+import javax.annotation.Nullable;
 import java.sql.*;
+import java.time.Instant;
 import java.util.*;
 
 /**
  * Отвечает за работу с базой данных
  *
- * @version   08.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -82,6 +85,28 @@ public class Database {
             e.printStackTrace();
         }
         return playersNames;
+    }
+
+    /**
+     * Проверяет, является ли помощником помощником этой игры
+     * @param liveGameId Id игры
+     * @param assistantId Id помощника
+     * @return Значение, является ли помощник помощником этой игры
+     */
+    public boolean isAssistant(int liveGameId, int assistantId) {
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                    SELECT 1 FROM single_live_games WHERE id = ? AND assistant_id = ?;""");
+            preparedStatement.setInt(1, liveGameId);
+            preparedStatement.setInt(2, assistantId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public List<String> getSinglePlayersNames(int liveGameId, int teamId) {
@@ -681,6 +706,47 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
             return "Критическая ошибка при удалении из таблицы доступных помощников! Свяжитесь с разработчиком бота!";
+        }
+    }
+
+    /**
+     * Блокирует игрока
+     * @param bannerId Id блокирующего
+     * @param playerId Id игрока
+     * @param minutes Время бана в минутах
+     */
+    public void banPlayer(@Nullable Integer bannerId, int playerId, String discordId, int minutes) {
+        try {
+            Timestamp timestamp = Timestamp.from(Instant.now().plusSeconds(minutes * 60L));
+
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                   INSERT INTO players_bans (player_id, discord_id, banner_id, finished_at) SELECT ?, ?, ?, ?
+                   WHERE NOT EXISTS (SELECT player_id FROM players_bans WHERE player_id = ?)""", Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setInt(1, playerId);
+            preparedStatement.setString(2, discordId);
+            if(bannerId == null) {
+                preparedStatement.setString(3, null);
+            } else {
+                preparedStatement.setInt(3, bannerId);
+            }
+            preparedStatement.setTimestamp(4, timestamp);
+            preparedStatement.setInt(5, playerId);
+            preparedStatement.executeUpdate();
+
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            if(!resultSet.next()) {
+                PreparedStatement updateStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                    UPDATE players_bans SET finished_at = ? WHERE player_id = ?""", Statement.RETURN_GENERATED_KEYS);
+                updateStatement.setTimestamp(1, timestamp);
+                updateStatement.setInt(2, playerId);
+                updateStatement.executeUpdate();
+            }
+
+            if(discordId != null) {
+                MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.BANNED.getRole()).queue();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

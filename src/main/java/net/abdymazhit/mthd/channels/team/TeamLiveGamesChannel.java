@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Канал активных игр
  *
- * @version   13.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLiveGamesChannel extends Channel {
@@ -46,14 +46,15 @@ public class TeamLiveGamesChannel extends Channel {
         }
 
         category.createTextChannel("live-games").setPosition(1)
-            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
-            .queue(textChannel -> {
-                channelId = textChannel.getId();
-                updateLiveGamesMessages();
-            });
+                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
+                .queue(textChannel -> {
+                    channelId = textChannel.getId();
+                    updateLiveGamesMessages();
+                });
     }
 
     /**

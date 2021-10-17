@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   14.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleFindGameCommandListener extends ListenerAdapter {
@@ -108,6 +108,7 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
                                     "DELETE FROM players_bans WHERE player_id = ?");
                             deleteStatement.setInt(1, playerId);
                             deleteStatement.executeUpdate();
+                            MTHD.getInstance().guild.removeRoleFromMember(member.getId(), UserRole.BANNED.getRole()).queue();
                         }
                     }
                 } catch (SQLException e) {

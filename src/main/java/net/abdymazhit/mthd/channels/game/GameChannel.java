@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал игры
  *
- * @version   15.10.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameChannel extends Channel {
@@ -136,9 +136,9 @@ public class GameChannel extends Channel {
                             `/game flag kick-on-lose true`
                             `/game flag final-dm true`
                             
-                            Команды для приглашения игроков %first_team%
+                            Команды для приглашения игроков `%first_team%`
                             %first_team_invites%
-                            Команды для приглашения игроков %second_team%
+                            Команды для приглашения игроков `%second_team%`
                             %second_team_invites%
                             """
                             .replace("%assistant%", assistant.getAsMention())
@@ -213,9 +213,9 @@ public class GameChannel extends Channel {
                 `/game flag kick-on-lose true`
                 `/game flag final-dm true`
                             
-                Команды для приглашения игроков %first_team%
+                Команды для приглашения игроков `%first_team%`
                 %first_team_invites%
-                Команды для приглашения игроков %second_team%
+                Команды для приглашения игроков `%second_team%`
                 %second_team_invites%
                 """
                 .replace("%assistant%", assistant.getAsMention())

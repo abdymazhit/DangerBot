@@ -2,14 +2,17 @@ package net.abdymazhit.mthd.channels;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
+import net.abdymazhit.mthd.enums.UserRole;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.TextChannel;
 
+import java.util.EnumSet;
 import java.util.List;
 
 /**
  * Канал авторизации
  *
- * @version   22.09.2021
+ * @version   17.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthChannel extends Channel{
@@ -23,10 +26,11 @@ public class AuthChannel extends Channel{
             textChannel.delete().queue();
         }
 
-        MTHD.getInstance().guild.createTextChannel("authorization").setPosition(0).queue(textChannel -> {
-            channelId = textChannel.getId();
-            sendChannelMessage(textChannel);
-        });
+        MTHD.getInstance().guild.createTextChannel("authorization").setPosition(0)
+                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE)).queue(textChannel -> {
+                    channelId = textChannel.getId();
+                    sendChannelMessage(textChannel);
+                });
     }
 
     /**
