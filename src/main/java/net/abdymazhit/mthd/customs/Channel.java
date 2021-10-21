@@ -1,16 +1,19 @@
 package net.abdymazhit.mthd.customs;
 
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
+
 /**
  * Представляет собой канал
  *
- * @version   17.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class Channel {
 
-    /** Id канала */
-    public String channelId;
+    /** Канал */
+    public TextChannel channel;
 
-    /** Id сообщения канала */
-    public String channelMessageId;
+    /** Главное сообщение канала */
+    public Message channelMessage;
 }

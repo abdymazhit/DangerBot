@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -36,43 +36,40 @@ public class MyTeamChannel extends Channel {
             }
         }
 
-        category.createTextChannel("my-team").setPosition(3)
-                .setSlowmode(5)
-                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+        category.createTextChannel("my-team").setPosition(3).setSlowmode(15)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                 .queue(textChannel -> {
-                    channelId = textChannel.getId();
-                    sendChannelMessage(textChannel);
+                    channel = textChannel;
+                    sendChannelMessage();
                 });
     }
 
     /**
-     * Отправляет сообщение о доступных командах для участников и лидеров команд
-     * @param textChannel Канал моя команда
+     * Отправляет сообщение о доступных командах
      */
-    private void sendChannelMessage(TextChannel textChannel) {
+    private void sendChannelMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Доступные команды");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
-            Исключить участника из команды
-            `!team kick <NAME>`
+                Исключить участника из команды
+                `!teamInfo kick <NAME>`
 
-            Передать права лидера команды
-            `!team transfer <NAME>`
+                Передать права лидера команды
+                `!teamInfo transfer <NAME>`
 
-            Удалить команду
-            `!team disband`
+                Удалить команду
+                `!teamInfo disband`
 
-            Посмотреть информацию о команде
-            `!team info`
+                Посмотреть информацию о команде
+                `!teamInfo info`
 
-            Покинуть команду
-            `!team leave`""");
-        textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                Покинуть команду
+                `!teamInfo leave`""");
+        channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }
 }

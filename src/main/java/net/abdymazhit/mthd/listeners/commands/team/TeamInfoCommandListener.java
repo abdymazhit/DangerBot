@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 /**
  * Команда посмотреть информацию о команде
  *
- * @version   11.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamInfoCommandListener {
@@ -54,9 +54,9 @@ public class TeamInfoCommandListener {
             return;
         }
 
-        Team team = new Team(memberTeamId);
-        team.getTeamInfoByDatabase();
-        MessageEmbed messageEmbed = MTHD.getInstance().utils.getTeamInfoMessageEmbed(team);
+        TeamInfo teamInfo = new TeamInfo(memberTeamId);
+        teamInfo.getTeamInfoByDatabase();
+        MessageEmbed messageEmbed = MTHD.getInstance().utils.getTeamInfoMessageEmbed(teamInfo);
         if(messageEmbed == null) {
             message.reply("Ошибка! По неизвестной причине получить информацию о Вашей команде не получилось! Свяжитесь с разработчиком бота!").queue();
         } else {

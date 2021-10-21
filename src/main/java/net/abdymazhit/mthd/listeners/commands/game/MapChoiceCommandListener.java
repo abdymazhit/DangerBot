@@ -6,7 +6,6 @@ import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
-import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -23,7 +22,7 @@ import java.util.TimerTask;
 /**
  * Команда выбора карты
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceCommandListener extends ListenerAdapter {
@@ -54,9 +53,8 @@ public class MapChoiceCommandListener extends ListenerAdapter {
      */
     private void choiceMap(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member member) {
         if(gameCategoryManager.mapChoiceChannel == null) return;
-        if(gameCategoryManager.mapChoiceChannel.channelId == null) return;
 
-        if(gameCategoryManager.mapChoiceChannel.channelId.equals(messageChannel.getId())) {
+        if(gameCategoryManager.mapChoiceChannel.channel.equals(messageChannel)) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.startsWith("!ban")) {
                 String[] command = contentRaw.split(" ");
@@ -105,8 +103,8 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 }
 
                 if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-                    if(!member.getRoles().contains(gameCategoryManager.firstTeamRole) &&
-                       !member.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                    if(!member.getRoles().contains(gameCategoryManager.game.firstTeamInfo.role) &&
+                       !member.getRoles().contains(gameCategoryManager.game.secondTeamInfo.role)) {
                         message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                         return;
                     }
@@ -165,13 +163,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                         return;
                     }
 
-                    Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
-                    if(category == null) {
-                        message.reply("Ошибка! Категория игры не найдена!").queue();
-                        return;
-                    }
-
-                    int liveGameId = Integer.parseInt(category.getName().replace("Game-", ""));
+                    int liveGameId = Integer.parseInt(gameCategoryManager.category.getName().replace("Game-", ""));
                     boolean isAssistant = MTHD.getInstance().database.isAssistant(liveGameId, cancellerId);
                     if(!isAssistant) {
                         message.reply("Ошибка! Вы не являетесь помощником этой игры!").queue();
@@ -190,7 +182,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.category.getId());
                     }
                 }, 7000);
             } else {
@@ -208,7 +200,7 @@ public class MapChoiceCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT 1 FROM team_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;");
+                    "SELECT 1 FROM team_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;");
             preparedStatement.setInt(1, captainId);
             preparedStatement.setInt(2, captainId);
             ResultSet resultSet = preparedStatement.executeQuery();

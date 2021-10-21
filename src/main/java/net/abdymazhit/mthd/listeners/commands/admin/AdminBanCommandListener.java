@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 /**
  * Администраторская команда блокировки игроков
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminBanCommandListener {
@@ -67,7 +67,7 @@ public class AdminBanCommandListener {
         }
 
         try {
-            int timeInMinutes = 0;
+            int timeInMinutes;
 
             char symbol = banTime.charAt(banTime.length() - 1);
             if(symbol == 'm') {
@@ -79,14 +79,19 @@ public class AdminBanCommandListener {
             } else if(symbol == 'd') {
                 banTime = banTime.replace("d", "");
                 timeInMinutes = Integer.parseInt(banTime) * 1440;
+            } else {
+                message.reply("Ошибка! Вы неправильно ввели команду!").queue();
+                return;
             }
 
-            MTHD.getInstance().database.banPlayer(bannerId, userAccount.id, userAccount.discordId, timeInMinutes);
-            message.reply("Вы успешно заблокировали игрока! Имя игрока: " + playerName +
-                          ", discord id: " + userAccount.discordId + ", время в минутах: " + timeInMinutes).queue();
+            MTHD.getInstance().database.banPlayer(bannerId, userAccount.id, timeInMinutes);
+            message.reply("Вы успешно заблокировали игрока! Имя игрока: %player%, discord id: %discord_id%, время в минутах: %minutes%"
+                    .replace("%player%", playerName)
+                    .replace("%discord_id%", userAccount.discordId)
+                    .replace("%minutes%", String.valueOf(timeInMinutes))).queue();
         } catch (NumberFormatException exception) {
             exception.printStackTrace();
-            message.reply("Ошибка! Вы неправильно ввели команду!").queue();
+            message.reply("Ошибка! Неизвестная ошибка!").queue();
         }
     }
 }

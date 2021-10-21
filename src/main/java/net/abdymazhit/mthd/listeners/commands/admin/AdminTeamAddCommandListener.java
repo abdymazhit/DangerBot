@@ -1,11 +1,5 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
@@ -14,10 +8,17 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
+
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   22.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -102,7 +103,9 @@ public class AdminTeamAddCommandListener {
             MTHD.getInstance().guild.addRoleToMember(memberAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
-        message.reply("Участник успешно добавлен в команду! Название команды: " + teamName + ", ник участника: " + memberName).queue();
+        message.reply("Участник успешно добавлен в команду! Название команды: %team%, ник участника: %member%"
+                .replace("%team%", teamName)
+                .replace("%member%", memberName)).queue();
     }
 
     /**
@@ -116,13 +119,13 @@ public class AdminTeamAddCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement addStatement = connection.prepareStatement(
-                "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
+                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             addStatement.setInt(1, teamId);
             addStatement.setInt(2, memberId);
             addStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
+                    "INSERT INTO teams_members_addition_history (team_id, member_id, adder_id, added_at) VALUES (?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, memberId);
             historyStatement.setInt(3, adderId);

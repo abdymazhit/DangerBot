@@ -19,7 +19,7 @@ import java.util.TimerTask;
 /**
  * Команда выбора игроков на игру
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -50,9 +50,8 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
      */
     private void choicePlayer(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member member) {
         if(gameCategoryManager.playersChoiceChannel == null) return;
-        if(gameCategoryManager.playersChoiceChannel.channelId == null) return;
 
-        if(gameCategoryManager.playersChoiceChannel.channelId.equals(messageChannel.getId())) {
+        if(gameCategoryManager.playersChoiceChannel.channel.equals(messageChannel)) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.startsWith("!add")) {
                 String[] command = contentRaw.split(" ");
@@ -78,8 +77,8 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(!member.getRoles().contains(gameCategoryManager.firstTeamRole) &&
-                   !member.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                if(!member.getRoles().contains(gameCategoryManager.game.firstTeamInfo.role) &&
+                   !member.getRoles().contains(gameCategoryManager.game.secondTeamInfo.role)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -104,26 +103,26 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(playerTeamId == gameCategoryManager.game.firstTeam.id) {
+                if(playerTeamId == gameCategoryManager.game.firstTeamInfo.id) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
-                        if(gameCategoryManager.game.firstTeamPlayers.size() > 3) {
+                        if(gameCategoryManager.game.firstTeamInfo.members.size()> 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
                     } else if(gameCategoryManager.game.format.equals("6x2")) {
-                        if(gameCategoryManager.game.firstTeamPlayers.size() > 5) {
+                        if(gameCategoryManager.game.firstTeamInfo.members.size() > 5) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
                     }
-                } else if(playerTeamId == gameCategoryManager.game.secondTeam.id) {
+                } else if(playerTeamId == gameCategoryManager.game.secondTeamInfo.id) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
-                        if(gameCategoryManager.game.secondTeamPlayers.size() > 3) {
+                        if(gameCategoryManager.game.secondTeamInfo.members.size()> 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
                     } else if(gameCategoryManager.game.format.equals("6x2")) {
-                        if(gameCategoryManager.game.secondTeamPlayers.size() > 5) {
+                        if(gameCategoryManager.game.secondTeamInfo.members.size() > 5) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
@@ -172,8 +171,8 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(!member.getRoles().contains(gameCategoryManager.firstTeamRole) &&
-                   !member.getRoles().contains(gameCategoryManager.secondTeamRole)) {
+                if(!member.getRoles().contains(gameCategoryManager.game.firstTeamInfo.role) &&
+                   !member.getRoles().contains(gameCategoryManager.game.secondTeamInfo.role)) {
                     message.reply("Ошибка! Вы не являетесь участником или лидером участвующей в игре команды!").queue();
                     return;
                 }
@@ -229,7 +228,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                         return;
                     }
 
-                    Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
+                    Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.category.getId());
                     if(category == null) {
                         message.reply("Ошибка! Категория игры не найдена!").queue();
                         return;
@@ -254,7 +253,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.category.getId());
                     }
                 }, 7000);
             } else {
@@ -272,7 +271,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT 1 FROM team_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;");
+                    "SELECT 1 FROM team_live_games WHERE first_team_captain_id = ? OR second_team_captain_id = ?;");
             preparedStatement.setInt(1, captainId);
             preparedStatement.setInt(2, captainId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -293,8 +292,8 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement createStatement = connection.prepareStatement(
-                "INSERT INTO team_live_games_players (team_id, player_id) SELECT ?, ? " +
-                "WHERE NOT EXISTS (SELECT 1 FROM team_live_games_players WHERE team_id = ? AND player_id = ?);", Statement.RETURN_GENERATED_KEYS);
+                    "INSERT INTO team_live_games_players (team_id, player_id) SELECT ?, ? " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM team_live_games_players WHERE team_id = ? AND player_id = ?);", Statement.RETURN_GENERATED_KEYS);
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, playerId);
             createStatement.setInt(3, teamId);
@@ -324,7 +323,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
             Connection connection = MTHD.getInstance().database.getConnection();
 
             PreparedStatement selectStatement = connection.prepareStatement(
-                "SELECT 1 FROM team_live_games_players WHERE team_id = ? AND player_id = ?;");
+                    "SELECT 1 FROM team_live_games_players WHERE team_id = ? AND player_id = ?;");
             selectStatement.setInt(1, teamId);
             selectStatement.setInt(2, playerId);
             ResultSet selectResultSet = selectStatement.executeQuery();
@@ -333,7 +332,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
             }
 
             PreparedStatement createStatement = connection.prepareStatement(
-                "DELETE FROM team_live_games_players WHERE team_id = ? AND player_id = ?;");
+                    "DELETE FROM team_live_games_players WHERE team_id = ? AND player_id = ?;");
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, playerId);
             createStatement.executeUpdate();

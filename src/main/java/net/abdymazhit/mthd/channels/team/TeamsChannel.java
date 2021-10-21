@@ -2,11 +2,12 @@ package net.abdymazhit.mthd.channels.team;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
-import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.ResultSet;
@@ -18,13 +19,13 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
 
-    /** Id информационного сообщения о лучших командах */
-    public String channelTopTeamsMessageId;
+    /** Информационное сообщение о лучших командах */
+    public Message channelTopTeamsMessage;
 
     /**
      * Инициализирует канал команды
@@ -43,31 +44,28 @@ public class TeamsChannel extends Channel {
             }
         }
 
-        category.createTextChannel("teams").setPosition(0)
-                .setSlowmode(5)
-                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+        category.createTextChannel("teams").setPosition(0).setSlowmode(15)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                 .queue(textChannel -> {
-                    channelId = textChannel.getId();
+                    channel = textChannel;
                     updateTopMessage();
-                    sendChannelMessage(textChannel);
+                    sendChannelMessage();
                 });
     }
 
     /**
      * Отправляет сообщение о доступных командах для авторизованных пользователей
-     * @param textChannel Канал команды
      */
-    private void sendChannelMessage(TextChannel textChannel) {
+    private void sendChannelMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Доступные команды");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
-            Посмотреть информацию о команд
-            `!team info <NAME>`""");
-        textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                Посмотреть информацию о команд
+                `!teamInfo info <NAME>`""");
+        channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }
 
@@ -75,13 +73,7 @@ public class TeamsChannel extends Channel {
      * Обновляет информационное сообщение о лучших командах
      */
     public void updateTopMessage() {
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал teams не существует!");
-            return;
-        }
-
-        List<Team> teams = getTopTeams();
+        List<TeamInfo> teams = getTopTeams();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         String title = "Топ 20 команд";
@@ -95,40 +87,40 @@ public class TeamsChannel extends Channel {
         embedBuilder.addField("Place", teamsPlaceString.toString(), true);
 
         StringBuilder teamsNamesString = new StringBuilder();
-        for(Team team : teams) {
-            teamsNamesString.append(team.name.replace("_", "\\_")).append("\n");
+        for(TeamInfo teamInfo : teams) {
+            teamsNamesString.append(teamInfo.name.replace("_", "\\_")).append("\n");
         }
         embedBuilder.addField("Name", teamsNamesString.toString(), true);
 
         StringBuilder teamsPointsString = new StringBuilder();
-        for(Team team : teams) {
-            teamsPointsString.append(team.points).append("\n");
+        for(TeamInfo teamInfo : teams) {
+            teamsPointsString.append(teamInfo.points).append("\n");
         }
         embedBuilder.addField("Points", teamsPointsString.toString(), true);
 
-        if(channelTopTeamsMessageId == null) {
-            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelTopTeamsMessageId = message.getId());
+        if(channelTopTeamsMessage == null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelTopTeamsMessage = message);
         } else {
-            textChannel.editMessageEmbedsById(channelTopTeamsMessageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(channelTopTeamsMessage.getId(), embedBuilder.build()).queue();
         }
         embedBuilder.clear();
     }
 
     /**
-     * Получает лучше команды
-     * @return Лучшие команды
+     * Получает список лучших команд
+     * @return Список лучших команд
      */
-    public List<Team> getTopTeams() {
-        List<Team> teams = new ArrayList<>();
+    public List<TeamInfo> getTopTeams() {
+        List<TeamInfo> teams = new ArrayList<>();
         try {
             ResultSet resultSet = MTHD.getInstance().database.getConnection().createStatement().executeQuery("""
                 WITH TEAMS AS(SELECT *, RANK() OVER(ORDER BY points DESC) RATING FROM teams)
                 SELECT id, name, points FROM TEAMS WHERE RATING <= 20 AND is_deleted IS NULL;""");
             while(resultSet.next()) {
-                Team team = new Team(resultSet.getInt(1));
-                team.name = resultSet.getString("name");
-                team.points = resultSet.getInt("points");
-                teams.add(team);
+                TeamInfo teamInfo = new TeamInfo(resultSet.getInt(1));
+                teamInfo.name = resultSet.getString("name");
+                teamInfo.points = resultSet.getInt("points");
+                teams.add(teamInfo);
             }
         } catch (SQLException e) {
             e.printStackTrace();

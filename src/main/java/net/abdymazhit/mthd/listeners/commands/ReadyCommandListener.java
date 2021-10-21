@@ -15,7 +15,7 @@ import java.sql.SQLException;
 /**
  * Команда готовности к игре
  *
- * @version   13.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class ReadyCommandListener extends ListenerAdapter {
@@ -38,9 +38,8 @@ public class ReadyCommandListener extends ListenerAdapter {
 
     private void ready(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Member member, SlashCommandEvent event) {
         if(gameCategoryManager.readyChannel == null) return;
-        if(gameCategoryManager.readyChannel.channelId == null) return;
 
-        if(gameCategoryManager.readyChannel.channelId.equals(messageChannel.getId())) {
+        if(gameCategoryManager.readyChannel.channel.equals(messageChannel)) {
             int readyId = MTHD.getInstance().database.getUserId(member.getId());
             if(readyId < 0) {
                 event.reply("Ошибка! Вы не зарегистрированы на сервере!").setEphemeral(true).queue();
@@ -62,7 +61,7 @@ public class ReadyCommandListener extends ListenerAdapter {
             if(!gameCategoryManager.readyChannel.readyList.contains(readyName)) {
                 gameCategoryManager.readyChannel.unreadyList.remove(readyName);
                 gameCategoryManager.readyChannel.readyList.add(readyName);
-                gameCategoryManager.readyChannel.updateReadyMessage(event.getTextChannel());
+                gameCategoryManager.readyChannel.updateReadyMessage();
                 event.reply("Вы успешно стали готовым к игре!").setEphemeral(true).queue();
             } else {
                 event.reply("Вы уже готовы к игре!").setEphemeral(true).queue();

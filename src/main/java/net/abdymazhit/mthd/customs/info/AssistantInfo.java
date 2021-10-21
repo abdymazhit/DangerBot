@@ -1,14 +1,14 @@
-package net.abdymazhit.mthd.customs;
+package net.abdymazhit.mthd.customs.info;
 
 import java.sql.Timestamp;
 
 /**
  * Представляет собой помощника
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
-public class Assistant {
+public class AssistantInfo {
 
     /** Id помощника */
     public int id;
@@ -37,7 +37,7 @@ public class Assistant {
      * @param username Имя помощника
      * @param discordId Discord id помощника
      */
-    public Assistant(int id, String username, String discordId) {
+    public AssistantInfo(int id, String username, String discordId) {
         this.id = id;
         this.username = username;
         this.discordId = discordId;

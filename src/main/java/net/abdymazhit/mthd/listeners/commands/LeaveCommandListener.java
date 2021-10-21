@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда выхода
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class LeaveCommandListener extends ListenerAdapter {
@@ -32,7 +32,7 @@ public class LeaveCommandListener extends ListenerAdapter {
         Member member = event.getMember();
 
         if(!event.getName().equals("leave")) return;
-        if(!messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) return;
+        if(!MTHD.getInstance().authChannel.channel.equals(messageChannel)) return;
         if(member == null) return;
 
         if(!member.getRoles().contains(UserRole.AUTHORIZED.getRole())) {
@@ -45,8 +45,7 @@ public class LeaveCommandListener extends ListenerAdapter {
             List<Role> rolesToAdd = new ArrayList<>();
             List<Role> rolesToRemove = new ArrayList<>();
             for(Role role : member.getRoles()) {
-                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-                   && !role.equals(UserRole.BANNED.getRole())) {
+                if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
                     rolesToRemove.add(role);
                 } else {
                     rolesToAdd.add(role);
@@ -72,8 +71,7 @@ public class LeaveCommandListener extends ListenerAdapter {
         List<Role> rolesToAdd = new ArrayList<>();
         List<Role> rolesToRemove = new ArrayList<>();
         for(Role role : member.getRoles()) {
-            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-               && !role.equals(UserRole.BANNED.getRole())) {
+            if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())) {
                 rolesToRemove.add(role);
             } else {
                 rolesToAdd.add(role);

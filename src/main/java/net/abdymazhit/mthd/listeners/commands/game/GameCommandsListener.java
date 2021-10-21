@@ -3,7 +3,6 @@ package net.abdymazhit.mthd.listeners.commands.game;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
-import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -16,7 +15,7 @@ import java.util.TimerTask;
 /**
  * Команда отмены игры
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCommandsListener extends ListenerAdapter {
@@ -47,9 +46,8 @@ public class GameCommandsListener extends ListenerAdapter {
      */
     private void processGame(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member assistant) {
         if(gameCategoryManager.gameChannel == null) return;
-        if(gameCategoryManager.gameChannel.channelId == null) return;
 
-        if(gameCategoryManager.gameChannel.channelId.equals(messageChannel.getId())) {
+        if(gameCategoryManager.gameChannel.channel.equals(messageChannel)) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.equals("!cancel")) {
                 if(!assistant.getRoles().contains(UserRole.ADMIN.getRole()) && !assistant.getRoles().contains(UserRole.ASSISTANT.getRole())) {
@@ -64,13 +62,7 @@ public class GameCommandsListener extends ListenerAdapter {
                         return;
                     }
 
-                    Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
-                    if(category == null) {
-                        message.reply("Ошибка! Категория игры не найдена!").queue();
-                        return;
-                    }
-
-                    int liveGameId = Integer.parseInt(category.getName().replace("Game-", ""));
+                    int liveGameId = Integer.parseInt(gameCategoryManager.category.getName().replace("Game-", ""));
                     boolean isAssistant = MTHD.getInstance().database.isAssistant(liveGameId, cancellerId);
                     if(!isAssistant) {
                         message.reply("Ошибка! Вы не являетесь помощником этой игры!").queue();
@@ -89,7 +81,7 @@ public class GameCommandsListener extends ListenerAdapter {
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.category.getId());
                     }
                 }, 7000);
             } else if(contentRaw.startsWith("!finish")) {

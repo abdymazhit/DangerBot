@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Администраторские команды
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminCommandsListener extends ListenerAdapter {
@@ -71,7 +71,7 @@ public class AdminCommandsListener extends ListenerAdapter {
 
         if(event.getAuthor().isBot()) return;
 
-        if(MTHD.getInstance().adminChannel.channelId.equals(messageChannel.getId())) {
+        if(MTHD.getInstance().adminChannel.channel.equals(messageChannel)) {
             if(contentRaw.startsWith("!adminteam add")) {
                 adminTeamAddCommandListener.onCommandReceived(event);
             } else if(contentRaw.startsWith("!adminteam create")) {
@@ -92,7 +92,7 @@ public class AdminCommandsListener extends ListenerAdapter {
                 adminBanCommandListener.onCommandReceived(event);
             } else if(contentRaw.equals("!staff")) {
                 adminAssistantsInfoCommandListener.onCommandReceived(event);
-            }else {
+            } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }
         }

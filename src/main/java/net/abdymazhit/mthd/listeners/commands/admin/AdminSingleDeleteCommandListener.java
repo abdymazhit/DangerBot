@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * Администраторская команда удаления игрока из Single Rating
  *
- * @version   05.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminSingleDeleteCommandListener {
@@ -74,7 +74,8 @@ public class AdminSingleDeleteCommandListener {
 
         MTHD.getInstance().guild.removeRoleFromMember(playerAccount.discordId, UserRole.SINGLE_RATING.getRole()).queue();
 
-        message.reply("Игрок успешно удален из Single Rating! Имя игрока: " + playerName).queue();
+        message.reply("Игрок успешно удален из Single Rating! Имя игрока: %player%"
+                .replace("%player%", playerName)).queue();
         MTHD.getInstance().playersChannel.updateTopMessage();
     }
 

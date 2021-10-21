@@ -1,4 +1,4 @@
-package net.abdymazhit.mthd.customs;
+package net.abdymazhit.mthd.customs.info;
 
 import net.abdymazhit.mthd.enums.GameResult;
 
@@ -8,10 +8,10 @@ import java.util.List;
 /**
  * Представляет собой игрока
  *
- * @version   08.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
-public class Player {
+public class PlayerInfo {
 
     /** Id игрока */
     public final int id;
@@ -40,26 +40,10 @@ public class Player {
      * @param username Имя игрока
      * @param points Очки игрока
      */
-    public Player(int id, String username, int points) {
+    public PlayerInfo(int id, String username, int points) {
         this.id = id;
         this.username = username;
         this.points = points;
-    }
-
-    /**
-     * Инициализирует игрока
-     * @param id Id игрока
-     * @param username Имя игрока
-     * @param points Очки игрока
-     * @param games Количество игр игрока
-     * @param wins Количество побед игрока
-     */
-    public Player(int id, String username, int points, int games, int wins) {
-        this.id = id;
-        this.username = username;
-        this.points = points;
-        this.games = games;
-        this.wins = wins;
     }
 
     /**
@@ -71,7 +55,7 @@ public class Player {
      * @param wins Количество побед игрока
      * @param latestActive Время последней игры игрока
      */
-    public Player(int id, String username, int points, int games, int wins, List<GameResult> lastGameResults, Timestamp latestActive) {
+    public PlayerInfo(int id, String username, int points, int games, int wins, List<GameResult> lastGameResults, Timestamp latestActive) {
         this.id = id;
         this.username = username;
         this.points = points;

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -36,52 +36,51 @@ public class AdminChannel extends Channel {
         }
 
         category.createTextChannel("admin").setPosition(0)
-            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue(textChannel -> {
-                channelId = textChannel.getId();
-                sendChannelMessage(textChannel);
-            });
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(textChannel -> {
+                    channel = textChannel;
+                    sendChannelMessage();
+                });
     }
 
     /**
      * Отправляет сообщение о доступных командах для администрации
-     * @param textChannel Канал администрации
      */
-    private void sendChannelMessage(TextChannel textChannel) {
+    private void sendChannelMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Команды администратора");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
-            Создание команды
-            `!adminteam create <TEAM_NAME> <LEADER_NAME>`
+                Создание команды
+                `!adminteam create <TEAM_NAME> <LEADER_NAME>`
                 
-            Удаление команды
-            `!adminteam disband <TEAM_NAME>`
+                Удаление команды
+                `!adminteam disband <TEAM_NAME>`
                 
-            Добавление участника в команду
-            `!adminteam add <TEAM_NAME> <MEMBER_NAME>`
+                Добавление участника в команду
+                `!adminteam add <TEAM_NAME> <MEMBER_NAME>`
 
-            Удаление участника из команды
-            `!adminteam delete <TEAM_NAME> <MEMBER_NAME>`
+                Удаление участника из команды
+                `!adminteam delete <TEAM_NAME> <MEMBER_NAME>`
 
-            Передача прав лидера команды
-            `!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`
+                Передача прав лидера команды
+                `!adminteam transfer <TEAM_NAME> <FROM_NAME> <TO_NAME>`
 
-            Переименование команды
-            `!adminteam rename <TEAM_NAME> <TO_NAME>`
+                Переименование команды
+                `!adminteam rename <TEAM_NAME> <TO_NAME>`
             
-            Добавить игрока в Single Rating
-            `!adminsingle add <PLAYER_NAME>`
+                Добавить игрока в Single Rating
+                `!adminsingle add <PLAYER_NAME>`
             
-            Удалить игрока из Single Rating
-            `!adminsingle delete <PLAYER_NAME>`
+                Удалить игрока из Single Rating
+                `!adminsingle delete <PLAYER_NAME>`
             
-            Заблокировать игрока
-            `!ban <PLAYER_NAME> <TIME>m/h/d`
+                Заблокировать игрока
+                `!ban <PLAYER_NAME> <TIME>m/h/d`
             
-            Посмотреть информацию о помощниках
-            `!staff`""");
-        textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                Посмотреть информацию о помощниках
+                `!staff`""");
+        channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }
 }

@@ -6,6 +6,7 @@ import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.PreparedStatement;
@@ -19,13 +20,13 @@ import java.util.List;
 /**
  * Канал поиска игры команд
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameChannel extends Channel {
 
-    /** Id сообщения о доступных помощниках */
-    public String channelAvailableAssistantsMessageId;
+    /** Информационное сообщение о доступных помощниках */
+    public Message channelAvailableAssistantsMessage;
 
     /**
      * Инициализирует канал поиска игры
@@ -44,15 +45,13 @@ public class TeamFindGameChannel extends Channel {
             }
         }
 
-        category.createTextChannel("find-game").setPosition(2)
-                .setSlowmode(5)
-                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+        category.createTextChannel("find-game").setPosition(2).setSlowmode(15)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.LEADER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.MEMBER.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                 .queue(textChannel -> {
-                    channelId = textChannel.getId();
+                    channel = textChannel;
                     updateTeamsInGameSearchCountMessage();
                     updateAvailableAssistantsMessage();
                 });
@@ -62,12 +61,6 @@ public class TeamFindGameChannel extends Channel {
      * Обновляет количество команд в поиске игры
      */
     public void updateTeamsInGameSearchCountMessage() {
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал find-game не существует!");
-            return;
-        }
-
         removeInactiveTeams("4x2");
         removeInactiveTeams("6x2");
 
@@ -78,28 +71,32 @@ public class TeamFindGameChannel extends Channel {
         embedBuilder.setTitle("Поиск игры");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
-            Доступные форматы игры: 4x2 , 6x2
+                Доступные форматы игры: 4x2 , 6x2
             
-            Обратите внимание, если в течении 20 минут не нашлась игра, Вы будете удалены из поиска! Вам придется заново зайти в поиск игры.
+                Обратите внимание, если в течении 20 минут не нашлась игра, Вы будете удалены из поиска! Вам придется заново зайти в поиск игры.
 
-            Команд в поиске игры 4x2: `%teams4x2Count%`
-            Команд в поиске игры 6x2: `%teams6x2Count%`
+                Команд в поиске игры 4x2: `%teams4x2Count%`
+                Команд в поиске игры 6x2: `%teams6x2Count%`
 
-            Войти в поиск игры
-            `!find game <FORMAT>`
+                Войти в поиск игры
+                `!find game <FORMAT>`
 
-            Выйти из поиска игры
-            `!find leave`"""
-            .replace("%teams4x2Count%", String.valueOf(count4x2))
-            .replace("%teams6x2Count%", String.valueOf(count6x2)));
-        if(channelMessageId == null) {
-            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                Выйти из поиска игры
+                `!find leave`"""
+                .replace("%teams4x2Count%", String.valueOf(count4x2))
+                .replace("%teams6x2Count%", String.valueOf(count6x2)));
+        if(channelMessage == null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         } else {
-            textChannel.editMessageEmbedsById(channelMessageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(channelMessage.getId(), embedBuilder.build()).queue();
         }
         embedBuilder.clear();
     }
 
+    /**
+     * Удаляет неактивные команды из поиска
+     * @param format Формат игры
+     */
     private void removeInactiveTeams(String format) {
         try {
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement(
@@ -128,12 +125,6 @@ public class TeamFindGameChannel extends Channel {
      * Обновляет список доступных помощников
      */
     public void updateAvailableAssistantsMessage() {
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал find-game не существует!");
-            return;
-        }
-
         List<String> assistants = MTHD.getInstance().database.getAvailableAssistants();
 
         StringBuilder assistantsString = new StringBuilder();
@@ -149,10 +140,10 @@ public class TeamFindGameChannel extends Channel {
         embedBuilder.setTitle("Доступные помощники");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription(assistantsString);
-        if(channelAvailableAssistantsMessageId == null) {
-            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelAvailableAssistantsMessageId = message.getId());
+        if(channelAvailableAssistantsMessage == null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelAvailableAssistantsMessage = message);
         } else {
-            textChannel.editMessageEmbedsById(channelAvailableAssistantsMessageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(channelAvailableAssistantsMessage.getId(), embedBuilder.build()).queue();
         }
         embedBuilder.clear();
     }
@@ -166,7 +157,7 @@ public class TeamFindGameChannel extends Channel {
         int count = 0;
         try {
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement(
-                "SELECT COUNT(*) as count FROM teams_in_game_search WHERE format = ?;");
+                    "SELECT COUNT(*) as count FROM teams_in_game_search WHERE format = ?;");
             preparedStatement.setString(1, format);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {

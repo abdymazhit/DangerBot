@@ -2,6 +2,7 @@ package net.abdymazhit.mthd.channels.game;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
+import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
@@ -27,19 +28,28 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
 /**
  * Канал выбора карты
  *
- * @version   13.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
 
-    /** Категория игры */
+    /** Менеджер категория игры */
     private final GameCategoryManager gameCategoryManager;
 
-    /** Список доступных карт */
-    public List<GameMap> gameMaps;
+    /** Информационное сообщение о выборе карты */
+    public Message channelMapsMessage;
+
+    /** Время каждого раунда бана */
+    private static final int roundTime = 20;
+
+    /** Таймер обратного отсчета */
+    public Timer timer;
 
     /** Список выбираемых карт */
     public List<GameMap> gameAllMaps;
+
+    /** Список оставшихся карт */
+    public List<GameMap> gameMaps;
 
     /** Роль текущей банющей команды */
     public Role currentBannerTeamRole;
@@ -47,42 +57,18 @@ public class MapChoiceChannel extends Channel {
     /** Текущий банющий капитан */
     public Member currentBannerCaptain;
 
-    /** Id сообщения о картах */
-    public String channelMapsMessageId;
-
-    /** Таймер обратного отсчета */
-    public Timer timer;
-
     /** Значение, отправляется ли сообщение о доступных картах */
     public boolean isMapsMessageSending;
 
-    /** Время каждого раунда бана */
-    private static final int roundTime = 20;
-
     /**
      * Инициализирует канал выбора карты
-     * @param gameCategoryManager Категория игры
+     * @param gameCategoryManager Менеджер категория игры
      */
     public MapChoiceChannel(GameCategoryManager gameCategoryManager) {
         this.gameCategoryManager = gameCategoryManager;
-        gameMaps = new ArrayList<>();
         gameAllMaps = new ArrayList<>();
+        gameMaps = new ArrayList<>();
         isMapsMessageSending = true;
-
-        Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
-        if(category == null) {
-            System.out.println("Критическая ошибка! Категория Game не существует!");
-            return;
-        }
-
-        List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategoryManager.game.firstTeamCaptain.discordId,
-                gameCategoryManager.game.secondTeamCaptain.discordId).get();
-        Member firstTeamCaptain = members.get(0);
-        Member secondTeamCaptain = members.get(1);
-        if(firstTeamCaptain == null || secondTeamCaptain == null) {
-            System.out.println("Критическая ошибка! Не удалось получить роли начавших игру первой и второй команды!");
-            return;
-        }
 
         if(gameCategoryManager.game.format.equals("4x2")) {
             List<GameMap> random4x2Maps = GameMap.getRandom4x2Maps();
@@ -94,91 +80,81 @@ public class MapChoiceChannel extends Channel {
             gameAllMaps = new ArrayList<>(random6x2Maps);
         }
 
-        MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant -> {
-            ChannelAction<TextChannel> createAction = category.createTextChannel("map-choice").setPosition(2).setSlowmode(5)
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+        ChannelAction<TextChannel> createAction = gameCategoryManager.category.createTextChannel("map-choice").setPosition(2).setSlowmode(5)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
+        if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
+            createAction = createAction.addPermissionOverride(gameCategoryManager.game.firstTeamInfo.role, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                    .addPermissionOverride(gameCategoryManager.game.secondTeamInfo.role, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+                    .addPermissionOverride(gameCategoryManager.game.firstTeamInfo.captain.member, EnumSet.of(Permission.MESSAGE_WRITE), null)
+                    .addPermissionOverride(gameCategoryManager.game.secondTeamInfo.captain.member, EnumSet.of(Permission.MESSAGE_WRITE), null);
+        } else {
+            createAction = createAction.addPermissionOverride(gameCategoryManager.game.firstTeamInfo.captain.member, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
+                    .addPermissionOverride(gameCategoryManager.game.secondTeamInfo.captain.member, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null);
+            for(UserAccount userAccount : gameCategoryManager.game.playersAccounts) {
+                createAction = createAction.addPermissionOverride(userAccount.member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
+            }
+        }
+        createAction.addPermissionOverride(gameCategoryManager.game.assistantAccount.member, EnumSet.of(Permission.VIEW_CHANNEL), null).queue(textChannel -> {
+            channel = textChannel;
 
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Третья стадия игры - Выбор карты");
+            embedBuilder.setColor(3092790);
+
+            String description = """
+                    Капитаны команд (%first_team% и %second_team%) должны решить какую карту будут играть!
+                
+                    Обратите внимание, если Вы не успеете заблокировать карту за отведенное время, тогда будет заблокирована случайная карта.
+  
+                    Заблокировать карту
+                    `!ban <ПОРЯДКОВЫЙ НОМЕР> или <НАЗВАНИЕ КАРТЫ>`""";
             if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-                createAction = createAction.addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
-                        .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE), null)
-                        .addPermissionOverride(gameCategoryManager.firstTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
-                        .addPermissionOverride(gameCategoryManager.secondTeamRole, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
+                description = description.replace("%first_team%", gameCategoryManager.game.firstTeamInfo.role.getAsMention())
+                        .replace("%second_team%", gameCategoryManager.game.secondTeamInfo.role.getAsMention());
             } else {
-                createAction = createAction.addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
-                        .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null);
-                for(Member member : gameCategoryManager.players) {
-                    createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
-                }
+                description = description.replace("%first_team%", gameCategoryManager.game.firstTeamInfo.captain.member.getAsMention())
+                        .replace("%second_team%", gameCategoryManager.game.secondTeamInfo.captain.member.getAsMention());
             }
 
-            createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL), null).queue(textChannel -> {
-                channelId = textChannel.getId();
-                EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setTitle("Третья стадия игры - Выбор карты");
-                embedBuilder.setColor(3092790);
+            embedBuilder.setDescription(description);
+            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
+            embedBuilder.clear();
 
-                String description = """
-                            Капитаны команд (%first_team% и %second_team%) должны решить какую карту будут играть!
-                
-                            Обратите внимание, если Вы не успеете заблокировать карту за отведенное время, тогда будет заблокирована случайная карта.
-  
-                            Заблокировать карту
-                            `!ban <ПОРЯДКОВЫЙ НОМЕР> или <НАЗВАНИЕ КАРТЫ>`""";
-
-                if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
-                    description = description.replace("%first_team%", gameCategoryManager.firstTeamRole.getAsMention())
-                            .replace("%second_team%", gameCategoryManager.secondTeamRole.getAsMention());
-                } else {
-                    description = description.replace("%first_team%", gameCategoryManager.game.firstTeamCaptainMember.getAsMention())
-                            .replace("%second_team%", gameCategoryManager.game.secondTeamCaptainMember.getAsMention());
-                }
-
-                embedBuilder.setDescription(description);
-                textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
-                embedBuilder.clear();
-                updateMapsMessage(textChannel);
-            });
+            updateMapsMessage();
         });
     }
 
     /**
-     * Банит карту
+     * Блокирует карту
      * @param gameMap Карта
      */
     public void banMap(GameMap gameMap) {
         gameMaps.remove(gameMap);
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал map-choice не существует!");
-            return;
-        }
-
-        updateMapsMessage(textChannel);
+        updateMapsMessage();
     }
 
     /**
-     * Обновляет сообщение о доступных картах
+     * Обновляет информационное сообщение о выборе карты
      */
-    private void updateMapsMessage(TextChannel textChannel) {
+    private void updateMapsMessage() {
         if(gameCategoryManager.game.rating.equals(Rating.TEAM_RATING)) {
             if(currentBannerTeamRole == null) {
-                currentBannerTeamRole = gameCategoryManager.firstTeamRole;
+                currentBannerTeamRole = gameCategoryManager.game.firstTeamInfo.role;
             } else {
-                if(currentBannerTeamRole.equals(gameCategoryManager.firstTeamRole)) {
-                    currentBannerTeamRole = gameCategoryManager.secondTeamRole;
+                if(currentBannerTeamRole.equals(gameCategoryManager.game.firstTeamInfo.role)) {
+                    currentBannerTeamRole = gameCategoryManager.game.secondTeamInfo.role;
                 } else {
-                    currentBannerTeamRole = gameCategoryManager.firstTeamRole;
+                    currentBannerTeamRole = gameCategoryManager.game.firstTeamInfo.role;
                 }
             }
         } else {
             if(currentBannerCaptain == null) {
-                currentBannerCaptain = gameCategoryManager.game.firstTeamCaptainMember;
+                currentBannerCaptain = gameCategoryManager.game.firstTeamInfo.captain.member;
             } else {
-                if(currentBannerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
-                    currentBannerCaptain = gameCategoryManager.game.secondTeamCaptainMember;
+                if(currentBannerCaptain.equals(gameCategoryManager.game.firstTeamInfo.captain.member)) {
+                    currentBannerCaptain = gameCategoryManager.game.secondTeamInfo.captain.member;
                 } else {
-                    currentBannerCaptain = gameCategoryManager.game.firstTeamCaptainMember;
+                    currentBannerCaptain = gameCategoryManager.game.firstTeamInfo.captain.member;
                 }
             }
         }
@@ -217,7 +193,7 @@ public class MapChoiceChannel extends Channel {
 
             File file = new File("./maps/image.png");
             ImageIO.write(image, "png", file);
-            createCountdownTask(textChannel, file);
+            createCountdownTask(file);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -227,39 +203,37 @@ public class MapChoiceChannel extends Channel {
      * Создает таймер обратного отсчета
      * @param file Файл изображения
      */
-    private void createCountdownTask(TextChannel textChannel, File file) {
+    private void createCountdownTask(File file) {
         if(gameMaps.size() == 1) {
             gameCategoryManager.setGameState(GameState.GAME_CREATION);
             gameCategoryManager.setGameMap(gameMaps.get(0));
 
             isMapsMessageSending = true;
-            textChannel.editMessageEmbedsById(channelMapsMessageId, getBanPickMessage(-1))
-                .retainFiles(new ArrayList<>()).addFile(file).queue(message -> {
-                    isMapsMessageSending = false;
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            gameCategoryManager.createGameChannel();
-                        }
-                    }, 7000);
-                });
+            channel.editMessageEmbedsById(channelMapsMessage.getId(), getMapPickMessage(-1)).retainFiles(new ArrayList<>()).addFile(file).queue(message -> {
+                isMapsMessageSending = false;
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        gameCategoryManager.createGameChannel();
+                    }
+                }, 7000);
+            });
         } else {
             if(timer != null) {
                 timer.cancel();
-                timer = null;
             }
 
             AtomicBoolean canStart = new AtomicBoolean(false);
-            if(channelMapsMessageId == null) {
+            if(channelMapsMessage == null) {
                 isMapsMessageSending = true;
-                textChannel.sendMessageEmbeds(getBanPickMessage(roundTime)).addFile(file).queue(message -> {
-                    channelMapsMessageId = message.getId();
+                channel.sendMessageEmbeds(getMapPickMessage(roundTime)).addFile(file).queue(message -> {
+                    channelMapsMessage = message;
                     isMapsMessageSending = false;
                     canStart.set(true);
                 });
             } else {
                 isMapsMessageSending = true;
-                textChannel.editMessageEmbedsById(channelMapsMessageId, getBanPickMessage(roundTime))
+                channel.editMessageEmbedsById(channelMapsMessage.getId(), getMapPickMessage(roundTime))
                         .retainFiles(new ArrayList<>()).addFile(file).queue(message -> {
                     isMapsMessageSending = false;
                     canStart.set(true);
@@ -276,10 +250,10 @@ public class MapChoiceChannel extends Channel {
                             @Override
                             public void run() {
                                 if(time.get() % 2 == 0) {
-                                    textChannel.editMessageEmbedsById(channelMapsMessageId, getBanPickMessage(time.get())).queue(null, ignore(UNKNOWN_CHANNEL));
+                                    channel.editMessageEmbedsById(channelMapsMessage.getId(), getMapPickMessage(time.get())).queue(null, ignore(UNKNOWN_CHANNEL));
                                 }
 
-                                if(time.get() <= 0) {
+                                if(time.get() == 0) {
                                     banMap(gameMaps.get(new Random().nextInt(gameMaps.size())));
                                     cancel();
                                 }
@@ -294,11 +268,11 @@ public class MapChoiceChannel extends Channel {
     }
 
     /**
-     * Получает сообщение о бане
-     * @param time Время до бана
-     * @return Сообщение о бане
+     * Получает информационное сообщение о выборе карты
+     * @param time Время до автоблокировки карты
+     * @return Информационное сообщение о выборе карты
      */
-    private MessageEmbed getBanPickMessage(int time) {
+    private MessageEmbed getMapPickMessage(int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(3092790);
 
@@ -323,7 +297,6 @@ public class MapChoiceChannel extends Channel {
         }
 
         StringBuilder mapsString = new StringBuilder();
-
         for(int i = 0; i < gameAllMaps.size(); i++) {
             GameMap gameMap = gameAllMaps.get(i);
             if(gameMaps.contains(gameMap)) {

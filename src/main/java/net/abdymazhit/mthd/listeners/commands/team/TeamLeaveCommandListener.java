@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда покинуть команду
  *
- * @version   22.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLeaveCommandListener {
@@ -60,19 +60,19 @@ public class TeamLeaveCommandListener {
             return;
         }
 
-        Team team = MTHD.getInstance().database.getMemberTeam(deleterId);
-        if(team == null) {
+        TeamInfo teamInfo = MTHD.getInstance().database.getMemberTeam(deleterId);
+        if(teamInfo == null) {
             message.reply("Ошибка! Вы не являетесь участником какой-либо команды!").queue();
             return;
         }
 
-        boolean isMemberDeleted = deleteTeamMember(team.id, deleterId, deleterId);
+        boolean isMemberDeleted = deleteTeamMember(teamInfo.id, deleterId, deleterId);
         if(!isMemberDeleted) {
             message.reply("Критическая ошибка при попытке покинуть команду! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(team.name, true);
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamInfo.name, true);
         if(teamRoles.size() != 1) {
             message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -95,13 +95,13 @@ public class TeamLeaveCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
+                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, memberId);
             deleteStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
+                    "INSERT INTO teams_members_deletion_history (team_id, member_id, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, memberId);
             historyStatement.setInt(3, deleterId);

@@ -9,7 +9,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.GuildChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,7 +17,7 @@ import java.util.*;
 /**
  * Канал активных игр Single рейтинга
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleLiveGamesChannel extends Channel {
@@ -46,13 +45,12 @@ public class SingleLiveGamesChannel extends Channel {
         }
 
         category.createTextChannel("live-games").setPosition(1)
-                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
                 .queue(textChannel -> {
-                    channelId = textChannel.getId();
+                    channel = textChannel;
                     updateLiveGamesMessages();
                 });
     }
@@ -61,11 +59,6 @@ public class SingleLiveGamesChannel extends Channel {
      * Обновляет сообщения активных игр
      */
     public void updateLiveGamesMessages() {
-        if(channelId == null) return;
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) return;
-
         List<LiveGame> games = getLiveGames();
 
         Map<LiveGame, String> channelLiveGamesMessages = new HashMap<>(channelLiveGamesMessagesId);
@@ -84,38 +77,33 @@ public class SingleLiveGamesChannel extends Channel {
             }
 
             if(!isSent) {
-                sendLiveGamesMessage(textChannel, liveGame, null);
+                sendLiveGamesMessage(liveGame, null);
             } else {
-                sendLiveGamesMessage(textChannel, liveGame, channelLiveGamesMessagesId.get(neededGame));
+                sendLiveGamesMessage(liveGame, channelLiveGamesMessagesId.get(neededGame));
             }
         }
 
-        if(channelId == null) {
-            return;
-        }
-
         for(LiveGame game : liveGamesMessages.keySet()) {
-            String messageId = this.channelLiveGamesMessagesId.get(game);
-            this.channelLiveGamesMessagesId.remove(game);
-            textChannel.deleteMessageById(messageId).queue();
+            String messageId = channelLiveGamesMessagesId.get(game);
+            channelLiveGamesMessagesId.remove(game);
+            channel.deleteMessageById(messageId).queue();
         }
     }
 
     /**
      * Отправляет информационное сообщение о активной игре
-     * @param textChannel Канал активных игр
      * @param liveGame Активная игра
      * @param messageId Id сообщения активных игр
      */
-    private void sendLiveGamesMessage(TextChannel textChannel, LiveGame liveGame, String messageId) {
+    private void sendLiveGamesMessage(LiveGame liveGame, String messageId) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
 
         if(liveGame.gameState.equals(GameState.READY)) {
             embedBuilder.setTitle("""
-            ```           team_XXX   vs   team_XXX           ```""");
+                    ```           team_XXX   vs   team_XXX           ```""");
         } else {
             embedBuilder.setTitle("""
-            ```           team_%first_team_captain%   vs   team_%second_team_captain%           ```"""
+                    ```           team_%first_team_captain%   vs   team_%second_team_captain%           ```"""
                     .replace("%first_team_captain%", liveGame.firstTeamCaptainName)
                     .replace("%second_team_captain%", liveGame.secondTeamCaptainName));
         }
@@ -125,16 +113,16 @@ public class SingleLiveGamesChannel extends Channel {
         embedBuilder.addField("Стадия игры", liveGame.gameState.getName(), true);
 
         if(messageId == null) {
-            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(liveGame, message.getId()));
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(liveGame, message.getId()));
         } else {
-            textChannel.editMessageEmbedsById(messageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(messageId, embedBuilder.build()).queue();
         }
         embedBuilder.clear();
     }
 
     /**
-     * Получает активные игры
-     * @return Активные игры
+     * Получает список активных игр
+     * @return Список активных игр
      */
     public List<LiveGame> getLiveGames() {
         List<LiveGame> games = new ArrayList<>();

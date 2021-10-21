@@ -1,25 +1,23 @@
 package net.abdymazhit.mthd.customs;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.mthd.MTHD;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.GameMap;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.Rating;
-import net.dv8tion.jda.api.entities.Member;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Представляет собой игру
  *
- * @version   05.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -31,22 +29,10 @@ public class Game {
     public int id;
 
     /** Первая команда */
-    public Team firstTeam;
-
-    /** Капитан первой игры */
-    public UserAccount firstTeamCaptain;
-
-    /** Капитан первой игры */
-    public Member firstTeamCaptainMember;
+    public TeamInfo firstTeamInfo;
 
     /** Вторая команда */
-    public Team secondTeam;
-
-    /** Капитан второй игры */
-    public UserAccount secondTeamCaptain;
-
-    /** Капитан второй игры */
-    public Member secondTeamCaptainMember;
+    public TeamInfo secondTeamInfo;
 
     /** Помощник игры */
     public UserAccount assistantAccount;
@@ -63,153 +49,143 @@ public class Game {
     /** Стадия игры */
     public GameState gameState;
 
-    /** Игроки */
-    public List<String> players;
-
-    /** Id игроков */
-    public List<Integer> playersIds;
-
-    /** Игроки первой команды */
-    public List<String> firstTeamPlayers;
-
-    /** Id игроков первой команды */
-    public List<Integer> firstTeamPlayersId;
-
-    /** Vime id игроков первой команды */
-    public List<Integer> firstTeamPlayersVimeId;
-
-    /** Игроки второй команды */
-    public List<String> secondTeamPlayers;
-
-    /** Id игроков второй команды */
-    public List<Integer> secondTeamPlayersId;
-
-    /** Vime id игроков второй команды */
-    public List<Integer> secondTeamPlayersVimeId;
+    /** Участвующие игроки игры */
+    public List<UserAccount> playersAccounts;
 
     /**
-     * Инициализирует матч
+     * Инициализирует новую Team Rating игру
      * @param rating Рейтинговая система игры
-     * @param id Id матча
+     * @param id Id игры
+     * @param format Формат игры
      * @param firstTeamId Id первой команды
-     * @param firstTeamCaptainId Id начавшего первой команды
+     * @param firstTeamCaptainId Id капитана первой команды
      * @param secondTeamId Id второй команды
-     * @param secondTeamCaptainId Id начавшего второй команды
-     * @param format Формат матча
-     * @param gameMap Выбранная карта
+     * @param secondTeamCaptainId Id капитана второй команды
+     * @param assistantId Id помощника игры
+     */
+    public Game(Rating rating, int id, String format, int firstTeamId, int firstTeamCaptainId, int secondTeamId, int secondTeamCaptainId, int assistantId) {
+        this.rating = rating;
+        this.id = id;
+        this.format = format;
+        firstTeamInfo = new TeamInfo(firstTeamId);
+        firstTeamInfo.captain = new UserAccount(firstTeamCaptainId);
+        secondTeamInfo = new TeamInfo(secondTeamId);
+        secondTeamInfo.captain = new UserAccount(secondTeamCaptainId);
+        assistantAccount = new UserAccount(assistantId);
+        startedAt = Timestamp.from(Instant.now());
+        getData();
+    }
+
+    /**
+     * Инициализирует новую Single Rating игру
+     * @param rating Рейтинговая система игры
+     * @param id Id игры
+     * @param format Формат игры
+     * @param firstTeamCaptainId Id капитана первой команды
+     * @param secondTeamCaptainId Id капитана второй команды
+     * @param assistantId Id помощника игры
+     * @param playersIds Id участвующих игроков
+     */
+    public Game(Rating rating, int id, String format, int firstTeamCaptainId, int secondTeamCaptainId, int assistantId, List<Integer> playersIds) {
+        this.rating = rating;
+        this.id = id;
+        this.format = format;
+        startedAt = Timestamp.from(Instant.now());
+        firstTeamInfo = new TeamInfo();
+        firstTeamInfo.captain = new UserAccount(firstTeamCaptainId);
+        secondTeamInfo = new TeamInfo();
+        secondTeamInfo.captain = new UserAccount(secondTeamCaptainId);
+        assistantAccount = new UserAccount(assistantId);
+        playersAccounts = new ArrayList<>();
+        for(int playerId : playersIds) {
+            playersAccounts.add(new UserAccount(playerId));
+        }
+        getData();
+    }
+
+    /**
+     * Инициализирует уже существующую Team Rating игру
+     * @param rating Рейтинговая система игры
+     * @param id Id игры
+     * @param format Формат игры
+     * @param gameMap Карта игры
      * @param gameState Стадия игры
-     * @param assistantId Id помощника
-     * @param startedAt Время начала матча
-     */
-    public Game(Rating rating, int id, int firstTeamId, int firstTeamCaptainId,  int secondTeamId, int secondTeamCaptainId,
-                String format, GameMap gameMap, GameState gameState, int assistantId, Timestamp startedAt) {
-        this.rating = rating;
-        this.id = id;
-        this.firstTeam = new Team(firstTeamId);
-        this.firstTeamCaptain = new UserAccount(firstTeamCaptainId);
-        this.secondTeam = new Team(secondTeamId);
-        this.secondTeamCaptain = new UserAccount(secondTeamCaptainId);
-        this.format = format;
-        this.gameMap = gameMap;
-        this.gameState = gameState;
-        this.assistantAccount = new UserAccount(assistantId);
-        this.startedAt = startedAt;
-    }
-
-    /**
-     * Инициализирует игру
-     * @param rating Рейтинговая система игры
-     * @param id Id игры
-     * @param firstTeamId Id первой команды
-     * @param firstTeamCaptainId Id начавшего первой команды
-     * @param secondTeamId Id второй команды
-     * @param secondTeamCaptainId Id начавшего второй команды
-     * @param format Формат игры
-     * @param assistantId Помощник игры
-     */
-    public Game(Rating rating, int id, int firstTeamId, int firstTeamCaptainId, int secondTeamId, int secondTeamCaptainId,
-                String format, int assistantId) {
-        this.rating = rating;
-        this.id = id;
-        this.firstTeam = new Team(firstTeamId);
-        this.firstTeamCaptain = new UserAccount(firstTeamCaptainId);
-        this.secondTeam = new Team(secondTeamId);
-        this.secondTeamCaptain = new UserAccount(secondTeamCaptainId);
-        this.format = format;
-        this.assistantAccount = new UserAccount(assistantId);
-        this.startedAt = Timestamp.from(Instant.now());
-    }
-
-    /**
-     * Инициализирует игру
-     * @param rating Рейтинговая система игры
-     * @param playersIds Id игроков
-     * @param id Id игры
-     * @param firstTeamCaptainId Id начавшего первой команды
-     * @param secondTeamCaptainId Id начавшего второй команды
-     * @param format Формат игры
-     * @param assistantId Помощник игры
-     */
-    public Game(Rating rating, List<Integer> playersIds, int id, int firstTeamCaptainId, int secondTeamCaptainId,
-                String format, int assistantId) {
-        this.rating = rating;
-        this.playersIds = playersIds;
-        this.id = id;
-        this.firstTeamCaptain = new UserAccount(firstTeamCaptainId);
-        this.secondTeamCaptain = new UserAccount(secondTeamCaptainId);
-        this.format = format;
-        this.assistantAccount = new UserAccount(assistantId);
-        this.startedAt = Timestamp.from(Instant.now());
-    }
-
-    /**
-     * Инициализирует игру
-     * @param rating Рейтинговая система игры
-     * @param playersIds Id игроков
-     * @param id Id игры
-     * @param firstTeamCaptainId Id начавшего первой команды
-     * @param secondTeamCaptainId Id начавшего второй команды
-     * @param format Формат игры
-     * @param assistantId Помощник игры
      * @param startedAt Время начала игры
+     * @param firstTeamId Id первой команды
+     * @param firstTeamCaptainId Id капитана первой команды
+     * @param secondTeamId Id второй команды
+     * @param secondTeamCaptainId Id капитана второй команды
+     * @param assistantId Id помощника игры
      */
-    public Game(Rating rating, List<Integer> playersIds, int id, int firstTeamCaptainId, int secondTeamCaptainId,
-                String format, GameMap gameMap, GameState gameState, int assistantId, Timestamp startedAt) {
+    public Game(Rating rating, int id, String format, GameMap gameMap, GameState gameState, Timestamp startedAt,
+                int firstTeamId, int firstTeamCaptainId,  int secondTeamId, int secondTeamCaptainId, int assistantId) {
         this.rating = rating;
-        this.playersIds = playersIds;
         this.id = id;
-        this.firstTeamCaptain = new UserAccount(firstTeamCaptainId);
-        this.secondTeamCaptain = new UserAccount(secondTeamCaptainId);
         this.format = format;
         this.gameMap = gameMap;
         this.gameState = gameState;
-        this.assistantAccount = new UserAccount(assistantId);
         this.startedAt = startedAt;
+        firstTeamInfo = new TeamInfo(firstTeamId);
+        firstTeamInfo.captain = new UserAccount(firstTeamCaptainId);
+        secondTeamInfo = new TeamInfo(secondTeamId);
+        secondTeamInfo.captain = new UserAccount(secondTeamCaptainId);
+        assistantAccount = new UserAccount(assistantId);
+        getData();
+    }
+
+    /**
+     * Инициализирует уже существующую Single Rating игру
+     * @param rating Рейтинговая система игры
+     * @param id Id игры
+     * @param format Формат игры
+     * @param gameMap Карта игры
+     * @param gameState Стадия игры
+     * @param startedAt Время начала игры
+     * @param firstTeamCaptainId Id капитана первой команды
+     * @param secondTeamCaptainId Id капитана второй команды
+     * @param assistantId Id помощника игры
+     * @param playersIds Id участвующих игроков
+     */
+    public Game(Rating rating, int id, String format, GameMap gameMap, GameState gameState, Timestamp startedAt, int firstTeamCaptainId, int secondTeamCaptainId,
+                int assistantId, List<Integer> playersIds) {
+        this.rating = rating;
+        this.id = id;
+        this.format = format;
+        this.gameMap = gameMap;
+        this.gameState = gameState;
+        this.startedAt = startedAt;
+        firstTeamInfo = new TeamInfo();
+        firstTeamInfo.captain = new UserAccount(firstTeamCaptainId);
+        secondTeamInfo = new TeamInfo();
+        secondTeamInfo.captain = new UserAccount(secondTeamCaptainId);
+        assistantAccount = new UserAccount(assistantId);
+        playersAccounts = new ArrayList<>();
+        for(int playerId : playersIds) {
+            playersAccounts.add(new UserAccount(playerId));
+        }
+        getData();
     }
 
     /**
      * Получает подробную информацию о команде
      */
-    public void getData() {
-        firstTeamCaptain.discordId = MTHD.getInstance().database.getUserDiscordId(firstTeamCaptain.id);
-        firstTeamCaptain.username = MTHD.getInstance().database.getUserName(firstTeamCaptain.id);
-        secondTeamCaptain.discordId = MTHD.getInstance().database.getUserDiscordId(secondTeamCaptain.id);
-        secondTeamCaptain.username = MTHD.getInstance().database.getUserName(secondTeamCaptain.id);
+    private void getData() {
+        firstTeamInfo.captain.discordId = MTHD.getInstance().database.getUserDiscordId(firstTeamInfo.captain.id);
+        firstTeamInfo.captain.username = MTHD.getInstance().database.getUserName(firstTeamInfo.captain.id);
+        secondTeamInfo.captain.discordId = MTHD.getInstance().database.getUserDiscordId(secondTeamInfo.captain.id);
+        secondTeamInfo.captain.username = MTHD.getInstance().database.getUserName(secondTeamInfo.captain.id);
         assistantAccount.username = MTHD.getInstance().database.getUserName(assistantAccount.id);
         assistantAccount.discordId = MTHD.getInstance().database.getUserDiscordId(assistantAccount.id);
 
         if(rating.equals(Rating.TEAM_RATING)) {
-            firstTeam.points = MTHD.getInstance().database.getTeamPoints(firstTeam.id);
-            firstTeam.name = MTHD.getInstance().database.getTeamName(firstTeam.id);
-            secondTeam.points = MTHD.getInstance().database.getTeamPoints(secondTeam.id);
-            secondTeam.name = MTHD.getInstance().database.getTeamName(secondTeam.id);
+            firstTeamInfo.name = MTHD.getInstance().database.getTeamName(firstTeamInfo.id);
+            firstTeamInfo.points = MTHD.getInstance().database.getTeamPoints(firstTeamInfo.id);
+            secondTeamInfo.name = MTHD.getInstance().database.getTeamName(secondTeamInfo.id);
+            secondTeamInfo.points = MTHD.getInstance().database.getTeamPoints(secondTeamInfo.id);
         } else {
-            try {
-                firstTeamCaptainMember = MTHD.getInstance().guild.retrieveMemberById(firstTeamCaptain.discordId).submit().get();
-                secondTeamCaptainMember = MTHD.getInstance().guild.retrieveMemberById(secondTeamCaptain.discordId).submit().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            firstTeamInfo.captain.member = MTHD.getInstance().guild.getMemberById(firstTeamInfo.captain.discordId);
+            secondTeamInfo.captain.member = MTHD.getInstance().guild.getMemberById(secondTeamInfo.captain.discordId);
+            assistantAccount.member = MTHD.getInstance().guild.getMemberById(assistantAccount.discordId);
         }
     }
 
@@ -217,29 +193,37 @@ public class Game {
      * Установить id участников первой команды
      */
     public void setFirstTeamPlayersIds() {
-        firstTeamPlayersId = new ArrayList<>();
-        for(String playerName : firstTeamPlayers) {
-            int playerId = MTHD.getInstance().database.getUserIdByUsername(playerName);
+        for(UserAccount userAccount : firstTeamInfo.members) {
+            int playerId = MTHD.getInstance().database.getUserIdByUsername(userAccount.username);
             if(playerId > 0) {
-                firstTeamPlayersId.add(playerId);
+                userAccount.id = playerId;
             }
         }
 
-        firstTeamPlayersVimeId = new ArrayList<>();
         StringBuilder names = new StringBuilder();
-        for(String name : firstTeamPlayers) {
-            names.append(name).append(",");
+        for(UserAccount userAccount : firstTeamInfo.members) {
+            names.append(userAccount.username).append(",");
         }
 
-        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
-                                                              "?token=" + MTHD.getInstance().config.vimeApiToken);
+        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/%names%?token=%token%"
+                .replace("%names%", names)
+                .replace("%token%", MTHD.getInstance().config.vimeApiToken));
         if(info == null) return;
 
-        JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
-        for(JsonElement infoElement : infoArray) {
-            JsonObject infoObject = infoElement.getAsJsonObject();
-            int vimeId = infoObject.get("id").getAsInt();
-            firstTeamPlayersVimeId.add(vimeId);
+        for(JsonElement infoElement : JsonParser.parseString(info).getAsJsonArray()) {
+            JsonObject jsonObject = infoElement.getAsJsonObject();
+            int vimeId = jsonObject.get("id").getAsInt();
+            String username = jsonObject.get("username").getAsString();
+
+            for(UserAccount userAccount : firstTeamInfo.members) {
+                if(userAccount.username.equals(username)) {
+                    userAccount.vimeId = vimeId;
+                }
+
+                if(firstTeamInfo.captain.username.equals(username)) {
+                    firstTeamInfo.captain.vimeId = vimeId;
+                }
+            }
         }
     }
 
@@ -247,30 +231,37 @@ public class Game {
      * Установить id участников второй команды
      */
     public void setSecondTeamPlayersIds() {
-        secondTeamPlayersId = new ArrayList<>();
-        for(String playerName : secondTeamPlayers) {
-            int playerId = MTHD.getInstance().database.getUserIdByUsername(playerName);
+        for(UserAccount userAccount : secondTeamInfo.members) {
+            int playerId = MTHD.getInstance().database.getUserIdByUsername(userAccount.username);
             if(playerId > 0) {
-                secondTeamPlayersId.add(playerId);
+                userAccount.id = playerId;
             }
         }
 
-        secondTeamPlayersVimeId = new ArrayList<>();
         StringBuilder names = new StringBuilder();
-        for(String name : secondTeamPlayers) {
-            names.append(name).append(",");
+        for(UserAccount userAccount : secondTeamInfo.members) {
+            names.append(userAccount.username).append(",");
         }
 
-        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/" + names +
-                                                              "?token=" + MTHD.getInstance().config.vimeApiToken);
+        String info = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/user/name/%names%?token=%token%"
+                .replace("%names%", names)
+                .replace("%token%", MTHD.getInstance().config.vimeApiToken));
         if(info == null) return;
 
-        JsonArray infoArray = JsonParser.parseString(info).getAsJsonArray();
-        for(JsonElement infoElement : infoArray) {
-            JsonObject infoObject = infoElement.getAsJsonObject();
+        for(JsonElement infoElement : JsonParser.parseString(info).getAsJsonArray()) {
+            JsonObject jsonObject = infoElement.getAsJsonObject();
+            int vimeId = jsonObject.get("id").getAsInt();
+            String username = jsonObject.get("username").getAsString();
 
-            int vimeId = infoObject.get("id").getAsInt();
-            secondTeamPlayersVimeId.add(vimeId);
+            for(UserAccount userAccount : secondTeamInfo.members) {
+                if(userAccount.username.equals(username)) {
+                    userAccount.vimeId = vimeId;
+                }
+
+                if(secondTeamInfo.captain.username.equals(username)) {
+                    secondTeamInfo.captain.vimeId = vimeId;
+                }
+            }
         }
     }
 }

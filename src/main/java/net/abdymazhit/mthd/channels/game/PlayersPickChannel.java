@@ -7,10 +7,7 @@ import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Category;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 
 import java.util.*;
@@ -19,147 +16,117 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков в команду
  *
- * @version   13.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickChannel extends Channel {
 
-    /** Категория игры */
+    /** Менеджер категория игры */
     private final GameCategoryManager gameCategoryManager;
 
-    /** Капитан текущей выбирающей команды */
-    public Member currentPickerCaptain;
-
-    /** Id сообщения о картах */
-    public String channelPlayersMessageId;
-
-    /** Таймер обратного отсчета */
-    public Timer timer;
+    /** Информационное сообщение о выборе игроков */
+    public Message channelPlayersMessage;
 
     /** Время каждого раунда выбора игроков */
     private static final int roundTime = 30;
 
+    /** Таймер обратного отсчета */
+    public Timer timer;
+
+    /** Капитан текущей выбирающей команды */
+    public Member currentPickerCaptain;
+
     /**
      * Инициализирует канал выбора игроков в команду
-     * @param gameCategoryManager Категория игры
+     * @param gameCategoryManager Менеджер категория игры
      */
     public PlayersPickChannel(GameCategoryManager gameCategoryManager) {
         this.gameCategoryManager = gameCategoryManager;
 
-        Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
-        if(category == null) {
-            System.out.println("Критическая ошибка! Категория Game не существует!");
-            return;
+        ChannelAction<TextChannel> createAction = gameCategoryManager.category.createTextChannel("players-pick").setPosition(2).setSlowmode(5)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .addPermissionOverride(gameCategoryManager.game.firstTeamInfo.captain.member, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(gameCategoryManager.game.secondTeamInfo.captain.member, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null);
+        for(UserAccount userAccount : gameCategoryManager.game.playersAccounts) {
+            createAction = createAction.addPermissionOverride(userAccount.member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
         }
+        createAction.addPermissionOverride(gameCategoryManager.game.assistantAccount.member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null).queue(textChannel -> {
+            channel = textChannel;
 
-        List<Member> members = MTHD.getInstance().guild.retrieveMembersByIds(gameCategoryManager.game.firstTeamCaptain.discordId,
-                gameCategoryManager.game.secondTeamCaptain.discordId).get();
-        Member firstTeamCaptain = members.get(0);
-        Member secondTeamCaptain = members.get(1);
-        if(firstTeamCaptain == null || secondTeamCaptain == null) {
-            System.out.println("Критическая ошибка! Не удалось получить роли капитанов первой и второй команды!");
-            return;
-        }
-
-        MTHD.getInstance().guild.retrieveMemberById(gameCategoryManager.game.assistantAccount.discordId).queue(assistant -> {
-            ChannelAction<TextChannel> createAction = category.createTextChannel("players-pick").setPosition(2)
-                    .setSlowmode(5)
-                    .addPermissionOverride(firstTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(secondTeamCaptain, EnumSet.of(Permission.MESSAGE_WRITE, Permission.VIEW_CHANNEL), null)
-                    .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL));
-
-            for(Member member : gameCategoryManager.players) {
-                createAction = createAction.addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE));
-            }
-
-            createAction.addPermissionOverride(assistant, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE), null).queue(textChannel -> {
-                channelId = textChannel.getId();
-                EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setTitle("Вторая стадия игры - Выбор игроков");
-                embedBuilder.setColor(3092790);
-                embedBuilder.setDescription("""
-                        Капитаны команд (%first_captain% и %second_captain%) должны выбрать игроков в свою команду!
+            // Отправляет главное сообщение канала
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Вторая стадия игры - Выбор игроков");
+            embedBuilder.setColor(3092790);
+            embedBuilder.setDescription("""
+                    Капитаны команд (%first_captain% и %second_captain%) должны выбрать игроков в свою команду!
                         
-                        Обратите внимание, если Вы не успеете выбрать игрока за отведенное время, тогда для вашей команды будет выбран случайный игрок.
+                    Обратите внимание, если Вы не успеете выбрать игрока за отведенное время, тогда для вашей команды будет выбран случайный игрок.
           
-                        Выбрать игрока
-                        `!pick <НИК>`"""
-                        .replace("%first_captain%", firstTeamCaptain.getAsMention())
-                        .replace("%second_captain%", secondTeamCaptain.getAsMention()));
-                textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
-                embedBuilder.clear();
-                updatePlayersMessage(textChannel);
-            });
+                    Выбрать игрока
+                    `!pick <НИК>`"""
+                    .replace("%first_captain%", gameCategoryManager.game.firstTeamInfo.captain.member.getAsMention())
+                    .replace("%second_captain%", gameCategoryManager.game.secondTeamInfo.captain.member.getAsMention()));
+            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
+            embedBuilder.clear();
+
+            updatePlayersMessage();
         });
     }
 
     /**
-     * Выбирает игрока
-     * @param player Игрок
+     * Выбирает игрока в команду
+     * @param playerName Имя игрока
+     * @param teamId Id команды
      */
-    public void pickPlayer(String player, int teamId, String discordId) {
-        if(discordId != null) {
-            if(teamId == 0) {
-                MTHD.getInstance().guild.retrieveMemberById(discordId).queue(gameCategoryManager::addToFirstTeamVoiceChannel);
-            } else {
-                MTHD.getInstance().guild.retrieveMemberById(discordId).queue(gameCategoryManager::addToSecondTeamVoiceChannel);
-            }
-        } else {
-            UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(player);
-            if(playerAccount != null) {
-                if(teamId == 0) {
-                    MTHD.getInstance().guild.retrieveMemberById(playerAccount.discordId).queue(gameCategoryManager::addToFirstTeamVoiceChannel);
-                } else {
-                    MTHD.getInstance().guild.retrieveMemberById(playerAccount.discordId).queue(gameCategoryManager::addToSecondTeamVoiceChannel);
+    public void pickPlayer(String playerName, int teamId) {
+        for(UserAccount playerAccount : new ArrayList<>(gameCategoryManager.game.playersAccounts)) {
+            if(playerAccount.username.equalsIgnoreCase(playerName)) {
+                gameCategoryManager.game.playersAccounts.remove(playerAccount);
+
+                String discordId = MTHD.getInstance().database.getUserDiscordId(playerName);
+                if(discordId != null) {
+                    Member member = MTHD.getInstance().guild.getMemberById(discordId);
+                    if(teamId == 0) {
+                        gameCategoryManager.addToFirstTeamVoiceChannel(member);
+                    } else {
+                        gameCategoryManager.addToSecondTeamVoiceChannel(member);
+                    }
                 }
-            }
-        }
-
-        for(String name : gameCategoryManager.game.players) {
-            if(name.equalsIgnoreCase(player)) {
-                gameCategoryManager.game.players.remove(name);
 
                 if(teamId == 0) {
-                    gameCategoryManager.game.firstTeamPlayers.add(name);
+                    gameCategoryManager.game.firstTeamInfo.members.add(playerAccount);
                 } else {
-                    gameCategoryManager.game.secondTeamPlayers.add(name);
+                    gameCategoryManager.game.secondTeamInfo.members.add(playerAccount);
                 }
                 break;
             }
         }
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал map-choice не существует!");
-            return;
-        }
-
-        updatePlayersMessage(textChannel);
+        updatePlayersMessage();
     }
 
     /**
-     * Выбирает игрока за команду
+     * Выбирает игрока в команду
      * @param playerName Имя игрока
      * @param teamId Id команды
      */
     public void pickPlayerToTeam(String playerName, int teamId) {
-        UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
-        if(playerAccount == null) return;
-
-        MTHD.getInstance().database.addPlayerToTeam(teamId, playerAccount.id);
+        int userId = MTHD.getInstance().database.getUserIdByUsername(playerName);
+        if(userId > 0) {
+            MTHD.getInstance().database.addPlayerToTeam(teamId, userId);
+        }
     }
 
     /**
-     * Обновляет сообщение о доступных картах
+     * Обновляет информационное сообщение о выборе игроков
      */
-    private void updatePlayersMessage(TextChannel textChannel) {
+    private void updatePlayersMessage() {
         if(currentPickerCaptain == null) {
-            currentPickerCaptain = gameCategoryManager.game.firstTeamCaptainMember;
+            currentPickerCaptain = gameCategoryManager.game.firstTeamInfo.captain.member;
         } else {
-            if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
-                currentPickerCaptain = gameCategoryManager.game.secondTeamCaptainMember;
+            if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamInfo.captain.member)) {
+                currentPickerCaptain = gameCategoryManager.game.secondTeamInfo.captain.member;
             } else {
-                currentPickerCaptain = gameCategoryManager.game.firstTeamCaptainMember;
+                currentPickerCaptain = gameCategoryManager.game.firstTeamInfo.captain.member;
             }
         }
 
@@ -167,37 +134,39 @@ public class PlayersPickChannel extends Channel {
             timer.cancel();
         }
 
-        if(gameCategoryManager.game.players.size() == 1) {
-            String playerName = gameCategoryManager.game.players.get(0);
-            if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
+        if(gameCategoryManager.game.playersAccounts.size() == 1) {
+            String playerName = gameCategoryManager.game.playersAccounts.get(0).username;
+            if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamInfo.captain.member)) {
+                pickPlayer(playerName, 0);
                 pickPlayerToTeam(playerName, 0);
-                pickPlayer(playerName, 0, null);
             } else {
+                pickPlayer(playerName, 1);
                 pickPlayerToTeam(playerName, 1);
-                pickPlayer(playerName, 1, null);
             }
         } else {
-            createCountdownTask(textChannel);
+            createCountdownTask();
         }
     }
 
     /**
-     * Создает обратный отсчет
-     * @param textChannel Канал выбора игроков в команду
+     * Создает таймер обратного отсчета
      */
-    private void createCountdownTask(TextChannel textChannel) {
-        if(gameCategoryManager.game.players.size() == 0) {
+    private void createCountdownTask() {
+        if(gameCategoryManager.game.playersAccounts.size() == 0) {
             gameCategoryManager.setGameState(GameState.MAP_CHOICE);
 
-            if(channelPlayersMessageId == null) {
-                textChannel.sendMessageEmbeds(getPlayersPickMessage(-1)).queue(message -> new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        gameCategoryManager.createMapsChoiceChannel();
-                    }
-                }, 7000));
+            if(channelPlayersMessage == null) {
+                channel.sendMessageEmbeds( getPlayersPickMessage(-1)).queue(message -> {
+                    channelPlayersMessage = message;
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            gameCategoryManager.createMapsChoiceChannel();
+                        }
+                    }, 7000); }
+                );
             } else {
-                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(-1)).queue(message -> new Timer().schedule(new TimerTask() {
+                channel.editMessageEmbedsById(channelPlayersMessage.getId(), getPlayersPickMessage(-1)).queue(message -> new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
                         gameCategoryManager.createMapsChoiceChannel();
@@ -207,71 +176,52 @@ public class PlayersPickChannel extends Channel {
         } else {
             if(timer != null) {
                 timer.cancel();
-                timer = null;
             }
 
-            if(channelPlayersMessageId == null) {
-                textChannel.sendMessageEmbeds(getPlayersPickMessage(roundTime)).queue(message -> {
-                    channelPlayersMessageId = message.getId();
-
-                    AtomicInteger time =  new AtomicInteger(roundTime);
-                    timer = new Timer();
-                    timer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            if(time.get() % 2 == 0) {
-                                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(time.get())).queue();
-                            }
-
-                            if(time.get() <= 0) {
-                                String playerName = gameCategoryManager.game.players.get(new Random().nextInt(gameCategoryManager.game.players.size()));
-                                if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
-                                    pickPlayerToTeam(playerName, 0);
-                                    pickPlayer(playerName, 0, null);
-                                } else {
-                                    pickPlayerToTeam(playerName, 1);
-                                    pickPlayer(playerName, 1, null);
-                                }
-                                cancel();
-                            }
-                            time.getAndDecrement();
-                        }
-                    }, 0, 1000);
+            if(channelPlayersMessage == null) {
+                channel.sendMessageEmbeds(getPlayersPickMessage(roundTime)).queue(message -> {
+                    channelPlayersMessage = message;
+                    performTimeActions();
                 });
             } else {
-                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(roundTime)).queue(message -> {
-                    AtomicInteger time =  new AtomicInteger(roundTime);
-                    timer = new Timer();
-                    timer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            if(time.get() % 2 == 0) {
-                                textChannel.editMessageEmbedsById(channelPlayersMessageId, getPlayersPickMessage(time.get())).queue();
-                            }
-
-                            if(time.get() <= 0) {
-                                String playerName = gameCategoryManager.game.players.get(new Random().nextInt(gameCategoryManager.game.players.size()));
-                                if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamCaptainMember)) {
-                                    pickPlayerToTeam(playerName, 0);
-                                    pickPlayer(playerName, 0, null);
-                                } else {
-                                    pickPlayerToTeam(playerName, 1);
-                                    pickPlayer(playerName, 1, null);
-                                }
-                                cancel();
-                            }
-                            time.getAndDecrement();
-                        }
-                    }, 0, 1000);
-                });
+                channel.editMessageEmbedsById(channelPlayersMessage.getId(), getPlayersPickMessage(roundTime)).queue(message -> performTimeActions());
             }
         }
     }
 
     /**
-     * Получает сообщение о выборе игроков
-     * @param time Время до выбора
-     * @return Сообщение о выборе игроков
+     * Выполняет действия времени
+     */
+    private void performTimeActions() {
+        AtomicInteger time =  new AtomicInteger(roundTime);
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if(time.get() % 2 == 0) {
+                    channel.editMessageEmbedsById(channelPlayersMessage.getId(), getPlayersPickMessage(time.get())).queue();
+                }
+
+                if(time.get() == 0) {
+                    String playerName = gameCategoryManager.game.playersAccounts.get(new Random().nextInt(gameCategoryManager.game.playersAccounts.size())).username;
+                    if(currentPickerCaptain.equals(gameCategoryManager.game.firstTeamInfo.captain.member)) {
+                        pickPlayer(playerName, 0);
+                        pickPlayerToTeam(playerName, 0);
+                    } else {
+                        pickPlayer(playerName, 1);
+                        pickPlayerToTeam(playerName, 1);
+                    }
+                    cancel();
+                }
+                time.getAndDecrement();
+            }
+        }, 0, 1000);
+    }
+
+    /**
+     * Получает информационное сообщение о выборе игроков
+     * @param time Время до автовыбора игрока
+     * @return Информационное сообщение о выборе игроков
      */
     private MessageEmbed getPlayersPickMessage(int time) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -280,33 +230,30 @@ public class PlayersPickChannel extends Channel {
         StringBuilder players1String = new StringBuilder();
         StringBuilder players2String = new StringBuilder();
 
-        for(int i = 0; i < gameCategoryManager.game.firstTeamPlayers.size(); i++) {
-            players1String.append("`").append(gameCategoryManager.game.firstTeamPlayers.get(i)).append("`").append("\n");
+        for(int i = 0; i < gameCategoryManager.game.firstTeamInfo.members.size(); i++) {
+            players1String.append("`").append(gameCategoryManager.game.firstTeamInfo.members.get(i).username).append("`").append("\n");
         }
-        for(int i = 0; i < gameCategoryManager.game.secondTeamPlayers.size(); i++) {
-            players2String.append("`").append(gameCategoryManager.game.secondTeamPlayers.get(i)).append("`").append("\n");
+        for(int i = 0; i < gameCategoryManager.game.secondTeamInfo.members.size(); i++) {
+            players2String.append("`").append(gameCategoryManager.game.secondTeamInfo.members.get(i).username).append("`").append("\n");
         }
 
-        embedBuilder.addField("Команда " + gameCategoryManager.game.firstTeamCaptain.username, players1String.toString(), true);
-        embedBuilder.addField("Команда " + gameCategoryManager.game.secondTeamCaptain.username, players2String.toString(), true);
+        embedBuilder.addField("Команда " + gameCategoryManager.game.firstTeamInfo.captain.username, players1String.toString(), true);
+        embedBuilder.addField("Команда " + gameCategoryManager.game.secondTeamInfo.captain.username, players2String.toString(), true);
 
         if(time >= 0) {
             if(currentPickerCaptain.getNickname() != null) {
-                embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
-                        .replace("%captain%", currentPickerCaptain.getNickname()));
+                embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!".replace("%captain%", currentPickerCaptain.getNickname()));
             } else {
-                embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!"
-                        .replace("%captain%", currentPickerCaptain.getEffectiveName()));
+                embedBuilder.setTitle("Капитан (%captain%) должен выбрать игрока в команду!".replace("%captain%", currentPickerCaptain.getEffectiveName()));
             }
-            embedBuilder.setDescription("Оставшееся время для выбора игрока: `%time% сек.`"
-                    .replace("%time%", String.valueOf(time)));
 
-            StringBuilder players = new StringBuilder();
+            embedBuilder.setDescription("Оставшееся время для выбора игрока: `%time% сек.`".replace("%time%", String.valueOf(time)));
 
-            for(String player : gameCategoryManager.game.players) {
-                players.append("`").append(player).append("`").append("\n");
+            StringBuilder playersNames = new StringBuilder();
+            for(UserAccount userAccount : gameCategoryManager.game.playersAccounts) {
+                playersNames.append("`").append(userAccount.username).append("`").append("\n");
             }
-            embedBuilder.addField("Невыбранные игроки", players.toString(), false);
+            embedBuilder.addField("Невыбранные игроки", playersNames.toString(), false);
         } else {
             embedBuilder.setTitle("Переход к выбору карт...");
         }

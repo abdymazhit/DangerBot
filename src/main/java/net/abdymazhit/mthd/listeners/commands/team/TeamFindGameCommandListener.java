@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   05.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameCommandListener extends ListenerAdapter {
@@ -32,7 +32,7 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         Member member = event.getMember();
 
-        if(!messageChannel.getId().equals(MTHD.getInstance().teamFindGameChannel.channelId)) return;
+        if(!MTHD.getInstance().teamFindGameChannel.channel.equals(messageChannel)) return;
         if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
@@ -81,11 +81,11 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                Team team = new Team(teamId);
-                team.getTeamInfoByDatabase();
+                TeamInfo teamInfo = new TeamInfo(teamId);
+                teamInfo.getTeamInfoByDatabase();
                 List<UserAccount> members = new ArrayList<>();
-                members.add(team.leader);
-                members.addAll(team.members);
+                members.add(teamInfo.leader);
+                members.addAll(teamInfo.members);
 
                 int onlinePlayers = 0;
                 for(UserAccount player : members) {
@@ -107,14 +107,17 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
                 }
 
                 List<Integer> teamsInLiveGames = getTeamsInLiveGames();
-                if(teamsInLiveGames == null) {
-                    message.reply("Ошибка! Не удалось получить список команд в активных играх!").queue();
-                    return;
-                }
-
                 if(teamsInLiveGames.contains(teamId)) {
                     message.reply("Ошибка! Ваша команда уже участвует в игре!").queue();
                     return;
+                }
+
+                if(member.getRoles().contains(UserRole.ASSISTANT.getRole()) || member.getRoles().contains(UserRole.ADMIN.getRole())) {
+                    List<Integer> assistantsInLiveGames = MTHD.getInstance().database.getAssistantsInLiveGames();
+                    if(assistantsInLiveGames.contains(memberId)) {
+                        message.reply("Ошибка! Вы сейчас проводите игру!").queue();
+                        return;
+                    }
                 }
 
                 String errorMessage = addTeamToTeamsInGameSearch(teamId, format, memberId);
@@ -167,8 +170,8 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "INSERT INTO teams_in_game_search (team_id, format, captain_id, joined_at) SELECT ?, ?, ?, ? " +
-                "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
+                    "INSERT INTO teams_in_game_search (team_id, format, captain_id, joined_at) SELECT ?, ?, ?, ? " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM teams_in_game_search WHERE team_id = ?);", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.setString(2, format);
             preparedStatement.setInt(3, captainId);
@@ -204,7 +207,7 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "DELETE FROM teams_in_game_search WHERE team_id = ?", Statement.RETURN_GENERATED_KEYS);
+                    "DELETE FROM teams_in_game_search WHERE team_id = ?", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, teamId);
             preparedStatement.executeUpdate();
 
@@ -221,20 +224,19 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
      * @return Список команд в активных играх
      */
     private List<Integer> getTeamsInLiveGames() {
+        List<Integer> teamsInLiveGames = new ArrayList<>();
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT first_team_id, second_team_id FROM team_live_games;");
+                    "SELECT first_team_id, second_team_id FROM team_live_games;");
             ResultSet resultSet = preparedStatement.executeQuery();
-            List<Integer> teamsInLiveGames = new ArrayList<>();
             while(resultSet.next()) {
                 teamsInLiveGames.add(resultSet.getInt("first_team_id"));
                 teamsInLiveGames.add(resultSet.getInt("second_team_id"));
             }
-            return teamsInLiveGames;
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
         }
+        return teamsInLiveGames;
     }
 }

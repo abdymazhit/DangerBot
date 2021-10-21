@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -34,7 +34,7 @@ public class AuthCommandListener extends ListenerAdapter {
         Member member = event.getMember();
 
         if(!event.getName().equals("auth")) return;
-        if(!messageChannel.getId().equals(MTHD.getInstance().authChannel.channelId)) return;
+        if(!MTHD.getInstance().authChannel.channel.equals(messageChannel)) return;
         if(member == null) return;
 
         OptionMapping tokenOption = event.getOption("token");
@@ -49,9 +49,10 @@ public class AuthCommandListener extends ListenerAdapter {
         }
 
         String token = tokenOption.getAsString().replace("https://api.vime.world/web/token/", "")
-            .replace(" ", "");
-        String authInfo = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/misc/token/" + token + "?token="
-                                                                  + MTHD.getInstance().config.vimeApiToken);
+                .replace(" ", "");
+        String authInfo = MTHD.getInstance().utils.sendGetRequest("https://api.vimeworld.ru/misc/token/%player_token%?token=%token%"
+                .replace("%player_token%", token)
+                .replace("%token%", MTHD.getInstance().config.vimeApiToken));
         if(authInfo == null) {
             event.reply("Ошибка! Неверный токен авторизации!").setEphemeral(true).queue();
             return;
@@ -95,9 +96,10 @@ public class AuthCommandListener extends ListenerAdapter {
             return;
         }
 
-        boolean isPlayerBanned = isPlayerBanned(member.getId());
-        if(isPlayerBanned) {
-            MTHD.getInstance().guild.addRoleToMember(member, UserRole.BANNED.getRole()).submit();
+        int userId = MTHD.getInstance().database.getUserId(member.getId());
+        if(userId < 0) {
+            event.reply("Ошибка! Вы не зарегистрированы на сервере!").setEphemeral(true).queue();
+            return;
         }
 
         // Изменить пользователю ник
@@ -125,7 +127,8 @@ public class AuthCommandListener extends ListenerAdapter {
             if(resultSet.next()) {
                 String discord_id = resultSet.getString("discord_id");
                 if(discord_id != null) {
-                    MTHD.getInstance().guild.retrieveMemberById(discord_id).queue(member -> {
+                    Member member = MTHD.getInstance().guild.getMemberById(discordId);
+                    if(member != null) {
                         // Удалить роли старого пользователя
                         List<Role> rolesToAdd = new ArrayList<>();
                         List<Role> rolesToRemove = new ArrayList<>();
@@ -142,7 +145,7 @@ public class AuthCommandListener extends ListenerAdapter {
                         if(MTHD.getInstance().guild.getSelfMember().canInteract(member)) {
                             member.modifyNickname(member.getUser().getName()).queue();
                         }
-                    });
+                    }
                 }
 
                 PreparedStatement statement = connection.prepareStatement("UPDATE users SET discord_id = ? WHERE username LIKE ? AND discord_id IS NULL;", Statement.RETURN_GENERATED_KEYS);
@@ -182,8 +185,11 @@ public class AuthCommandListener extends ListenerAdapter {
             rolesToAdd.addAll(teamRolesIsMember);
             rolesToAdd.addAll(singleRatingRole);
             rolesToAdd.add(UserRole.AUTHORIZED.getRole());
-            MTHD.getInstance().guild.retrieveMemberById(discordId).queue(member ->
-                    MTHD.getInstance().guild.modifyMemberRoles(member, rolesToAdd, new ArrayList<>()).submit());
+
+            Member member = MTHD.getInstance().guild.getMemberById(discordId);
+            if(member != null) {
+                MTHD.getInstance().guild.modifyMemberRoles(member, rolesToAdd, new ArrayList<>()).submit();
+            }
 
             // Вернуть значение, что пользователь добавлен
             return true;
@@ -203,7 +209,7 @@ public class AuthCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT name FROM teams WHERE leader_id = ? AND is_deleted is null;");
+                    "SELECT name FROM teams WHERE leader_id = ? AND is_deleted is null;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
@@ -229,7 +235,7 @@ public class AuthCommandListener extends ListenerAdapter {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(
-                "SELECT name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
+                    "SELECT name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
             preparedStatement.setInt(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
@@ -265,26 +271,5 @@ public class AuthCommandListener extends ListenerAdapter {
             e.printStackTrace();
         }
         return roles;
-    }
-
-    /**
-     * Получает значение, заблокирован ли игрок
-     * @param discordId Discord id игрока
-     * @return Значение, заблокирован ли игрок
-     */
-    public boolean isPlayerBanned(String discordId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT 1 FROM players_bans WHERE discord_id = ?;");
-            preparedStatement.setString(1, discordId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if(resultSet.next()) {
-                return true;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 }

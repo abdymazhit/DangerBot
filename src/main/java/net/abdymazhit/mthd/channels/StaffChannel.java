@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Канал помощников
  *
- * @version   22.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class StaffChannel extends Channel {
@@ -37,29 +37,28 @@ public class StaffChannel extends Channel {
         }
 
         category.createTextChannel("staff").setPosition(1)
-            .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-            .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-            .queue(textChannel -> {
-                channelId = textChannel.getId();
-                sendChannelMessage(textChannel);
-            });
+                .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+                .queue(textChannel -> {
+                    channel = textChannel;
+                    sendChannelMessage();
+                });
     }
 
     /**
      * Отправляет сообщение о доступных командах для помощников
-     * @param textChannel Канал помощников
      */
-    private void sendChannelMessage(TextChannel textChannel) {
+    private void sendChannelMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Доступные команды");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
-            Стать готовым для проведения игры
-            `!ready`
+                Стать готовым для проведения игры
+                `!ready`
 
-            Стать недоступным для проведения игры
-            `!unready`""");
-        textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                Стать недоступным для проведения игры
+                `!unready`""");
+        channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }
 }

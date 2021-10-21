@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleFindGameCommandListener extends ListenerAdapter {
@@ -30,7 +30,7 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
         Message message = event.getMessage();
         Member member = event.getMember();
 
-        if(!messageChannel.getId().equals(MTHD.getInstance().singleFindGameChannel.channelId)) return;
+        if(!MTHD.getInstance().singleFindGameChannel.channel.equals(messageChannel)) return;
         if(member == null) return;
         if(event.getAuthor().isBot()) return;
 
@@ -78,14 +78,17 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
                 }
 
                 List<Integer> playersInLiveGames = getPlayersInLiveGames();
-                if(playersInLiveGames == null) {
-                    message.reply("Ошибка! Не удалось получить список игроков в активных играх!").queue();
-                    return;
-                }
-
                 if(playersInLiveGames.contains(playerId)) {
                     message.reply("Ошибка! Вы уже участвуете в игре!").queue();
                     return;
+                }
+
+                if(member.getRoles().contains(UserRole.ASSISTANT.getRole()) || member.getRoles().contains(UserRole.ADMIN.getRole())) {
+                    List<Integer> assistantsInLiveGames = MTHD.getInstance().database.getAssistantsInLiveGames();
+                    if(assistantsInLiveGames.contains(playerId)) {
+                        message.reply("Ошибка! Вы сейчас проводите игру!").queue();
+                        return;
+                    }
                 }
 
                 try {
@@ -101,14 +104,14 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
                         int minutes = (int) (finishedAt.getTime() - now.getTime()) / 60000;
 
                         if(minutes > 0) {
-                            message.reply("Вы заблокированы! До окончания бана: `" + minutes + "мин.`").queue();
+                            message.reply("Вы заблокированы! До окончания бана: `%minutes% мин.`"
+                                    .replace("%minutes%", String.valueOf(minutes))).queue();
                             return;
                         } else {
                             PreparedStatement deleteStatement = connection.prepareStatement(
                                     "DELETE FROM players_bans WHERE player_id = ?");
                             deleteStatement.setInt(1, playerId);
                             deleteStatement.executeUpdate();
-                            MTHD.getInstance().guild.removeRoleFromMember(member.getId(), UserRole.BANNED.getRole()).queue();
                         }
                     }
                 } catch (SQLException e) {
@@ -216,8 +219,8 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
      * @return Список игроков в активных играх
      */
     private List<Integer> getPlayersInLiveGames() {
+        List<Integer> playersInLiveGames = new ArrayList<>();
         try {
-            List<Integer> playersInLiveGames = new ArrayList<>();
             Connection connection = MTHD.getInstance().database.getConnection();
 
             PreparedStatement preparedStatement = connection.prepareStatement(
@@ -234,11 +237,9 @@ public class SingleFindGameCommandListener extends ListenerAdapter {
             while(playersResultSet.next()) {
                 playersInLiveGames.add(playersResultSet.getInt("player_id"));
             }
-
-            return playersInLiveGames;
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
         }
+        return playersInLiveGames;
     }
 }

@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Команда удалить команду
  *
- * @version   05.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamDisbandCommandListener {
@@ -50,19 +50,19 @@ public class TeamDisbandCommandListener {
             return;
         }
 
-        Team team = MTHD.getInstance().database.getLeaderTeam(deleterId);
-        if(team == null) {
+        TeamInfo teamInfo = MTHD.getInstance().database.getLeaderTeam(deleterId);
+        if(teamInfo == null) {
             message.reply("Ошибка! Вы не являетесь лидером какой-либо команды!").queue();
             return;
         }
 
-        String errorMessage = disbandTeam(team.id, deleterId);
+        String errorMessage = disbandTeam(teamInfo.id, deleterId);
         if(errorMessage != null) {
             message.reply(errorMessage).queue();
             return;
         }
 
-        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(team.name, true);
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamInfo.name, true);
         if(teamRoles.size() != 1) {
             message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -76,7 +76,7 @@ public class TeamDisbandCommandListener {
 
         Category category = categories.get(0);
         for(VoiceChannel voiceChannel : category.getVoiceChannels()) {
-            if(voiceChannel.getName().equals(team.name)) {
+            if(voiceChannel.getName().equals(teamInfo.name)) {
                 voiceChannel.delete().queue();
             }
         }
@@ -97,12 +97,12 @@ public class TeamDisbandCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement deleteStatement = connection.prepareStatement(
-                "UPDATE teams SET is_deleted = true WHERE id = ? AND is_deleted is null;");
+                    "UPDATE teams SET is_deleted = true WHERE id = ? AND is_deleted is null;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.executeUpdate();
 
             PreparedStatement selectLeaderStatement = connection.prepareStatement(
-                "SELECT discord_id FROM users WHERE id = (SELECT leader_id FROM teams WHERE id = ? AND is_deleted is null);");
+                    "SELECT discord_id FROM users WHERE id = (SELECT leader_id FROM teams WHERE id = ? AND is_deleted is null);");
             selectLeaderStatement.setInt(1, teamId);
             ResultSet leaderResultSet = selectLeaderStatement.executeQuery();
             if(leaderResultSet.next()) {
@@ -125,12 +125,12 @@ public class TeamDisbandCommandListener {
             }
 
             PreparedStatement membersStatement = connection.prepareStatement(
-                "DELETE FROM teams_members WHERE team_id = ?;");
+                    "DELETE FROM teams_members WHERE team_id = ?;");
             membersStatement.setInt(1, teamId);
             membersStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                "INSERT INTO teams_deletion_history (team_id, deleter_id, deleted_at) VALUES (?, ?, ?);");
+                    "INSERT INTO teams_deletion_history (team_id, deleter_id, deleted_at) VALUES (?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, deleterId);
             historyStatement.setTimestamp(3, Timestamp.from(Instant.now()));

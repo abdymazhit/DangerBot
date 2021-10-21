@@ -5,7 +5,6 @@ import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.GameState;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.abdymazhit.mthd.managers.GameCategoryManager;
-import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -22,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Команда выбора игроков в команду
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickCommandListener extends ListenerAdapter {
@@ -53,9 +52,8 @@ public class PlayersPickCommandListener extends ListenerAdapter {
      */
     private void choicePlayer(GameCategoryManager gameCategoryManager, MessageChannel messageChannel, Message message, Member member) {
         if(gameCategoryManager.playersPickChannel == null) return;
-        if(gameCategoryManager.playersPickChannel.channelId == null) return;
 
-        if(gameCategoryManager.playersPickChannel.channelId.equals(messageChannel.getId())) {
+        if(gameCategoryManager.playersPickChannel.channel.equals(messageChannel)) {
             String contentRaw = message.getContentRaw();
             if(contentRaw.startsWith("!pick")) {
                 String[] command = contentRaw.split(" ");
@@ -101,26 +99,26 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                if(member == gameCategoryManager.game.firstTeamCaptainMember) {
+                if(member == gameCategoryManager.game.firstTeamInfo.captain.member) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
-                        if(gameCategoryManager.game.firstTeamPlayers.size() > 3) {
+                        if(gameCategoryManager.game.firstTeamInfo.members.size() > 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
                     } else if(gameCategoryManager.game.format.equals("6x2")) {
-                        if(gameCategoryManager.game.firstTeamPlayers.size() > 5) {
+                        if(gameCategoryManager.game.firstTeamInfo.members.size() > 5) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
                     }
-                } else if(member == gameCategoryManager.game.secondTeamCaptainMember) {
+                } else if(member == gameCategoryManager.game.secondTeamInfo.captain.member) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
-                        if(gameCategoryManager.game.secondTeamPlayers.size() > 3) {
+                        if(gameCategoryManager.game.secondTeamInfo.members.size() > 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
                     } else if(gameCategoryManager.game.format.equals("6x2")) {
-                        if(gameCategoryManager.game.secondTeamPlayers.size() > 5) {
+                        if(gameCategoryManager.game.secondTeamInfo.members.size() > 5) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
@@ -133,7 +131,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                 }
 
                 String errorMessage;
-                if(member == gameCategoryManager.game.firstTeamCaptainMember) {
+                if(member == gameCategoryManager.game.firstTeamInfo.captain.member) {
                     errorMessage = MTHD.getInstance().database.addPlayerToTeam(0, playerAccount.id);
                 } else {
                     errorMessage = MTHD.getInstance().database.addPlayerToTeam(1, playerAccount.id);
@@ -145,10 +143,10 @@ public class PlayersPickCommandListener extends ListenerAdapter {
 
                 message.reply("Вы успешно добавили игрока в команду!").queue();
 
-                if(member == gameCategoryManager.game.firstTeamCaptainMember) {
-                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 0, playerAccount.discordId);
+                if(member == gameCategoryManager.game.firstTeamInfo.captain.member) {
+                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 0);
                 } else {
-                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 1, playerAccount.discordId);
+                    gameCategoryManager.playersPickChannel.pickPlayer(playerName, 1);
                 }
             } else if(contentRaw.equals("!cancel")) {
                 if(!member.getRoles().contains(UserRole.ADMIN.getRole()) && !member.getRoles().contains(UserRole.ASSISTANT.getRole())) {
@@ -163,13 +161,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                         return;
                     }
 
-                    Category category = MTHD.getInstance().guild.getCategoryById(gameCategoryManager.categoryId);
-                    if(category == null) {
-                        message.reply("Ошибка! Категория игры не найдена!").queue();
-                        return;
-                    }
-
-                    int liveGameId = Integer.parseInt(category.getName().replace("Game-", ""));
+                    int liveGameId = Integer.parseInt(gameCategoryManager.category.getName().replace("Game-", ""));
                     boolean isAssistant = MTHD.getInstance().database.isAssistant(liveGameId, cancellerId);
                     if(!isAssistant) {
                         message.reply("Ошибка! Вы не являетесь помощником этой игры!").queue();
@@ -188,7 +180,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.categoryId);
+                        MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.category.getId());
                     }
                 }, 7000);
             } else {

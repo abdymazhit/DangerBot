@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.single;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Player;
+import net.abdymazhit.mthd.customs.info.PlayerInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -12,7 +12,7 @@ import java.io.File;
 /**
  * Команда посмотреть информацию о игроке
  *
- * @version   08.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleInfoCommandListener {
@@ -49,13 +49,13 @@ public class SingleInfoCommandListener {
             return;
         }
 
-        Player player = MTHD.getInstance().database.getSinglePlayerInfo(playerId);
-        if(player == null) {
+        PlayerInfo playerInfo = MTHD.getInstance().database.getSinglePlayerInfo(playerId);
+        if(playerInfo == null) {
             message.reply("Ошибка! Вы не владеете статусом Single Rating!").queue();
             return;
         }
 
-        File infoFile = MTHD.getInstance().utils.getPlayerInfoImage(player);
+        File infoFile = MTHD.getInstance().utils.getPlayerInfoImage(playerInfo);
         if(infoFile == null) {
             message.reply("Ошибка! По неизвестной причине получить информацию о Вас не получилось! Свяжитесь с разработчиком бота!").queue();
         } else {

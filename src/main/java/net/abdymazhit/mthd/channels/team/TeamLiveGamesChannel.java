@@ -9,7 +9,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.GuildChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,7 +17,7 @@ import java.util.*;
 /**
  * Канал активных игр
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamLiveGamesChannel extends Channel {
@@ -46,13 +45,12 @@ public class TeamLiveGamesChannel extends Channel {
         }
 
         category.createTextChannel("live-games").setPosition(1)
-                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                 .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
                 .queue(textChannel -> {
-                    channelId = textChannel.getId();
+                    channel = textChannel;
                     updateLiveGamesMessages();
                 });
     }
@@ -85,65 +83,50 @@ public class TeamLiveGamesChannel extends Channel {
             }
         }
 
-        if(channelId == null) return;
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал live-games не существует!");
-            return;
-        }
-
         for(LiveGame game : liveGamesMessages.keySet()) {
-            String messageId = this.channelLiveGamesMessagesId.get(game);
-            this.channelLiveGamesMessagesId.remove(game);
-            textChannel.deleteMessageById(messageId).queue();
+            String messageId = channelLiveGamesMessagesId.get(game);
+            channelLiveGamesMessagesId.remove(game);
+            channel.deleteMessageById(messageId).queue();
         }
     }
 
     /**
      * Отправляет информационное сообщение о активной игре
      * @param liveGame Активная игра
+     * @param messageId Id сообщения
      */
     private void sendLiveGamesMessage(LiveGame liveGame, String messageId) {
-        if(channelId == null) return;
-
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал live-games не существует!");
-            return;
-        }
-
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("""
-            ```              %first_team%   vs   %second_team%              ```"""
-            .replace("%first_team%", liveGame.firstTeamName)
-            .replace("%second_team%", liveGame.secondTeamName));
+                ```              %first_team%   vs   %second_team%              ```"""
+                .replace("%first_team%", liveGame.firstTeamName)
+                .replace("%second_team%", liveGame.secondTeamName));
         embedBuilder.setColor(3092790);
         embedBuilder.addField("Формат", liveGame.format, true);
         embedBuilder.addField("Помощник", liveGame.assistantName, true);
         embedBuilder.addField("Стадия игры", liveGame.gameState.getName(), true);
 
         if(messageId == null) {
-            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(liveGame, message.getId()));
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveGamesMessagesId.put(liveGame, message.getId()));
         } else {
-            textChannel.editMessageEmbedsById(messageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(messageId, embedBuilder.build()).queue();
         }
         embedBuilder.clear();
     }
 
     /**
-     * Получает активные игры
-     * @return Активные игры
+     * Получает список активных игр
+     * @return Список активных игр
      */
     public List<LiveGame> getLiveGames() {
         List<LiveGame> games = new ArrayList<>();
         try {
             ResultSet resultSet = MTHD.getInstance().database.getConnection().createStatement().executeQuery("""
-                    SELECT tlg.id, t1.name firstTeamName, t2.name secondTeamName, tlg.format, u.username as assistantName, tlg.game_state
-                    FROM team_live_games as tlg
-                    INNER JOIN teams as t1 ON t1.id = tlg.first_team_id
-                    INNER JOIN teams as t2 ON t2.id = tlg.second_team_id
-                    INNER JOIN users as u ON tlg.assistant_id = u.id;""");
+                SELECT tlg.id, t1.name firstTeamName, t2.name secondTeamName, tlg.format, u.username as assistantName, tlg.game_state
+                FROM team_live_games as tlg
+                INNER JOIN teams as t1 ON t1.id = tlg.first_team_id
+                INNER JOIN teams as t2 ON t2.id = tlg.second_team_id
+                INNER JOIN users as u ON tlg.assistant_id = u.id;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String firstTeamName = resultSet.getString("firstTeamName");

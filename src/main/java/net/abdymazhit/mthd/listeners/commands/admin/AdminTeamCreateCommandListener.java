@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Администраторская команда создания команды
  *
- * @version   23.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -93,7 +93,7 @@ public class AdminTeamCreateCommandListener {
         }
 
         MTHD.getInstance().guild.createCopyOfRole(UserRole.TEST.getRole()).setName(teamName)
-            .setColor(10070709).queue(role -> {
+                .setColor(10070709).queue(role -> {
             if(leaderAccount.discordId != null) {
                 MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, role).queue();
                 MTHD.getInstance().guild.addRoleToMember(leaderAccount.discordId, UserRole.LEADER.getRole()).queue();
@@ -110,8 +110,10 @@ public class AdminTeamCreateCommandListener {
                     .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
                     .queue();
 
-            message.reply("Команда успешно создана! Название команды: " + teamName + ", лидер команды: "
-                          + leaderName + ", роль команды: " + role.getAsMention()).queue();
+            message.reply("Команда успешно создана! Название команды: %team%, лидер команды: %leader%, роль команды: %role%"
+                    .replace("%team%", teamName)
+                    .replace("%leader%", leaderName)
+                    .replace("%role%", role.getAsMention())).queue();
         });
         MTHD.getInstance().teamsChannel.updateTopMessage();
     }
@@ -138,7 +140,7 @@ public class AdminTeamCreateCommandListener {
                 int teamId = createResultSet.getInt(1);
 
                 PreparedStatement historyStatement = connection.prepareStatement(
-                    "INSERT INTO teams_creation_history (team_id, name, leader_id, creator_id, created_at) VALUES (?, ?, ?, ?, ?);");
+                        "INSERT INTO teams_creation_history (team_id, name, leader_id, creator_id, created_at) VALUES (?, ?, ?, ?, ?);");
                 historyStatement.setInt(1, teamId);
                 historyStatement.setString(2, teamName);
                 historyStatement.setInt(3, leaderId);

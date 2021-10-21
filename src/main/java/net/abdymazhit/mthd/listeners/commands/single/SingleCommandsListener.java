@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Команды игроков
  *
- * @version   08.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleCommandsListener extends ListenerAdapter {
@@ -38,9 +38,8 @@ public class SingleCommandsListener extends ListenerAdapter {
         String contentRaw = message.getContentRaw();
 
         if(event.getAuthor().isBot()) return;
-        if(MTHD.getInstance().playersChannel.channelId == null) return;
 
-        if(MTHD.getInstance().playersChannel.channelId.equals(messageChannel.getId())) {
+        if(MTHD.getInstance().playersChannel.channel.equals(messageChannel)) {
             if(contentRaw.equals("!info")) {
                 singleInfoCommandListener.onCommandReceived(event);
             } else if(contentRaw.startsWith("!info")) {

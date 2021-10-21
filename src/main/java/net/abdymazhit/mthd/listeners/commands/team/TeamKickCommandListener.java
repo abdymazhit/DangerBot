@@ -1,19 +1,20 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
-import java.util.List;
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
+import java.util.List;
+
 /**
  * Команда исключить участника из команды
  *
- * @version   22.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamKickCommandListener extends TeamLeaveCommandListener {
@@ -63,25 +64,25 @@ public class TeamKickCommandListener extends TeamLeaveCommandListener {
             return;
         }
 
-        Team team = MTHD.getInstance().database.getLeaderTeam(deleterId);
-        if(team == null) {
+        TeamInfo teamInfo = MTHD.getInstance().database.getLeaderTeam(deleterId);
+        if(teamInfo == null) {
             message.reply("Ошибка! Вы не являетесь лидером какой-либо команды!").queue();
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.id, team.id);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(memberAccount.id, teamInfo.id);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Участник не является участником этой команды!").queue();
             return;
         }
 
-        boolean isMemberDeleted = deleteTeamMember(team.id, memberAccount.id, deleterId);
+        boolean isMemberDeleted = deleteTeamMember(teamInfo.id, memberAccount.id, deleterId);
         if(!isMemberDeleted) {
             message.reply("Критическая ошибка при удалении участника из команды! Свяжитесь с разработчиком бота!").queue();
             return;
         }
 
-        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(team.name, true);
+        List<Role> teamRoles = MTHD.getInstance().guild.getRolesByName(teamInfo.name, true);
         if(teamRoles.size() != 1) {
             message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
             return;

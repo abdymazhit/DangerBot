@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Администраторская команда удаления команды
  *
- * @version   23.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDisbandCommandListener extends TeamDisbandCommandListener {
@@ -88,7 +88,8 @@ public class AdminTeamDisbandCommandListener extends TeamDisbandCommandListener 
 
         teamRoles.get(0).delete().queue();
 
-        message.reply("Команда успешно удалена! Название команды: " + teamName).queue();
+        message.reply("Команда успешно удалена! Название команды: %team%"
+                .replace("%team%", teamName)).queue();
         MTHD.getInstance().teamsChannel.updateTopMessage();
     }
 }

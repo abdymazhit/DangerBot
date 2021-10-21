@@ -1,6 +1,5 @@
 package net.abdymazhit.mthd.listeners.commands.admin;
 
-import java.util.List;
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
@@ -10,10 +9,12 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
+import java.util.List;
+
 /**
  * Администраторская команда удаления участника из команды
  *
- * @version   22.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDeleteCommandListener extends TeamLeaveCommandListener {
@@ -105,6 +106,8 @@ public class AdminTeamDeleteCommandListener extends TeamLeaveCommandListener {
             MTHD.getInstance().guild.removeRoleFromMember(memberAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
-        message.reply("Участник успешно удален из команды! Название команды: " + teamName + ", ник участника: " + memberName).queue();
+        message.reply("Участник успешно удален из команды! Название команды: %team%, ник участника: %member%"
+                .replace("%team%", teamName)
+                .replace("%member%", memberName)).queue();
     }
 }

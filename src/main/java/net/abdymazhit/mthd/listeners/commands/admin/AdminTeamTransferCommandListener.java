@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   22.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamTransferCommandListener extends TeamTransferCommandListener {
@@ -113,6 +113,8 @@ public class AdminTeamTransferCommandListener extends TeamTransferCommandListene
             MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.discordId, UserRole.LEADER.getRole()).queue();
         }
 
-        message.reply("Права лидера успешно переданы! Название команды: " + teamName + ", новый лидер команды: " + newLeaderName).queue();
+        message.reply("Права лидера успешно переданы! Название команды: %team%, новый лидер команды: %leader%"
+                .replace("%team%", teamName)
+                .replace("%leader%", newLeaderName)).queue();
     }
 }

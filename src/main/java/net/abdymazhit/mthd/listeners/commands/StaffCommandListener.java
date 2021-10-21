@@ -8,10 +8,12 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+import java.util.List;
+
 /**
  * Команда персонала
  *
- * @version   26.09.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class StaffCommandListener extends ListenerAdapter {
@@ -27,9 +29,8 @@ public class StaffCommandListener extends ListenerAdapter {
 
         if(assistant == null) return;
         if(event.getAuthor().isBot()) return;
-        if(MTHD.getInstance().staffChannel.channelId == null) return;
 
-        if(MTHD.getInstance().staffChannel.channelId.equals(messageChannel.getId())) {
+        if(MTHD.getInstance().staffChannel.channel.equals(messageChannel)) {
             String contentRaw = message.getContentRaw();
 
             if(!assistant.getRoles().contains(UserRole.ASSISTANT.getRole()) &&
@@ -50,6 +51,12 @@ public class StaffCommandListener extends ListenerAdapter {
             }
 
             if(contentRaw.equals("!ready")) {
+                List<Integer> assistantsInLiveGames = MTHD.getInstance().database.getAssistantsInLiveGames();
+                if(assistantsInLiveGames.contains(assistantId)) {
+                    message.reply("Ошибка! Вы уже проводите игру!").queue();
+                    return;
+                }
+
                 String errorMessage = MTHD.getInstance().database.setReady(assistantId);
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();

@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -573,7 +573,6 @@ public record DatabaseTables(Connection connection) {
                     CREATE TABLE IF NOT EXISTS players_bans (
                     id serial not null AUTO_INCREMENT,
                     player_id int not null,
-                    discord_id varchar(50),
                     banner_id int,
                     finished_at timestamp not null,
                     PRIMARY KEY (id));

@@ -1,7 +1,7 @@
 package net.abdymazhit.mthd.listeners.commands.team;
 
 import net.abdymazhit.mthd.MTHD;
-import net.abdymazhit.mthd.customs.Team;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.customs.UserAccount;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.entities.Member;
@@ -17,7 +17,7 @@ import java.time.Instant;
 /**
  * Команда передать права лидера
  *
- * @version   05.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener {
@@ -61,8 +61,8 @@ public class TeamTransferCommandListener {
 
         String newLeaderName = command[2];
 
-        Team team = MTHD.getInstance().database.getLeaderTeam(changerId);
-        if(team == null) {
+        TeamInfo teamInfo = MTHD.getInstance().database.getLeaderTeam(changerId);
+        if(teamInfo == null) {
             message.reply("Ошибка! Вы не являетесь лидером какой-либо команды!").queue();
             return;
         }
@@ -73,13 +73,13 @@ public class TeamTransferCommandListener {
             return;
         }
 
-        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.id, team.id);
+        boolean isUserTeamMember = MTHD.getInstance().database.isUserTeamMember(newLeaderAccount.id, teamInfo.id);
         if(!isUserTeamMember) {
             message.reply("Ошибка! Новый лидер команды в настоящий момент не является участником этой команды!").queue();
             return;
         }
 
-        boolean isTransferred = transferLeader(team.id, changerId, newLeaderAccount.id, changerId);
+        boolean isTransferred = transferLeader(teamInfo.id, changerId, newLeaderAccount.id, changerId);
         if(!isTransferred) {
             message.reply("Критическая ошибка при передачи прав лидера! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -93,7 +93,8 @@ public class TeamTransferCommandListener {
             MTHD.getInstance().guild.addRoleToMember(newLeaderAccount.discordId, UserRole.LEADER.getRole()).queue();
         }
 
-        message.reply("Вы успешно передали права лидера! Новый лидер команды: " + newLeaderName).queue();
+        message.reply("Вы успешно передали права лидера! Новый лидер команды: %new_leader%"
+                .replace("%new_leader%", newLeaderName)).queue();
     }
 
     /**
@@ -108,25 +109,25 @@ public class TeamTransferCommandListener {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement updateStatement = connection.prepareStatement(
-                "UPDATE teams SET leader_id = ? WHERE id = ? AND is_deleted is null;");
+                    "UPDATE teams SET leader_id = ? WHERE id = ? AND is_deleted is null;");
             updateStatement.setInt(1, toId);
             updateStatement.setInt(2, teamId);
             updateStatement.executeUpdate();
 
             PreparedStatement deleteStatement = connection.prepareStatement(
-                "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
+                    "DELETE FROM teams_members WHERE team_id = ? AND member_id = ?;");
             deleteStatement.setInt(1, teamId);
             deleteStatement.setInt(2, toId);
             deleteStatement.executeUpdate();
 
             PreparedStatement createStatement = connection.prepareStatement(
-                "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
+                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
             createStatement.setInt(1, teamId);
             createStatement.setInt(2, fromId);
             createStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(
-                "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
+                    "INSERT INTO teams_leaders_transfer_history (team_id, from_id, to_id, changer_id, changed_at) VALUES (?, ?, ?, ?, ?);");
             historyStatement.setInt(1, teamId);
             historyStatement.setInt(2, fromId);
             historyStatement.setInt(3, toId);

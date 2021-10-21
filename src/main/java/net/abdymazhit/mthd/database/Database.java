@@ -2,11 +2,10 @@ package net.abdymazhit.mthd.database;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Config;
-import net.abdymazhit.mthd.customs.Player;
-import net.abdymazhit.mthd.customs.Team;
 import net.abdymazhit.mthd.customs.UserAccount;
+import net.abdymazhit.mthd.customs.info.PlayerInfo;
+import net.abdymazhit.mthd.customs.info.TeamInfo;
 import net.abdymazhit.mthd.enums.GameResult;
-import net.abdymazhit.mthd.enums.UserRole;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -16,7 +15,7 @@ import java.util.*;
 /**
  * Отвечает за работу с базой данных
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -66,28 +65,6 @@ public class Database {
     }
 
     /**
-     * Получает имена игроков команды
-     * @param teamId Id команды
-     * @return Имена игроков команды
-     */
-    public List<String> getTeamPlayersNames(int teamId) {
-        List<String> playersNames = new ArrayList<>();
-        try {
-            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN team_live_games_players as lgp ON lgp.team_id = ? AND u.id = lgp.player_id;""");
-            preparedStatement.setInt(1, teamId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while(resultSet.next()) {
-                playersNames.add(resultSet.getString("username"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return playersNames;
-    }
-
-    /**
      * Проверяет, является ли помощником помощником этой игры
      * @param liveGameId Id игры
      * @param assistantId Id помощника
@@ -96,7 +73,7 @@ public class Database {
     public boolean isAssistant(int liveGameId, int assistantId) {
         try {
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT 1 FROM single_live_games WHERE id = ? AND assistant_id = ?;""");
+                SELECT 1 FROM single_live_games WHERE id = ? AND assistant_id = ?;""");
             preparedStatement.setInt(1, liveGameId);
             preparedStatement.setInt(2, assistantId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -109,6 +86,34 @@ public class Database {
         return false;
     }
 
+    /**
+     * Получает имена игроков команды
+     * @param teamId Id команды
+     * @return Имена игроков команды
+     */
+    public List<String> getTeamPlayersNames(int teamId) {
+        List<String> playersNames = new ArrayList<>();
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                SELECT u.username as username FROM users as u
+                INNER JOIN team_live_games_players as lgp ON lgp.team_id = ? AND u.id = lgp.player_id;""");
+            preparedStatement.setInt(1, teamId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()) {
+                playersNames.add(resultSet.getString("username"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return playersNames;
+    }
+
+    /**
+     * Получает имена игроков Single Rating
+     * @param liveGameId Id игры
+     * @param teamId Id команды
+     * @return Имена игроков Single Rating
+     */
     public List<String> getSinglePlayersNames(int liveGameId, int teamId) {
         List<String> playersNames = new ArrayList<>();
         try {
@@ -133,8 +138,8 @@ public class Database {
             }
 
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games_players as slgp ON slgp.team_id = ? AND u.id = slgp.player_id AND slgp.live_game_id = ?;""");
+                SELECT u.username as username FROM users as u
+                INNER JOIN single_live_games_players as slgp ON slgp.team_id = ? AND u.id = slgp.player_id AND slgp.live_game_id = ?;""");
             preparedStatement.setInt(1, teamId);
             preparedStatement.setInt(2, liveGameId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -188,6 +193,26 @@ public class Database {
     }
 
     /**
+     * Получает discord id пользователя
+     * @param username Имя пользователя
+     * @return Discord id пользователя
+     */
+    public String getUserDiscordId(String username) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discord_id FROM users WHERE username = ?;");
+            preparedStatement.setString(1, username);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                return resultSet.getString("discord_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Получает id и discord id пользователя
      * @param username Ник пользователя
      * @return Id и discord id пользователя
@@ -196,7 +221,6 @@ public class Database {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT id, discord_id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
-
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 UserAccount userAccount = new UserAccount(resultSet.getInt(1));
@@ -404,12 +428,12 @@ public class Database {
      * @param playerId Id игрока
      * @return Информация о игроке Single Rating
      */
-    public Player getSinglePlayerInfo(int playerId) {
+    public PlayerInfo getSinglePlayerInfo(int playerId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    SELECT u.username, p.points, p.games, p.wins FROM users as u
-                    INNER JOIN players as p ON p.player_id = ? AND is_deleted is null AND u.id = ?;""");
+                SELECT u.username, p.points, p.games, p.wins FROM users as u
+                INNER JOIN players as p ON p.player_id = ? AND is_deleted is null AND u.id = ?;""");
             preparedStatement.setInt(1, playerId);
             preparedStatement.setInt(2, playerId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -491,7 +515,7 @@ public class Database {
                     }
                 }
 
-                return new Player(playerId, username, points, games, wins, lastGameResults, latestTime);
+                return new PlayerInfo(playerId, username, points, games, wins, lastGameResults, latestTime);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -499,11 +523,17 @@ public class Database {
         return null;
     }
 
+    /**
+     * Получает значение, участвует ли игрок в игре
+     * @param playerId Id игрока
+     * @param liveGameId Id игры
+     * @return Значение, участвует ли игрок в игре
+     */
     public boolean getSingleGamePlayer(int playerId, int liveGameId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                    SELECT 1 FROM single_live_games_players WHERE team_id is null AND player_id = ? AND live_game_id = ?;""");
+                SELECT 1 FROM single_live_games_players WHERE team_id is null AND player_id = ? AND live_game_id = ?;""");
             preparedStatement.setInt(1, playerId);
             preparedStatement.setInt(2, liveGameId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -516,14 +546,20 @@ public class Database {
         return false;
     }
 
+    /**
+     * Получает рейтинг команды Single Rating
+     * @param liveGameId Id игры
+     * @param teamId Id команды
+     * @return Рейтинг команды Single Rating
+     */
     public int getSingleTeamPoints(int liveGameId, int teamId) {
         int points = 0;
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("""
-                        SELECT points FROM players as p
-                        INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ?
-                        AND p.player_id = slgp.player_id AND p.is_deleted is null AND slgp.team_id = ?;""");
+                SELECT points FROM players as p
+                INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ?
+                AND p.player_id = slgp.player_id AND p.is_deleted is null AND slgp.team_id = ?;""");
             preparedStatement.setInt(1, liveGameId);
             preparedStatement.setInt(2, teamId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -534,14 +570,14 @@ public class Database {
             PreparedStatement preparedStatement2;
             if(teamId == 0) {
                 preparedStatement2 = connection.prepareStatement("""
-                        SELECT points FROM players as p
-                        INNER JOIN single_live_games as slg ON slg.id = ?
-                        AND p.player_id = slg.first_team_captain_id AND p.is_deleted is null;""");
+                    SELECT points FROM players as p
+                    INNER JOIN single_live_games as slg ON slg.id = ?
+                    AND p.player_id = slg.first_team_captain_id AND p.is_deleted is null;""");
             } else {
                 preparedStatement2 = connection.prepareStatement("""
-                        SELECT points FROM players as p
-                        INNER JOIN single_live_games as slg ON slg.id = ?
-                        AND p.player_id = slg.second_team_captain_id AND p.is_deleted is null;""");
+                    SELECT points FROM players as p
+                    INNER JOIN single_live_games as slg ON slg.id = ?
+                    AND p.player_id = slg.second_team_captain_id AND p.is_deleted is null;""");
             }
             preparedStatement2.setInt(1, liveGameId);
             ResultSet resultSet2 = preparedStatement2.executeQuery();
@@ -623,7 +659,7 @@ public class Database {
      * @param leaderId Id лидера
      * @return Команда лидера
      */
-    public Team getLeaderTeam(int leaderId) {
+    public TeamInfo getLeaderTeam(int leaderId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
                 "SELECT id, name FROM teams WHERE leader_id = ? AND is_deleted is null;");
@@ -631,9 +667,9 @@ public class Database {
 
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
-                Team team = new Team(resultSet.getInt(1));
-                team.name = resultSet.getString("name");
-                return team;
+                TeamInfo teamInfo = new TeamInfo(resultSet.getInt(1));
+                teamInfo.name = resultSet.getString("name");
+                return teamInfo;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -646,7 +682,7 @@ public class Database {
      * @param memberId Id участника
      * @return Команда участника
      */
-    public Team getMemberTeam(int memberId) {
+    public TeamInfo getMemberTeam(int memberId) {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
                 "SELECT id, name FROM teams WHERE id = (SELECT team_id FROM teams_members WHERE member_id = ?) AND is_deleted is null;");
@@ -654,9 +690,9 @@ public class Database {
 
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
-                Team team = new Team(resultSet.getInt(1));
-                team.name = resultSet.getString("name");
-                return team;
+                TeamInfo teamInfo = new TeamInfo(resultSet.getInt(1));
+                teamInfo.name = resultSet.getString("name");
+                return teamInfo;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -702,6 +738,12 @@ public class Database {
                 "DELETE FROM available_assistants WHERE assistant_id = ?;");
             preparedStatement.setInt(1, assistantId);
             preparedStatement.executeUpdate();
+
+            PreparedStatement deleteStatement = connection.prepareStatement(
+                    "DELETE FROM players_in_game_search WHERE player_id = ?;");
+            deleteStatement.setInt(1, assistantId);
+            deleteStatement.executeUpdate();
+
             return null;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -715,22 +757,21 @@ public class Database {
      * @param playerId Id игрока
      * @param minutes Время бана в минутах
      */
-    public void banPlayer(@Nullable Integer bannerId, int playerId, String discordId, int minutes) {
+    public void banPlayer(@Nullable Integer bannerId, int playerId, int minutes) {
         try {
             Timestamp timestamp = Timestamp.from(Instant.now().plusSeconds(minutes * 60L));
 
             PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                   INSERT INTO players_bans (player_id, discord_id, banner_id, finished_at) SELECT ?, ?, ?, ?
+                   INSERT INTO players_bans (player_id, banner_id, finished_at) SELECT ?, ?, ?
                    WHERE NOT EXISTS (SELECT player_id FROM players_bans WHERE player_id = ?)""", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, playerId);
-            preparedStatement.setString(2, discordId);
             if(bannerId == null) {
-                preparedStatement.setString(3, null);
+                preparedStatement.setString(2, null);
             } else {
-                preparedStatement.setInt(3, bannerId);
+                preparedStatement.setInt(2, bannerId);
             }
-            preparedStatement.setTimestamp(4, timestamp);
-            preparedStatement.setInt(5, playerId);
+            preparedStatement.setTimestamp(3, timestamp);
+            preparedStatement.setInt(4, playerId);
             preparedStatement.executeUpdate();
 
             ResultSet resultSet = preparedStatement.getGeneratedKeys();
@@ -741,13 +782,37 @@ public class Database {
                 updateStatement.setInt(2, playerId);
                 updateStatement.executeUpdate();
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
-            if(discordId != null) {
-                MTHD.getInstance().guild.addRoleToMember(discordId, UserRole.BANNED.getRole()).queue();
+    /**
+     * Получает список помощников в активных играх
+     * @return Список помощников в активных играх
+     */
+    public List<Integer> getAssistantsInLiveGames() {
+        List<Integer> assistantsInLiveGames = new ArrayList<>();
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+
+            PreparedStatement singleStatement = connection.prepareStatement(
+                    "SELECT assistant_id FROM single_live_games;");
+            ResultSet singleResultSet = singleStatement.executeQuery();
+            while(singleResultSet.next()) {
+                assistantsInLiveGames.add(singleResultSet.getInt("assistant_id"));
+            }
+
+            PreparedStatement teamStatement = connection.prepareStatement(
+                    "SELECT assistant_id FROM team_live_games;");
+            ResultSet teamResultSet = teamStatement.executeQuery();
+            while(teamResultSet.next()) {
+                assistantsInLiveGames.add(teamResultSet.getInt("assistant_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return assistantsInLiveGames;
     }
 
     /**

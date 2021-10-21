@@ -2,11 +2,12 @@ package net.abdymazhit.mthd.channels.single;
 
 import net.abdymazhit.mthd.MTHD;
 import net.abdymazhit.mthd.customs.Channel;
-import net.abdymazhit.mthd.customs.Player;
+import net.abdymazhit.mthd.customs.info.PlayerInfo;
 import net.abdymazhit.mthd.enums.UserRole;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.Connection;
@@ -20,13 +21,13 @@ import java.util.List;
 /**
  * Канал игроков
  *
- * @version   17.10.2021
+ * @version   21.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChannel extends Channel {
 
-    /** Id информационного сообщения о лучших игроках */
-    public String channelTopPlayersMessageId;
+    /** Информационное сообщение о лучших игроках */
+    public Message channelTopPlayersMessage;
 
     /**
      * Инициализирует канал игроков
@@ -45,34 +46,30 @@ public class PlayersChannel extends Channel {
             }
         }
 
-        category.createTextChannel("players").setPosition(0)
-                .setSlowmode(30)
-                .addPermissionOverride(UserRole.BANNED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), EnumSet.of(Permission.MESSAGE_WRITE))
+        category.createTextChannel("players").setPosition(0).setSlowmode(30)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .queue(textChannel -> {
-                    channelId = textChannel.getId();
-                    updateTopMessage();
-                    sendChannelMessage(textChannel);
-                });
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL)).queue(textChannel -> {
+            channel = textChannel;
+            updateTopMessage();
+            sendChannelMessage();
+        });
     }
 
     /**
      * Отправляет сообщение о доступных командах для авторизованных пользователей
-     * @param textChannel Канал игроков
      */
-    private void sendChannelMessage(TextChannel textChannel) {
+    private void sendChannelMessage() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Доступные команды");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
-            Посмотреть информацию о игроке
-            `!info <NAME>`
+                Посмотреть информацию о игроке
+                `!info <NAME>`
             
-            Посмотреть информацию о себе
-            `!info`""");
-        textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessageId = message.getId());
+                Посмотреть информацию о себе
+                `!info`""");
+        channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }
 
@@ -80,13 +77,7 @@ public class PlayersChannel extends Channel {
      * Обновляет информационное сообщение о лучших игроках
      */
     public void updateTopMessage() {
-        TextChannel textChannel = MTHD.getInstance().guild.getTextChannelById(channelId);
-        if(textChannel == null) {
-            System.out.println("Критическая ошибка! Канал players не существует!");
-            return;
-        }
-
-        List<Player> players = getTopPlayers();
+        List<PlayerInfo> players = getTopPlayers();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         String title = "Топ 20 игроков";
@@ -100,21 +91,21 @@ public class PlayersChannel extends Channel {
         embedBuilder.addField("Place", playersPlaceString.toString(), true);
 
         StringBuilder playersNamesString = new StringBuilder();
-        for(Player player : players) {
-            playersNamesString.append(player.username.replace("_", "\\_")).append("\n");
+        for(PlayerInfo playerInfo : players) {
+            playersNamesString.append(playerInfo.username.replace("_", "\\_")).append("\n");
         }
         embedBuilder.addField("Name", playersNamesString.toString(), true);
 
         StringBuilder playersPointsString = new StringBuilder();
-        for(Player player : players) {
-            playersPointsString.append(player.points).append("\n");
+        for(PlayerInfo playerInfo : players) {
+            playersPointsString.append(playerInfo.points).append("\n");
         }
         embedBuilder.addField("Points", playersPointsString.toString(), true);
 
-        if(channelTopPlayersMessageId == null) {
-            textChannel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelTopPlayersMessageId = message.getId());
+        if(channelTopPlayersMessage == null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelTopPlayersMessage = message);
         } else {
-            textChannel.editMessageEmbedsById(channelTopPlayersMessageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(channelTopPlayersMessage.getId(), embedBuilder.build()).queue();
         }
         embedBuilder.clear();
     }
@@ -123,8 +114,8 @@ public class PlayersChannel extends Channel {
      * Получает лучших игроков
      * @return Лучшие игроки
      */
-    public List<Player> getTopPlayers() {
-        List<Player> players = new ArrayList<>();
+    public List<PlayerInfo> getTopPlayers() {
+        List<PlayerInfo> players = new ArrayList<>();
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             ResultSet resultSet = connection.createStatement().executeQuery("""
@@ -139,8 +130,8 @@ public class PlayersChannel extends Channel {
                 ResultSet usernameResultSet = preparedStatement.executeQuery();
                 if(usernameResultSet.next()) {{
                     String username = usernameResultSet.getString("username");
-                    Player player = new Player(id, username, points);
-                    players.add(player);
+                    PlayerInfo playerInfo = new PlayerInfo(id, username, points);
+                    players.add(playerInfo);
                 }}
             }
         } catch (SQLException e) {
