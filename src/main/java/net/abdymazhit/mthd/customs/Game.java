@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Представляет собой игру
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class Game {
@@ -170,22 +170,11 @@ public class Game {
      * Получает подробную информацию о команде
      */
     private void getData() {
-        firstTeamInfo.captain.discordId = MTHD.getInstance().database.getUserDiscordId(firstTeamInfo.captain.id);
-        firstTeamInfo.captain.username = MTHD.getInstance().database.getUserName(firstTeamInfo.captain.id);
-        secondTeamInfo.captain.discordId = MTHD.getInstance().database.getUserDiscordId(secondTeamInfo.captain.id);
-        secondTeamInfo.captain.username = MTHD.getInstance().database.getUserName(secondTeamInfo.captain.id);
-        assistantAccount.username = MTHD.getInstance().database.getUserName(assistantAccount.id);
-        assistantAccount.discordId = MTHD.getInstance().database.getUserDiscordId(assistantAccount.id);
-
         if(rating.equals(Rating.TEAM_RATING)) {
             firstTeamInfo.name = MTHD.getInstance().database.getTeamName(firstTeamInfo.id);
             firstTeamInfo.points = MTHD.getInstance().database.getTeamPoints(firstTeamInfo.id);
             secondTeamInfo.name = MTHD.getInstance().database.getTeamName(secondTeamInfo.id);
             secondTeamInfo.points = MTHD.getInstance().database.getTeamPoints(secondTeamInfo.id);
-        } else {
-            firstTeamInfo.captain.member = MTHD.getInstance().guild.getMemberById(firstTeamInfo.captain.discordId);
-            secondTeamInfo.captain.member = MTHD.getInstance().guild.getMemberById(secondTeamInfo.captain.discordId);
-            assistantAccount.member = MTHD.getInstance().guild.getMemberById(assistantAccount.discordId);
         }
     }
 

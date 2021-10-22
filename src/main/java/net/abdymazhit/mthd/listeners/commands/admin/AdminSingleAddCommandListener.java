@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * Администраторская команда добавления игрока в Single Rating
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminSingleAddCommandListener {
@@ -57,7 +57,7 @@ public class AdminSingleAddCommandListener {
 
         String playerName = command[2];
 
-        UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
+        UserAccount playerAccount = MTHD.getInstance().database.getUserAccount(playerName);
         if(playerAccount == null) {
             message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
             return;

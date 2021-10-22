@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Менеджер Single Rating игр
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public record SingleGameManager(GameManager gameManager) {
@@ -36,7 +36,7 @@ public record SingleGameManager(GameManager gameManager) {
             }
 
             // Недостаточно игроков для начала игры
-            if(players.size() < 2) return;
+            if(players.size() < 6) return;
 
             List<PlayerInGameSearch> playersIn4x2Format = new ArrayList<>();
             List<PlayerInGameSearch> playersIn6x2Format = new ArrayList<>();
@@ -49,7 +49,7 @@ public record SingleGameManager(GameManager gameManager) {
                 }
             }
 
-            if(playersIn4x2Format.size() < 2) playersIn4x2Format.clear();
+            if(playersIn4x2Format.size() < 6) playersIn4x2Format.clear();
             if(playersIn6x2Format.size() < 12) playersIn6x2Format.clear();
 
             List<PlayerInGameSearch> playersList = new ArrayList<>();
@@ -57,7 +57,7 @@ public record SingleGameManager(GameManager gameManager) {
             for(PlayerInGameSearch playerInGameSearch : players) {
                 if(playerInGameSearch.format.equals("4x2")) {
                     if(!playersIn4x2Format.isEmpty()) {
-                        for(int i = 0; i < 2; i++) {
+                        for(int i = 0; i < 6; i++) {
                             playersList.add(playersIn4x2Format.get(i));
                         }
                         break;
@@ -73,7 +73,7 @@ public record SingleGameManager(GameManager gameManager) {
             }
 
             // Недостаточно игроков для начала игры
-            if(playersList.size() < 2) return;
+            if(playersList.size() < 6) return;
 
             List<PlayerInGameSearch> newPlayersList = new ArrayList<>(playersList);
             Random random = new Random();
@@ -176,7 +176,7 @@ public record SingleGameManager(GameManager gameManager) {
                 embedBuilder.setColor(3092790);
 
                 if(winnerTeamId == 0) {
-                    embedBuilder.setTitle("Побидетель: team_" + game.firstTeamInfo.captain.username);
+                    embedBuilder.setTitle("Победитель: team_" + game.firstTeamInfo.captain.username);
                     embedBuilder.addField("Рейтинг", """
                             Рейтинг игроков `team_%first_team%`: +%first_team_rating%
                             Рейтинг игроков `team_%second_team%`: %second_team_rating%"""
@@ -185,7 +185,7 @@ public record SingleGameManager(GameManager gameManager) {
                             .replace("%first_team_rating%", String.valueOf(firstTeamRating))
                             .replace("%second_team_rating%", String.valueOf(secondTeamRating)), true);
                 } else if(winnerTeamId == 1) {
-                    embedBuilder.setTitle("Побидетель: team_" + game.secondTeamInfo.captain.username);
+                    embedBuilder.setTitle("Победитель: team_" + game.secondTeamInfo.captain.username);
                     embedBuilder.addField("Рейтинг", """
                             Рейтинг игроков `team_%second_team%`: +%second_team_rating%
                             Рейтинг игроков `team_%first_team%`: %first_team_rating%"""

@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -68,7 +68,7 @@ public class AdminTeamAddCommandListener {
         String teamName = command[2];
         String memberName = command[3];
 
-        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
+        UserAccount memberAccount = MTHD.getInstance().database.getUserAccount(memberName);
         if(memberAccount == null) {
             message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
             return;

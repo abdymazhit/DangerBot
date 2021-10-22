@@ -1,11 +1,12 @@
 package net.abdymazhit.mthd.customs;
 
+import net.abdymazhit.mthd.MTHD;
 import net.dv8tion.jda.api.entities.Member;
 
 /**
  * Представляет собой аккаунт пользователя
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class UserAccount {
@@ -40,6 +41,9 @@ public class UserAccount {
      */
     public UserAccount(int id) {
         this.id = id;
+        username = MTHD.getInstance().database.getUserName(id);
+        discordId = MTHD.getInstance().database.getUserDiscordId(username);
+        member = MTHD.getInstance().guild.getMemberById(discordId);
     }
 
     /**
@@ -47,5 +51,7 @@ public class UserAccount {
      */
     public UserAccount(String username) {
         this.username = username;
+        discordId = MTHD.getInstance().database.getUserDiscordId(username);
+        member = MTHD.getInstance().guild.getMemberById(discordId);
     }
 }

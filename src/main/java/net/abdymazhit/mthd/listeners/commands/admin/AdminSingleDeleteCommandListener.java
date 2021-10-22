@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * Администраторская команда удаления игрока из Single Rating
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminSingleDeleteCommandListener {
@@ -60,7 +60,7 @@ public class AdminSingleDeleteCommandListener {
 
         String playerName = command[2];
 
-        UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
+        UserAccount playerAccount = MTHD.getInstance().database.getUserAccount(playerName);
         if(playerAccount == null) {
             message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
             return;

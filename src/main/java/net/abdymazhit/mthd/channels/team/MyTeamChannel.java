@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Канал моя команда
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class MyTeamChannel extends Channel {
@@ -56,19 +56,19 @@ public class MyTeamChannel extends Channel {
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
                 Исключить участника из команды
-                `!teamInfo kick <NAME>`
+                `!team kick <NAME>`
 
                 Передать права лидера команды
-                `!teamInfo transfer <NAME>`
+                `!team transfer <NAME>`
 
                 Удалить команду
-                `!teamInfo disband`
+                `!team disband`
 
                 Посмотреть информацию о команде
-                `!teamInfo info`
+                `!team info`
 
                 Покинуть команду
-                `!teamInfo leave`""");
+                `!team leave`""");
         channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }

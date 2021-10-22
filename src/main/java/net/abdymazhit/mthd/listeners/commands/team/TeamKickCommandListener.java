@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Команда исключить участника из команды
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamKickCommandListener extends TeamLeaveCommandListener {
@@ -58,7 +58,7 @@ public class TeamKickCommandListener extends TeamLeaveCommandListener {
 
         String memberName = command[2];
 
-        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
+        UserAccount memberAccount = MTHD.getInstance().database.getUserAccount(memberName);
         if(memberAccount == null) {
             message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
             return;

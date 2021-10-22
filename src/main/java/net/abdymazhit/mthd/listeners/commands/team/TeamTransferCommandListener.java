@@ -17,7 +17,7 @@ import java.time.Instant;
 /**
  * Команда передать права лидера
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamTransferCommandListener {
@@ -67,7 +67,7 @@ public class TeamTransferCommandListener {
             return;
         }
 
-        UserAccount newLeaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(newLeaderName);
+        UserAccount newLeaderAccount = MTHD.getInstance().database.getUserAccount(newLeaderName);
         if(newLeaderAccount == null) {
             message.reply("Ошибка! Новый лидер команды не зарегистрирован на сервере!").queue();
             return;

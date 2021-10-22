@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков на игру
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -28,8 +28,6 @@ public class PlayersChoiceChannel extends Channel {
     /** Информационное сообщение о игроках */
     public Message channelPlayersMessage;
 
-    /** Сообщение отмены игры */
-    public Message channelGameCancelMessage;
 
     /** Время выбора игроков */
     private static final int choiceTime = 120;
@@ -91,7 +89,7 @@ public class PlayersChoiceChannel extends Channel {
                         boolean isCancelling = false;
 
                         if(gameCategoryManager.game.format.equals("4x2")) {
-                            if(gameCategoryManager.game.firstTeamInfo.members.size() < 4 || gameCategoryManager.game.secondTeamInfo.members.size() < 4) {
+                            if(gameCategoryManager.game.firstTeamInfo.members.size() < 2 || gameCategoryManager.game.secondTeamInfo.members.size() < 2) {
                                 isCancelling = true;
                             }
                         } else if(gameCategoryManager.game.format.equals("6x2")) {
@@ -101,8 +99,7 @@ public class PlayersChoiceChannel extends Channel {
                         }
 
                         if(isCancelling) {
-                            textChannel.sendMessage("Недостаточно игроков для начала игры! Игра отменяется...")
-                                    .queue(message -> channelGameCancelMessage = message);
+                            textChannel.sendMessage("Недостаточно игроков для начала игры! Игра отменяется...").queue();
                             MTHD.getInstance().gameManager.deleteGame(gameCategoryManager.game);
                             new Timer().schedule(new TimerTask() {
                                 @Override

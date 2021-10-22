@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Канал команды
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamsChannel extends Channel {
@@ -64,7 +64,7 @@ public class TeamsChannel extends Channel {
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
                 Посмотреть информацию о команд
-                `!teamInfo info <NAME>`""");
+                `!team info <NAME>`""");
         channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }

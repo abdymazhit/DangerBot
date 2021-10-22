@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 /**
  * Администраторская команда передачи прав лидера команды
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamTransferCommandListener extends TeamTransferCommandListener {
@@ -73,13 +73,13 @@ public class AdminTeamTransferCommandListener extends TeamTransferCommandListene
             return;
         }
 
-        UserAccount currentLeaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(currentLeaderName);
+        UserAccount currentLeaderAccount = MTHD.getInstance().database.getUserAccount(currentLeaderName);
         if(currentLeaderAccount == null) {
             message.reply("Ошибка! Текущий лидер команды не зарегистрирован на сервере!").queue();
             return;
         }
 
-        UserAccount newLeaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(newLeaderName);
+        UserAccount newLeaderAccount = MTHD.getInstance().database.getUserAccount(newLeaderName);
         if(newLeaderAccount == null) {
             message.reply("Ошибка! Новый лидер команды не зарегистрирован на сервере!").queue();
             return;

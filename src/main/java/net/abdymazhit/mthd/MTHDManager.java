@@ -19,7 +19,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер сервера
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHDManager {
@@ -190,17 +190,15 @@ public class MTHDManager {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             ResultSet resultSet = connection.createStatement().executeQuery("""
-                SELECT tm.member_id id, u.discord_id discord_id, t.name team_name
+                SELECT tm.member_id id, t.name team_name
                 FROM teams_members as tm
                 INNER JOIN teams as t ON t.id = tm.team_id
                 INNER JOIN users as u ON u.id = tm.member_id AND u.discord_id is not null;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");
-                String discordId = resultSet.getString("discord_id");
                 String teamName = resultSet.getString("team_name");
 
                 UserAccount userAccount = new UserAccount(id);
-                userAccount.discordId = discordId;
                 userAccount.teamName = teamName;
 
                 userAccounts.add(userAccount);
@@ -220,15 +218,13 @@ public class MTHDManager {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
             ResultSet resultSet = connection.createStatement().executeQuery("""
-                SELECT t.leader_id id, u.discord_id discord_id, t.name team_name FROM teams as t
+                SELECT t.leader_id id, t.name team_name FROM teams as t
                 INNER JOIN users as u ON u.id = t.leader_id AND t.is_deleted is null AND u.discord_id is not null;""");
             while(resultSet.next()) {
                 int id = resultSet.getInt("id");
-                String discordId = resultSet.getString("discord_id");
                 String teamName = resultSet.getString("team_name");
 
                 UserAccount userAccount = new UserAccount(id);
-                userAccount.discordId = discordId;
                 userAccount.teamName = teamName;
 
                 userAccounts.add(userAccount);

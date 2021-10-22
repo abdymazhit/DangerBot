@@ -21,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Команда выбора игроков в команду
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersPickCommandListener extends ListenerAdapter {
@@ -87,7 +87,7 @@ public class PlayersPickCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
+                UserAccount playerAccount = MTHD.getInstance().database.getUserAccount(playerName);
                 if(playerAccount == null) {
                     message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
                     return;

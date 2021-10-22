@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Администраторская команда создания команды
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamCreateCommandListener {
@@ -67,7 +67,7 @@ public class AdminTeamCreateCommandListener {
         String teamName = command[2];
         String leaderName = command[3];
 
-        UserAccount leaderAccount = MTHD.getInstance().database.getUserIdAndDiscordId(leaderName);
+        UserAccount leaderAccount = MTHD.getInstance().database.getUserAccount(leaderName);
         if(leaderAccount == null) {
             message.reply("Ошибка! Лидер не зарегистрирован на сервере!").queue();
             return;

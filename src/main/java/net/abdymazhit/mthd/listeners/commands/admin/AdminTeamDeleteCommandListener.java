@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Администраторская команда удаления участника из команды
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamDeleteCommandListener extends TeamLeaveCommandListener {
@@ -64,7 +64,7 @@ public class AdminTeamDeleteCommandListener extends TeamLeaveCommandListener {
         String teamName = command[2];
         String memberName = command[3];
 
-        UserAccount memberAccount = MTHD.getInstance().database.getUserIdAndDiscordId(memberName);
+        UserAccount memberAccount = MTHD.getInstance().database.getUserAccount(memberName);
         if(memberAccount == null) {
             message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
             return;

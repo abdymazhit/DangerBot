@@ -19,7 +19,7 @@ import java.util.TimerTask;
 /**
  * Команда выбора игроков на игру
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceCommandListener extends ListenerAdapter {
@@ -91,7 +91,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
+                UserAccount playerAccount = MTHD.getInstance().database.getUserAccount(playerName);
                 if(playerAccount == null) {
                     message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
                     return;
@@ -105,7 +105,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
 
                 if(playerTeamId == gameCategoryManager.game.firstTeamInfo.id) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
-                        if(gameCategoryManager.game.firstTeamInfo.members.size()> 3) {
+                        if(gameCategoryManager.game.firstTeamInfo.members.size() > 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
@@ -117,7 +117,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     }
                 } else if(playerTeamId == gameCategoryManager.game.secondTeamInfo.id) {
                     if(gameCategoryManager.game.format.equals("4x2")) {
-                        if(gameCategoryManager.game.secondTeamInfo.members.size()> 3) {
+                        if(gameCategoryManager.game.secondTeamInfo.members.size() > 3) {
                             message.reply("Ошибка! Ваша команда имеет максимальное количество игроков!").queue();
                             return;
                         }
@@ -143,6 +143,12 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();
                     return;
+                }
+
+                if(gameCategoryManager.game.firstTeamInfo.captain.id == captainId) {
+                    gameCategoryManager.game.firstTeamInfo.members.add(playerAccount);
+                } else {
+                    gameCategoryManager.game.secondTeamInfo.members.add(playerAccount);
                 }
 
                 message.reply("Вы успешно добавили игрока в игру!").queue();
@@ -185,7 +191,7 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                     return;
                 }
 
-                UserAccount playerAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
+                UserAccount playerAccount = MTHD.getInstance().database.getUserAccount(playerName);
                 if(playerAccount == null) {
                     message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
                     return;
@@ -211,6 +217,12 @@ public class PlayersChoiceCommandListener extends ListenerAdapter {
                 if(errorMessage != null) {
                     message.reply(errorMessage).queue();
                     return;
+                }
+
+                if(gameCategoryManager.game.firstTeamInfo.captain.id == captainId) {
+                    gameCategoryManager.game.firstTeamInfo.members.add(playerAccount);
+                } else {
+                    gameCategoryManager.game.secondTeamInfo.members.add(playerAccount);
                 }
 
                 message.reply("Вы успешно удалили игрока из игры!").queue();

@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Отвечает за работу с базой данных
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class Database {
@@ -217,15 +217,13 @@ public class Database {
      * @param username Ник пользователя
      * @return Id и discord id пользователя
      */
-    public UserAccount getUserIdAndDiscordId(String username) {
+    public UserAccount getUserAccount(String username) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT id, discord_id FROM users WHERE username LIKE ?;");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM users WHERE username LIKE ?;");
             preparedStatement.setString(1, username);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
-                UserAccount userAccount = new UserAccount(resultSet.getInt(1));
-                userAccount.discordId = resultSet.getString("discord_id");
-                return userAccount;
+                return new UserAccount(resultSet.getInt("id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();

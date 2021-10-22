@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Категория игры
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class GameCategoryManager {
@@ -65,30 +65,29 @@ public class GameCategoryManager {
                 .queue(category -> {
                     this.category = category;
 
+                    game.playersAccounts = new ArrayList<>();
+                    try {
+                        PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                                SELECT u.username as username FROM users as u
+                                INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
+                        preparedStatement.setInt(1, game.id);
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        while(resultSet.next()) {
+                            String username = resultSet.getString("username");
+                            game.playersAccounts.add(new UserAccount(username));
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
                     if(game.rating.equals(Rating.TEAM_RATING)) {
                         createPlayersChoiceChannel();
                     } else {
-                        game.playersAccounts = new ArrayList<>();
-
                         game.firstTeamInfo.members = new ArrayList<>();
                         game.firstTeamInfo.members.add(new UserAccount(game.firstTeamInfo.captain.username));
 
                         game.secondTeamInfo.members = new ArrayList<>();
                         game.secondTeamInfo.members.add(new UserAccount(game.secondTeamInfo.captain.username));
-
-                        try {
-                            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                                SELECT u.username as username FROM users as u
-                                INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
-                            preparedStatement.setInt(1, game.id);
-                            ResultSet resultSet = preparedStatement.executeQuery();
-                            while(resultSet.next()) {
-                                String username = resultSet.getString("username");
-                                game.playersAccounts.add(new UserAccount(username));
-                            }
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
 
                         createReadyChannel();
                     }
@@ -104,13 +103,34 @@ public class GameCategoryManager {
         this.game = game;
         this.category = category;
 
+        game.playersAccounts = new ArrayList<>();
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
+                    SELECT u.username as username FROM users as u
+                    INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
+            preparedStatement.setInt(1, game.id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()) {
+                String username = resultSet.getString("username");
+                game.playersAccounts.add(new UserAccount(username));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         if(game.rating.equals(Rating.TEAM_RATING)) {
             getTeamRoles(game.firstTeamInfo.name, game.secondTeamInfo.name);
         } else {
+            game.firstTeamInfo.members = new ArrayList<>();
+            game.firstTeamInfo.members.add(new UserAccount(game.firstTeamInfo.captain.username));
+
+            game.secondTeamInfo.members = new ArrayList<>();
+            game.secondTeamInfo.members.add(new UserAccount(game.secondTeamInfo.captain.username));
+
             try {
                 Connection connection = MTHD.getInstance().database.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement("""
-                        SELECT discord_id FROM users as u
+                        SELECT username FROM users as u
                         INNER JOIN single_live_games_players as slgp
                         ON slgp.live_game_id = ?
                         AND u.id = slgp.player_id
@@ -118,12 +138,8 @@ public class GameCategoryManager {
                 preparedStatement.setInt(1, game.id);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while(resultSet.next()) {
-                    String discordId = resultSet.getString("discord_id");
-                    for(UserAccount userAccount : game.firstTeamInfo.members) {
-                        if(userAccount.discordId.equals(discordId)) {
-                            userAccount.member = MTHD.getInstance().guild.getMemberById(discordId);
-                        }
-                    }
+                    String username = resultSet.getString("username");
+                    game.firstTeamInfo.members.add(new UserAccount(username));
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -132,7 +148,7 @@ public class GameCategoryManager {
             try {
                 Connection connection = MTHD.getInstance().database.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement("""
-                        SELECT discord_id FROM users as u
+                        SELECT username FROM users as u
                         INNER JOIN single_live_games_players as slgp
                         ON slgp.live_game_id = ?
                         AND u.id = slgp.player_id
@@ -140,12 +156,8 @@ public class GameCategoryManager {
                 preparedStatement.setInt(1, game.id);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while(resultSet.next()) {
-                    String discordId = resultSet.getString("discord_id");
-                    for(UserAccount userAccount : game.secondTeamInfo.members) {
-                        if(userAccount.discordId.equals(discordId)) {
-                            userAccount.member = MTHD.getInstance().guild.getMemberById(discordId);
-                        }
-                    }
+                    String username = resultSet.getString("username");
+                    game.secondTeamInfo.members.add(new UserAccount(username));
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -201,42 +213,8 @@ public class GameCategoryManager {
         }
 
         if(game.gameState.equals(GameState.READY)) {
-            game.playersAccounts = new ArrayList<>();
-            game.firstTeamInfo.members.add(new UserAccount(game.firstTeamInfo.captain.username));
-            game.secondTeamInfo.members.add(new UserAccount(game.secondTeamInfo.captain.username));
-
-            try {
-                PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                            SELECT u.username as username FROM users as u
-                            INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
-                preparedStatement.setInt(1, game.id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while(resultSet.next()) {
-                    String username = resultSet.getString("username");
-                    game.playersAccounts.add(new UserAccount(username));
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
             createReadyChannel();
         } else if(game.gameState.equals(GameState.PLAYERS_CHOICE)) {
-            game.playersAccounts = new ArrayList<>();
-
-            try {
-                PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement("""
-                    SELECT u.username as username FROM users as u
-                    INNER JOIN single_live_games_players as slgp ON slgp.live_game_id = ? AND u.id = slgp.player_id;""");
-                preparedStatement.setInt(1, game.id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while(resultSet.next()) {
-                    String username = resultSet.getString("username");
-                    game.playersAccounts.add(new UserAccount(username));
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
             if(game.rating.equals(Rating.TEAM_RATING)) {
                 try {
                     Connection connection = MTHD.getInstance().database.getConnection();
@@ -264,6 +242,9 @@ public class GameCategoryManager {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
+
+                game.firstTeamInfo.members = new ArrayList<>();
+                game.secondTeamInfo.members = new ArrayList<>();
 
                 createPlayersPickChannel();
             }

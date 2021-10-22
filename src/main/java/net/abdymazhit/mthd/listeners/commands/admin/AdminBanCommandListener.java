@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 /**
  * Администраторская команда блокировки игроков
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminBanCommandListener {
@@ -60,7 +60,7 @@ public class AdminBanCommandListener {
         String playerName = command[1];
         String banTime = command[2];
 
-        UserAccount userAccount = MTHD.getInstance().database.getUserIdAndDiscordId(playerName);
+        UserAccount userAccount = MTHD.getInstance().database.getUserAccount(playerName);
         if(userAccount == null) {
             message.reply("Ошибка! Игрок не зарегистрирован на сервере!").queue();
             return;

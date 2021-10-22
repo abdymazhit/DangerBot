@@ -18,7 +18,7 @@ import java.util.TimerTask;
 /**
  * Менеджер Team Rating игр
  *
- * @version   21.10.2021
+ * @version   22.10.2021
  * @author    Islam Abdymazhit
  */
 public record TeamGameManager(GameManager gameManager) {
@@ -161,10 +161,10 @@ public record TeamGameManager(GameManager gameManager) {
             if(gameCategoryManager.game.equals(game)) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 if(game.firstTeamInfo.id == winnerTeamId) {
-                    embedBuilder.setTitle("Побидетель: " + game.firstTeamInfo.name);
+                    embedBuilder.setTitle("Победитель: " + game.firstTeamInfo.name);
                     embedBuilder.addField("Рейтинг", """
-                            Рейтинг %winner%: +%winner_rating% (+%winner_rating_changes%
-                            Рейтинг %loser%: +%loser_rating% (+%loser_rating_changes%"""
+                            Рейтинг %winner%: +%winner_rating% (+%winner_rating_changes%)
+                            Рейтинг %loser%: +%loser_rating% (%loser_rating_changes%)"""
                             .replace("%winner%", gameCategoryManager.game.firstTeamInfo.role.getAsMention())
                             .replace("%winner_rating%", String.valueOf(firstTeamRating))
                             .replace("%winner_rating_changes%", String.valueOf(firstTeamRating - game.firstTeamInfo.points))
@@ -172,10 +172,10 @@ public record TeamGameManager(GameManager gameManager) {
                             .replace("%loser_rating%", String.valueOf(secondTeamRating))
                             .replace("%loser_rating_changes%", String.valueOf(secondTeamRating - game.secondTeamInfo.points)), true);
                 } else if(game.secondTeamInfo.id == winnerTeamId) {
-                    embedBuilder.setTitle("Побидетель: " + game.secondTeamInfo.name);
+                    embedBuilder.setTitle("Победитель: " + game.secondTeamInfo.name);
                     embedBuilder.addField("Рейтинг", """
-                            Рейтинг %winner%: +%winner_rating% (+%winner_rating_changes%
-                            Рейтинг %loser%: +%loser_rating% (+%loser_rating_changes%"""
+                            Рейтинг %winner%: +%winner_rating% (+%winner_rating_changes%)
+                            Рейтинг %loser%: +%loser_rating% (%loser_rating_changes%)"""
                             .replace("%winner%", gameCategoryManager.game.secondTeamInfo.role.getAsMention())
                             .replace("%winner_rating%", String.valueOf(secondTeamRating))
                             .replace("%winner_rating_changes%", String.valueOf(secondTeamRating - game.secondTeamInfo.points))
