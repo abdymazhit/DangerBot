@@ -7,9 +7,6 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
-import java.sql.*;
-import java.time.Instant;
-
 /**
  * Администраторская команда удаления ютубера
  *
@@ -63,7 +60,7 @@ public class AdminStreamDeleteCommandListener {
             return;
         }
 
-        boolean isStreamDeleted = deleteStream(youtuberAccount.id, deleterId);
+        boolean isStreamDeleted = MTHD.getInstance().database.deleteStream(youtuberAccount.id, deleterId);
         if(!isStreamDeleted) {
             message.reply("Критическая ошибка при удалении трансляции! Свяжитесь с разработчиком бота!").queue();
             return;
@@ -71,46 +68,5 @@ public class AdminStreamDeleteCommandListener {
 
         message.reply("Трансляция успешно удалена! Имя ютубера: %youtuber%"
                 .replace("%youtuber%", youtuberName)).queue();
-    }
-
-    /**
-     * Удаляет трансляцию
-     * @param youtuberId Id ютубера
-     * @param deleterId Id удаляющего
-     * @return Значение, удалена ли трансляция
-     */
-    private boolean deleteStream(int youtuberId, int deleterId) {
-        try {
-            Connection connection = MTHD.getInstance().database.getConnection();
-
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT link FROM streams WHERE youtuber_id = ?;");
-            preparedStatement.setInt(1, youtuberId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if(resultSet.next()) {
-                String link = resultSet.getString("link");
-
-                MTHD.getInstance().liveStreamsManager.removeLiveStream(link);
-
-                PreparedStatement deleteStatement = connection.prepareStatement(
-                        "DELETE FROM streams WHERE youtuber_id = ?;");
-                deleteStatement.setInt(1, youtuberId);
-                deleteStatement.executeUpdate();
-
-                PreparedStatement historyStatement = connection.prepareStatement(
-                        "INSERT INTO streams_deletion_history (youtuber_id, link, deleter_id, deleted_at) VALUES (?, ?, ?, ?);");
-                historyStatement.setInt(1, youtuberId);
-                historyStatement.setString(2, link);
-                historyStatement.setInt(3, deleterId);
-                historyStatement.setTimestamp(4, Timestamp.from(Instant.now()));
-                historyStatement.executeUpdate();
-            }
-
-            // Вернуть значение, что трансляция успешно удалена
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
 }

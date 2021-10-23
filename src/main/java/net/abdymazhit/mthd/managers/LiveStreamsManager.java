@@ -11,6 +11,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -65,7 +66,6 @@ public class LiveStreamsManager {
         if(liveStreamsLinks.isEmpty()) {
             cancelChecking();
         }
-
         MTHD.getInstance().activeBroadcastsChannel.updateLiveStreamsMessages();
     }
 
@@ -91,7 +91,10 @@ public class LiveStreamsManager {
                         JsonObject snippetObject = itemObject.get("snippet").getAsJsonObject();
                         String isLive = snippetObject.get("liveBroadcastContent").getAsString();
                         if(!isLive.equals("live")) {
-                            removeLiveStream(link);
+                            int youtuberId = getYoutuberId(link);
+                            if(youtuberId > 0) {
+                                MTHD.getInstance().database.deleteStream(youtuberId, youtuberId);
+                            }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -99,6 +102,27 @@ public class LiveStreamsManager {
                 }
             }
         }, 0, 60000);
+    }
+
+    /**
+     * Получает id ютубера
+     * @param streamLink Ссылка на трансляцию
+     * @return Id ютубера
+     */
+    private int getYoutuberId(String streamLink) {
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                SELECT youtuber_id FROM streams WHERE link = ?;""", Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setString(1, streamLink);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                return resultSet.getInt("youtuber_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
     /**

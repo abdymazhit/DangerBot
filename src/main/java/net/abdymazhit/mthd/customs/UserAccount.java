@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.entities.Member;
 /**
  * Представляет собой аккаунт пользователя
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class UserAccount {
@@ -43,7 +43,9 @@ public class UserAccount {
         this.id = id;
         username = MTHD.getInstance().database.getUserName(id);
         discordId = MTHD.getInstance().database.getUserDiscordId(username);
-        member = MTHD.getInstance().guild.getMemberById(discordId);
+        if(discordId != null) {
+            member = MTHD.getInstance().guild.getMemberById(discordId);
+        }
     }
 
     /**
@@ -52,6 +54,8 @@ public class UserAccount {
     public UserAccount(String username) {
         this.username = username;
         discordId = MTHD.getInstance().database.getUserDiscordId(username);
-        member = MTHD.getInstance().guild.getMemberById(discordId);
+        if(discordId != null) {
+            member = MTHD.getInstance().guild.getMemberById(discordId);
+        }
     }
 }

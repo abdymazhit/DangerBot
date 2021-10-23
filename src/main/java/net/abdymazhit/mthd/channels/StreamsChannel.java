@@ -53,6 +53,8 @@ public class StreamsChannel extends Channel {
         embedBuilder.setTitle("Доступные команды");
         embedBuilder.setColor(3092790);
         embedBuilder.setDescription("""
+                Обратите внимание! В названии трансляции обязательно должно присутствовать название `DangerZone` или `Danger Zone`!
+                
                 Добавить трансляцию
                 `!stream add <LINK>`""");
         channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
