@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -79,7 +79,16 @@ public class AdminChannel extends Channel {
                 `!ban <PLAYER_NAME> <TIME>m/h/d`
             
                 Посмотреть информацию о помощниках
-                `!staff`""");
+                `!staff`
+                
+                Добавить ютубера
+                `!youtube add <PLAYER_NAME> <CHANNEL_LINK>`
+                
+                Удалить ютубера
+                `!youtube delete <PLAYER_NAME>`
+                
+                Удалить трансляцию ютубера
+                `!stream delete <PLAYER_NAME>`""");
         channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelMessage = message);
         embedBuilder.clear();
     }

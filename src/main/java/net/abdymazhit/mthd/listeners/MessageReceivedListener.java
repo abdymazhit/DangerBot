@@ -16,7 +16,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_MESSAGE;
 /**
  * Очищает сообщения канала
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class MessageReceivedListener extends ListenerAdapter {
@@ -48,6 +48,14 @@ public class MessageReceivedListener extends ListenerAdapter {
         if(messageChannel.equals(MTHD.getInstance().staffChannel.channel)) {
             if(MTHD.getInstance().staffChannel.channelMessage != null) {
                 if(!message.equals(MTHD.getInstance().staffChannel.channelMessage)) {
+                    message.delete().queueAfter(30, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
+                }
+            }
+        }
+
+        if(messageChannel.equals(MTHD.getInstance().streamsChannel.channel)) {
+            if(MTHD.getInstance().streamsChannel.channelMessage != null) {
+                if(!message.equals(MTHD.getInstance().streamsChannel.channelMessage)) {
                     message.delete().queueAfter(30, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE));
                 }
             }
@@ -145,7 +153,7 @@ public class MessageReceivedListener extends ListenerAdapter {
                         if(!message.equals(gameCategoryManager.readyChannel.channelMessage)
                            && !message.equals(gameCategoryManager.readyChannel.channelReadyMessage)) {
                             if(!event.getAuthor().isBot()) {
-                                message.delete().queueAfter(7, TimeUnit.SECONDS, null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
+                                message.delete().queue(null, ignore(UNKNOWN_MESSAGE, UNKNOWN_CHANNEL));
                             }
                         }
                     }

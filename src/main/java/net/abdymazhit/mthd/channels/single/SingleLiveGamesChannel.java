@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Канал активных игр Single рейтинга
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class SingleLiveGamesChannel extends Channel {
@@ -47,8 +47,7 @@ public class SingleLiveGamesChannel extends Channel {
         category.createTextChannel("live-games").setPosition(1)
                 .addPermissionOverride(UserRole.ASSISTANT.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
                 .addPermissionOverride(UserRole.AUTHORIZED.getRole(), EnumSet.of(Permission.VIEW_CHANNEL), null)
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.MESSAGE_WRITE))
+                .addPermissionOverride(MTHD.getInstance().guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE))
                 .queue(textChannel -> {
                     channel = textChannel;
                     updateLiveGamesMessages();

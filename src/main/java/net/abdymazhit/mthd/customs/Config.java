@@ -3,7 +3,7 @@ package net.abdymazhit.mthd.customs;
 /**
  * Представляет собой файл конфигурации
  *
- * @version   22.09.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class Config {
@@ -13,6 +13,9 @@ public class Config {
 
     /** Токен VimeWorld.ru Public API */
     public String vimeApiToken  = "VIMEWORLD_API_TOKEN";
+
+    /** API Key YouTube */
+    public String youtubeApiKey  = "YOUTUBE_API_KEY";
 
     /** Параметры базы данных */
     public MySQL mySQL = new MySQL();

@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Команда авторизации
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class AuthCommandListener extends ListenerAdapter {
@@ -80,6 +80,7 @@ public class AuthCommandListener extends ListenerAdapter {
 
         JsonElement ownerElement = authObject.get("owner");
         if(ownerElement.isJsonNull()) {
+
             event.reply("Ошибка! Владелец токена не найден!").setEphemeral(true).queue();
             return;
         }
@@ -179,11 +180,13 @@ public class AuthCommandListener extends ListenerAdapter {
             List<Role> teamRolesIsLeader = getTeamRoleIsLeader(userId);
             List<Role> teamRolesIsMember = getTeamRoleIsMember(userId);
             List<Role> singleRatingRole = getSingleRatingRole(userId);
+            List<Role> youtubeRole = getYoutuberRole(userId);
 
             List<Role> rolesToAdd = new ArrayList<>();
             rolesToAdd.addAll(teamRolesIsLeader);
             rolesToAdd.addAll(teamRolesIsMember);
             rolesToAdd.addAll(singleRatingRole);
+            rolesToAdd.addAll(youtubeRole);
             rolesToAdd.add(UserRole.AUTHORIZED.getRole());
 
             Member member = MTHD.getInstance().guild.getMemberById(discordId);
@@ -266,6 +269,28 @@ public class AuthCommandListener extends ListenerAdapter {
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 roles.add(UserRole.SINGLE_RATING.getRole());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return roles;
+    }
+
+    /**
+     * Установить роль YouTube
+     * @param userId Id пользователя
+     * @return Добавляемые роли
+     */
+    public List<Role> getYoutuberRole(int userId) {
+        List<Role> roles = new ArrayList<>();
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT 1 FROM youtubers WHERE youtuber_id = ? AND is_deleted is null;");
+            preparedStatement.setInt(1, userId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                roles.add(UserRole.YOUTUBE.getRole());
             }
         } catch (SQLException e) {
             e.printStackTrace();

@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Менеджер Single Rating игр
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public record SingleGameManager(GameManager gameManager) {
@@ -36,7 +36,7 @@ public record SingleGameManager(GameManager gameManager) {
             }
 
             // Недостаточно игроков для начала игры
-            if(players.size() < 6) return;
+            if(players.size() < 8) return;
 
             List<PlayerInGameSearch> playersIn4x2Format = new ArrayList<>();
             List<PlayerInGameSearch> playersIn6x2Format = new ArrayList<>();
@@ -49,7 +49,7 @@ public record SingleGameManager(GameManager gameManager) {
                 }
             }
 
-            if(playersIn4x2Format.size() < 6) playersIn4x2Format.clear();
+            if(playersIn4x2Format.size() < 8) playersIn4x2Format.clear();
             if(playersIn6x2Format.size() < 12) playersIn6x2Format.clear();
 
             List<PlayerInGameSearch> playersList = new ArrayList<>();
@@ -57,7 +57,7 @@ public record SingleGameManager(GameManager gameManager) {
             for(PlayerInGameSearch playerInGameSearch : players) {
                 if(playerInGameSearch.format.equals("4x2")) {
                     if(!playersIn4x2Format.isEmpty()) {
-                        for(int i = 0; i < 6; i++) {
+                        for(int i = 0; i < 8; i++) {
                             playersList.add(playersIn4x2Format.get(i));
                         }
                         break;
@@ -73,7 +73,7 @@ public record SingleGameManager(GameManager gameManager) {
             }
 
             // Недостаточно игроков для начала игры
-            if(playersList.size() < 6) return;
+            if(playersList.size() < 8) return;
 
             List<PlayerInGameSearch> newPlayersList = new ArrayList<>(playersList);
             Random random = new Random();
@@ -215,8 +215,9 @@ public record SingleGameManager(GameManager gameManager) {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement finishStatement = connection.prepareStatement("""
                 INSERT INTO single_finished_games_history (first_team_captain_id,
-                second_team_captain_id, format, map_name, match_id, winner_team_id, assistant_id, finished_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?);""", Statement.RETURN_GENERATED_KEYS);
+                second_team_captain_id, format, map_name, match_id, winner_team_id, assistant_id,
+                first_team_rating_changes, second_team_rating_changes, finished_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", Statement.RETURN_GENERATED_KEYS);
             finishStatement.setInt(1, game.firstTeamInfo.captain.id);
             finishStatement.setInt(2, game.secondTeamInfo.captain.id);
             finishStatement.setString(3, game.format);
@@ -224,7 +225,9 @@ public record SingleGameManager(GameManager gameManager) {
             finishStatement.setString(5, matchId);
             finishStatement.setInt(6, winnerTeamId);
             finishStatement.setInt(7, game.assistantAccount.id);
-            finishStatement.setTimestamp(8, Timestamp.from(Instant.now()));
+            finishStatement.setInt(8, firstTeamRating);
+            finishStatement.setInt(9, secondTeamRating);
+            finishStatement.setTimestamp(10, Timestamp.from(Instant.now()));
             finishStatement.executeUpdate();
             ResultSet createResultSet = finishStatement.getGeneratedKeys();
             if(createResultSet.next()) {
@@ -237,11 +240,10 @@ public record SingleGameManager(GameManager gameManager) {
 
                 for(int playerId : firstTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
-                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id, rating_changes) VALUES (?, ?, ?, ?);");
+                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
                     playersStatement.setInt(1, finishedGameId);
                     playersStatement.setInt(2, 0);
                     playersStatement.setInt(3, playerId);
-                    playersStatement.setInt(4, firstTeamRating);
                     playersStatement.executeUpdate();
 
                     if(winnerTeamId == 0) {
@@ -258,11 +260,10 @@ public record SingleGameManager(GameManager gameManager) {
 
                 for(int playerId : secondTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
-                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id, rating_changes) VALUES (?, ?, ?, ?);");
+                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
                     playersStatement.setInt(1, finishedGameId);
                     playersStatement.setInt(2, 1);
                     playersStatement.setInt(3, playerId);
-                    playersStatement.setInt(4, secondTeamRating);
                     playersStatement.executeUpdate();
 
                     if(winnerTeamId == 1) {

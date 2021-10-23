@@ -17,7 +17,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных игр
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class LiveGamesManager {
@@ -25,7 +25,7 @@ public class LiveGamesManager {
     /** Список активных игр */
     private final List<Game> liveGames;
 
-    /** Значение, начата ли проверка активных игр*/
+    /** Значение, начата ли проверка активных игр */
     private boolean isStartedChecking;
 
     /** Таймер проверки активных игр */
@@ -35,7 +35,7 @@ public class LiveGamesManager {
     private final Gson gson;
 
     /**
-     * Инициализирует менеджер игры
+     * Инициализирует менеджер активных игр
      */
     public LiveGamesManager() {
         liveGames = new ArrayList<>();

@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * Администраторская команда добавления игрока в Single Rating
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminSingleAddCommandListener {
@@ -89,7 +89,7 @@ public class AdminSingleAddCommandListener {
             Connection connection = MTHD.getInstance().database.getConnection();
             PreparedStatement createStatement = connection.prepareStatement("""
                 INSERT INTO players (player_id) SELECT ? WHERE NOT EXISTS
-                (SELECT player_id FROM players WHERE player_id = ? AND is_deleted is null);""", Statement.RETURN_GENERATED_KEYS);
+                (SELECT 1 FROM players WHERE player_id = ? AND is_deleted is null);""", Statement.RETURN_GENERATED_KEYS);
             createStatement.setInt(1, playerId);
             createStatement.setInt(2, playerId);
             createStatement.executeUpdate();

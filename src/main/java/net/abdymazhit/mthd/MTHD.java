@@ -1,9 +1,7 @@
 package net.abdymazhit.mthd;
 
 import com.google.gson.Gson;
-import net.abdymazhit.mthd.channels.AdminChannel;
-import net.abdymazhit.mthd.channels.AuthChannel;
-import net.abdymazhit.mthd.channels.StaffChannel;
+import net.abdymazhit.mthd.channels.*;
 import net.abdymazhit.mthd.channels.single.PlayersChannel;
 import net.abdymazhit.mthd.channels.single.SingleFindGameChannel;
 import net.abdymazhit.mthd.channels.single.SingleLiveGamesChannel;
@@ -14,10 +12,7 @@ import net.abdymazhit.mthd.channels.team.TeamsChannel;
 import net.abdymazhit.mthd.customs.Config;
 import net.abdymazhit.mthd.database.Database;
 import net.abdymazhit.mthd.listeners.MessageReceivedListener;
-import net.abdymazhit.mthd.listeners.commands.AuthCommandListener;
-import net.abdymazhit.mthd.listeners.commands.LeaveCommandListener;
-import net.abdymazhit.mthd.listeners.commands.ReadyCommandListener;
-import net.abdymazhit.mthd.listeners.commands.StaffCommandListener;
+import net.abdymazhit.mthd.listeners.commands.*;
 import net.abdymazhit.mthd.listeners.commands.admin.AdminCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.game.*;
 import net.abdymazhit.mthd.listeners.commands.single.SingleCommandsListener;
@@ -26,6 +21,7 @@ import net.abdymazhit.mthd.listeners.commands.team.TeamCommandsListener;
 import net.abdymazhit.mthd.listeners.commands.team.TeamFindGameCommandListener;
 import net.abdymazhit.mthd.managers.GameManager;
 import net.abdymazhit.mthd.managers.LiveGamesManager;
+import net.abdymazhit.mthd.managers.LiveStreamsManager;
 import net.abdymazhit.mthd.utils.Utils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -48,7 +44,7 @@ import java.nio.file.Files;
 /**
  * Главный класс, отвечает за инициализацию бота
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHD {
@@ -73,6 +69,12 @@ public class MTHD {
 
     /** Канал персонала */
     public final StaffChannel staffChannel;
+
+    /** Канал трансляции */
+    public final StreamsChannel streamsChannel;
+
+    /** Канал активных трансляции */
+    public final ActiveBroadcastsChannel activeBroadcastsChannel;
 
     /** Канал команды */
     public final TeamsChannel teamsChannel;
@@ -103,6 +105,9 @@ public class MTHD {
 
     /** Менеджер активных игр */
     public final LiveGamesManager liveGamesManager;
+
+    /** Менеджер активных трансляции */
+    public final LiveStreamsManager liveStreamsManager;
 
     /** Менеджер игры */
     public final GameManager gameManager;
@@ -142,6 +147,8 @@ public class MTHD {
         authChannel = new AuthChannel();
         adminChannel = new AdminChannel();
         staffChannel = new StaffChannel();
+        streamsChannel = new StreamsChannel();
+        activeBroadcastsChannel = new ActiveBroadcastsChannel();
         teamsChannel = new TeamsChannel();
         teamLiveGamesChannel = new TeamLiveGamesChannel();
         teamFindGameChannel = new TeamFindGameChannel();
@@ -152,6 +159,7 @@ public class MTHD {
         utils = new Utils();
         mthdManager = new MTHDManager();
         liveGamesManager = new LiveGamesManager();
+        liveStreamsManager = new LiveStreamsManager();
         gameManager = new GameManager();
 
 //        Обновить команды, только при изменении/добавлении команды
@@ -219,6 +227,7 @@ public class MTHD {
 
         jda.addEventListener(new AdminCommandsListener());
         jda.addEventListener(new StaffCommandListener());
+        jda.addEventListener(new StreamAddCommandListener());
 
         jda.addEventListener(new ReadyCommandsListener());
         jda.addEventListener(new PlayersPickCommandListener());

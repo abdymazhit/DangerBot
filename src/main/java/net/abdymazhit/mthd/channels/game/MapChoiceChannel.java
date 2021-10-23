@@ -17,6 +17,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +31,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL;
 /**
  * Канал выбора карты
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class MapChoiceChannel extends Channel {
@@ -69,6 +72,20 @@ public class MapChoiceChannel extends Channel {
         gameAllMaps = new ArrayList<>();
         gameMaps = new ArrayList<>();
         isMapsMessageSending = true;
+
+        gameCategoryManager.game.playersAccounts = new ArrayList<>();
+        try {
+            PreparedStatement preparedStatement = MTHD.getInstance().database.getConnection().prepareStatement(
+                    "SELECT player_id FROM single_live_games_players WHERE live_game_id = ?;");
+            preparedStatement.setInt(1, gameCategoryManager.game.id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()) {
+                int playerId = resultSet.getInt("player_id");
+                gameCategoryManager.game.playersAccounts.add(new UserAccount(playerId));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
         if(gameCategoryManager.game.format.equals("4x2")) {
             List<GameMap> random4x2Maps = GameMap.getRandom4x2Maps();

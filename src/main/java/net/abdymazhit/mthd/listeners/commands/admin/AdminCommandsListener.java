@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 /**
  * Администраторские команды
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminCommandsListener extends ListenerAdapter {
@@ -44,6 +44,15 @@ public class AdminCommandsListener extends ListenerAdapter {
     /** Команда просмотра информации о помощниках */
     private final AdminAssistantsInfoCommandListener adminAssistantsInfoCommandListener;
 
+    /** Команда добавления ютубера */
+    private final AdminYoutubeAddCommandListener adminYoutubeAddCommandListener;
+
+    /** Команда удаления ютубера */
+    private final AdminYoutubeDeleteCommandListener adminYoutubeDeleteCommandListener;
+
+    /** Команда удаления трансляции */
+    private final AdminStreamDeleteCommandListener adminStreamDeleteCommandListener;
+
     /**
      * Инициализирует команды
      */
@@ -58,6 +67,9 @@ public class AdminCommandsListener extends ListenerAdapter {
         this.adminSingleDeleteCommandListener = new AdminSingleDeleteCommandListener();
         this.adminBanCommandListener = new AdminBanCommandListener();
         this.adminAssistantsInfoCommandListener = new AdminAssistantsInfoCommandListener();
+        this.adminYoutubeAddCommandListener = new AdminYoutubeAddCommandListener();
+        this.adminYoutubeDeleteCommandListener = new AdminYoutubeDeleteCommandListener();
+        this.adminStreamDeleteCommandListener = new AdminStreamDeleteCommandListener();
     }
 
     /**
@@ -92,6 +104,12 @@ public class AdminCommandsListener extends ListenerAdapter {
                 adminBanCommandListener.onCommandReceived(event);
             } else if(contentRaw.equals("!staff")) {
                 adminAssistantsInfoCommandListener.onCommandReceived(event);
+            } else if(contentRaw.startsWith("!youtube add")) {
+                adminYoutubeAddCommandListener.onCommandReceived(event);
+            } else if(contentRaw.startsWith("!youtube delete")) {
+                adminYoutubeDeleteCommandListener.onCommandReceived(event);
+            } else if(contentRaw.startsWith("!stream delete")) {
+                adminStreamDeleteCommandListener.onCommandReceived(event);
             } else {
                 message.reply("Ошибка! Неверная команда!").queue();
             }

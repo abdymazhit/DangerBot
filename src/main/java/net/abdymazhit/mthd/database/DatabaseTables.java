@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   21.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -49,8 +49,15 @@ public record DatabaseTables(Connection connection) {
         createTeamFinishedGamesPlayersHistory();
 
         createAvailableAssistantsTable();
-
         createPlayersBansTable();
+
+        createYoutubersTable();
+        createYoutubersAdditionHistoryTable();
+        createYoutubersDeletionHistoryTable();
+
+        createStreamsTable();
+        createStreamsAdditionHistoryTable();
+        createStreamsDeletionHistoryTable();
     }
 
     /**
@@ -231,6 +238,8 @@ public record DatabaseTables(Connection connection) {
                         match_id varchar(50) not null,
                         winner_team_id int not null,
                         assistant_id int not null,
+                        first_team_rating_changes int not null,
+                        second_team_rating_changes int not null,
                         finished_at timestamp not null,
                         PRIMARY KEY (id)
                     );
@@ -252,7 +261,6 @@ public record DatabaseTables(Connection connection) {
                     finished_game_id int not null,
                     team_id boolean not null,
                     player_id int not null,
-                    rating_changes int not null,
                     PRIMARY KEY (id));
             """);
             preparedStatement.executeUpdate();
@@ -576,6 +584,125 @@ public record DatabaseTables(Connection connection) {
                     banner_id int,
                     finished_at timestamp not null,
                     PRIMARY KEY (id));
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу ютуберов
+     */
+    private void createYoutubersTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS youtubers (
+                    id serial not null AUTO_INCREMENT,
+                    youtuber_id int not null,
+                    channel_id varchar(50) not null,
+                    is_deleted boolean,
+                    PRIMARY KEY (id));
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории добавления ютуберов
+     */
+    private void createYoutubersAdditionHistoryTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS youtubers_addition_history (
+                        id serial not null AUTO_INCREMENT,
+                        youtuber_id int not null,
+                        adder_id int not null,
+                        added_at timestamp not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории удаления ютуберов
+     */
+    private void createYoutubersDeletionHistoryTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS youtubers_deletion_history (
+                        id serial not null AUTO_INCREMENT,
+                        youtuber_id int not null,
+                        deleter_id int not null,
+                        deleted_at timestamp not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу активных трансляций
+     */
+    private void createStreamsTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS streams (
+                    id serial not null AUTO_INCREMENT,
+                    youtuber_id int not null,
+                    link varchar(50) not null,
+                    PRIMARY KEY (id));
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории добавления трансляции
+     */
+    private void createStreamsAdditionHistoryTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS streams_addition_history (
+                        id serial not null AUTO_INCREMENT,
+                        youtuber_id int not null,
+                        link varchar(50) not null,
+                        adder_id int not null,
+                        added_at timestamp not null,
+                        PRIMARY KEY (id)
+                    );
+            """);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Создает таблицу истории удаления трансляции
+     */
+    private void createStreamsDeletionHistoryTable() {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    CREATE TABLE IF NOT EXISTS streams_deletion_history (
+                        id serial not null AUTO_INCREMENT,
+                        youtuber_id int not null,
+                        link varchar(50) not null,
+                        deleter_id int not null,
+                        deleted_at timestamp not null,
+                        PRIMARY KEY (id)
+                    );
             """);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {

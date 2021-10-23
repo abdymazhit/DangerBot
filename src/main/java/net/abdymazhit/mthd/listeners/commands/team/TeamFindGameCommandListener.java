@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameCommandListener extends ListenerAdapter {
@@ -95,7 +95,7 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
                 }
 
                 if(format.equals("4x2")) {
-                    if(onlinePlayers < 2) {
+                    if(onlinePlayers < 4) {
                         message.reply("Ошибка! Недостаточное количество игроков в сети для входа в поиск игры!").queue();
                         return;
                     }

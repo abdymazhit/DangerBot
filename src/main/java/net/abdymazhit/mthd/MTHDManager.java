@@ -19,7 +19,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер сервера
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class MTHDManager {
@@ -33,11 +33,12 @@ public class MTHDManager {
 
         Map<String, String> usersDiscordIdsNames = getUsersDiscordIdsNames();
         Map<String, String> playersDiscordIdsNames = getPlayersDiscordIdsNames();
+        Map<String, String> youtubersDiscordIdsNames = getYoutubersDiscordIdsNames();
 
         List<UserAccount> teamMembers = getUsersAsTeamMembers();
         List<UserAccount> teamLeader = getUsersAsTeamLeaders();
 
-        configureUsersRoles(usersDiscordIdsNames, playersDiscordIdsNames, teamMembers, teamLeader);
+        configureUsersRoles(usersDiscordIdsNames, playersDiscordIdsNames, youtubersDiscordIdsNames, teamMembers, teamLeader);
     }
 
     /**
@@ -92,7 +93,8 @@ public class MTHDManager {
                && !role.equals(MTHD.getInstance().guild.getBoostRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())
                && !role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
                && !role.equals(UserRole.LEADER.getRole()) && !role.equals(UserRole.MEMBER.getRole())
-               && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.TEST.getRole())) {
+               && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.TEST.getRole())
+               && !role.equals(UserRole.YOUTUBE.getRole())) {
                 if(!teamsNamesRoles.containsKey(role.getName())) {
                     role.delete().queue();
                 }
@@ -182,6 +184,28 @@ public class MTHDManager {
     }
 
     /**
+     * Получает discord id и имена всех ютуберов
+     * @return Discord id и имена всех ютуберов
+     */
+    private Map<String, String> getYoutubersDiscordIdsNames() {
+        Map<String, String> youtubersDiscordIdsNames = new HashMap<>();
+        try {
+            Connection connection = MTHD.getInstance().database.getConnection();
+            ResultSet resultSet = connection.createStatement().executeQuery("""
+                SELECT discord_id, username FROM users as u
+                INNER JOIN youtubers as y ON y.youtuber_id = u.id AND y.is_deleted is null;""");
+            while(resultSet.next()) {
+                String discordId = resultSet.getString("discord_id");
+                String username = resultSet.getString("username");
+                youtubersDiscordIdsNames.put(discordId, username);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return youtubersDiscordIdsNames;
+    }
+
+    /**
      * Получает всех участников команд
      * @return Все участники команд
      */
@@ -239,10 +263,12 @@ public class MTHDManager {
      * Настраивает роли всех пользователей
      * @param usersDiscordIdsNames Discord id и имена всех пользователей
      * @param playersDiscordIdsNames Discord id и имена игроков Single Rating
+     * @param youtubersDiscordIdsNames Discord id и имена ютуберов
      * @param teamMembers Все участники команд
      * @param teamLeaders Все лидеры команд
      */
-    private void configureUsersRoles(Map<String, String> usersDiscordIdsNames, Map<String, String> playersDiscordIdsNames, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
+    private void configureUsersRoles(Map<String, String> usersDiscordIdsNames, Map<String, String> playersDiscordIdsNames,
+                                     Map<String, String> youtubersDiscordIdsNames, List<UserAccount> teamMembers, List<UserAccount> teamLeaders) {
         MTHD.getInstance().guild.loadMembers().onSuccess(members -> {
             for(Member member : members) {
                 if(!member.getUser().isBot()) {
@@ -272,6 +298,16 @@ public class MTHDManager {
                         } else {
                             if(!member.getRoles().contains(UserRole.SINGLE_RATING.getRole())) {
                                 MTHD.getInstance().guild.addRoleToMember(member, UserRole.SINGLE_RATING.getRole()).queue();
+                            }
+                        }
+
+                        if(!youtubersDiscordIdsNames.containsKey(discordId)) {
+                            if(member.getRoles().contains(UserRole.YOUTUBE.getRole())) {
+                                MTHD.getInstance().guild.removeRoleFromMember(member, UserRole.YOUTUBE.getRole()).queue();
+                            }
+                        } else {
+                            if(!member.getRoles().contains(UserRole.YOUTUBE.getRole())) {
+                                MTHD.getInstance().guild.addRoleToMember(member, UserRole.YOUTUBE.getRole()).queue();
                             }
                         }
 

@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -118,10 +118,12 @@ public class AdminTeamAddCommandListener {
     private boolean addTeamMember(int teamId, int memberId, int adderId) {
         try {
             Connection connection = MTHD.getInstance().database.getConnection();
-            PreparedStatement addStatement = connection.prepareStatement(
-                    "INSERT INTO teams_members (team_id, member_id) VALUES (?, ?);");
+            PreparedStatement addStatement = connection.prepareStatement("""
+                INSERT INTO teams_members (team_id, member_id) SELECT ?, ?
+                WHERE NOT EXISTS (SELECT 1 FROM teams_members WHERE member_id = ?);""");
             addStatement.setInt(1, teamId);
             addStatement.setInt(2, memberId);
+            addStatement.setInt(3, memberId);
             addStatement.executeUpdate();
 
             PreparedStatement historyStatement = connection.prepareStatement(

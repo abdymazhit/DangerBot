@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Канал выбора игроков на игру
  *
- * @version   22.10.2021
+ * @version   23.10.2021
  * @author    Islam Abdymazhit
  */
 public class PlayersChoiceChannel extends Channel {
@@ -89,7 +89,7 @@ public class PlayersChoiceChannel extends Channel {
                         boolean isCancelling = false;
 
                         if(gameCategoryManager.game.format.equals("4x2")) {
-                            if(gameCategoryManager.game.firstTeamInfo.members.size() < 2 || gameCategoryManager.game.secondTeamInfo.members.size() < 2) {
+                            if(gameCategoryManager.game.firstTeamInfo.members.size() < 4 || gameCategoryManager.game.secondTeamInfo.members.size() < 4) {
                                 isCancelling = true;
                             }
                         } else if(gameCategoryManager.game.format.equals("6x2")) {
