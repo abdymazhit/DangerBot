@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import net.abdymazhit.dangerbot.customs.info.PlayerInfo;
 import net.abdymazhit.dangerbot.customs.info.TeamInfo;
 import net.abdymazhit.dangerbot.customs.UserAccount;
+import net.abdymazhit.dangerbot.enums.Emoji;
 import net.abdymazhit.dangerbot.enums.GameResult;
 import net.abdymazhit.dangerbot.enums.LeagueImage;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -121,7 +122,7 @@ public class Utils {
                 .replace("%percent%", String.valueOf((int) (Double.parseDouble(percent) * 100)))
                 .replace("%rank%", rank);
         embedBuilder.setDescription(description);
-        embedBuilder.setThumbnail("http://skin.vimeworld.ru/helm/3d/%username%.png"
+        embedBuilder.setThumbnail("https://skin.vimeworld.ru/helm/3d/%username%.png"
                 .replace("%username%", username));
         embedBuilder.setTimestamp(new Date().toInstant());
 
@@ -141,9 +142,9 @@ public class Utils {
         StringBuilder members2String = new StringBuilder();
 
         if(teamInfo.leader.isVimeOnline) {
-            membersString.append("<:emote:884826184729366538> ");
+            membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_ONLINE.getEmote().getId()));
         } else {
-            membersString.append("<:emote:884826184641294346> ");
+            membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_OFFLINE.getEmote().getId()));
         }
         membersString.append("`").append(teamInfo.leader.username).append("`").append("\n");
 
@@ -152,9 +153,9 @@ public class Utils {
                 UserAccount user = teamInfo.members.get(i);
 
                 if(user.isVimeOnline) {
-                    membersString.append("<:emote:884826184729366538> ");
+                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_ONLINE.getEmote().getId()));
                 } else {
-                    membersString.append("<:emote:884826184641294346> ");
+                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_OFFLINE.getEmote().getId()));
                 }
                 membersString.append("`").append(user.username).append("`").append("\n");
             }
@@ -163,18 +164,18 @@ public class Utils {
                 UserAccount user = teamInfo.members.get(i);
 
                 if(user.isVimeOnline) {
-                    members2String.append("<:emote:884826184729366538> ");
+                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_ONLINE.getEmote().getId()));
                 } else {
-                    members2String.append("<:emote:884826184641294346> ");
+                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_OFFLINE.getEmote().getId()));
                 }
                 members2String.append("`").append(user.username).append("`").append("\n");
             }
         } else {
             for(UserAccount user : teamInfo.members) {
                 if(user.isVimeOnline) {
-                    membersString.append("<:emote:884826184729366538> ");
+                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_ONLINE.getEmote().getId()));
                 } else {
-                    membersString.append("<:emote:884826184641294346> ");
+                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_OFFLINE.getEmote().getId()));
                 }
                 membersString.append("`").append(user.username).append("`").append("\n");
             }
