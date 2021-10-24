@@ -19,7 +19,7 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_ROLE;
 /**
  * Менеджер ролей
  *
- * @version   23.10.2021
+ * @version   24.10.2021
  * @author    Islam Abdymazhit
  */
 public class RoleManager {
@@ -343,7 +343,7 @@ public class RoleManager {
                 for(Role role : member.getRoles()) {
                     if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
                        && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.MEMBER.getRole())
-                       && !role.equals(UserRole.SINGLE_RATING.getRole())) {
+                       && !role.equals(UserRole.SINGLE_RATING.getRole()) && !role.equals(UserRole.YOUTUBE.getRole())) {
                         if(!role.getName().equals(userAccount.teamName)) {
                             if(member.getRoles().contains(role)) {
                                 DangerBot.getInstance().guild.removeRoleFromMember(member, role).queue();
@@ -373,7 +373,7 @@ public class RoleManager {
                 for(Role role : member.getRoles()) {
                     if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
                        && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.LEADER.getRole())
-                       && !role.equals(UserRole.SINGLE_RATING.getRole())) {
+                       && !role.equals(UserRole.SINGLE_RATING.getRole()) && !role.equals(UserRole.YOUTUBE.getRole())) {
                         if(!role.getName().equals(userAccount.teamName)) {
                             if(member.getRoles().contains(role)) {
                                 DangerBot.getInstance().guild.removeRoleFromMember(member, role).queue();
@@ -387,7 +387,8 @@ public class RoleManager {
 
         for(Role role : member.getRoles()) {
             if(!role.equals(UserRole.ADMIN.getRole()) && !role.equals(UserRole.ASSISTANT.getRole())
-               && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())) {
+               && !role.equals(UserRole.AUTHORIZED.getRole()) && !role.equals(UserRole.SINGLE_RATING.getRole())
+               && !role.equals(UserRole.YOUTUBE.getRole())) {
                 if(member.getRoles().contains(role)) {
                     DangerBot.getInstance().guild.removeRoleFromMember(member, role).queue(null, ignore(UNKNOWN_ROLE));
                 }
