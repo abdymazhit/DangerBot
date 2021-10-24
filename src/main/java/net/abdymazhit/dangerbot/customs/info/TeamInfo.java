@@ -6,8 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.dangerbot.DangerBot;
 import net.abdymazhit.dangerbot.customs.UserAccount;
-import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.sql.Connection;
@@ -20,7 +18,7 @@ import java.util.List;
 /**
  * Представляет собой команду
  *
- * @version   23.10.2021
+ * @version   24.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamInfo {
@@ -83,7 +81,6 @@ public class TeamInfo {
         getUsersInfo(leader);
         getUsersVimeIds();
         getUsersVimeOnline();
-        getUsersDiscordOnline();
     }
 
     /**
@@ -198,31 +195,6 @@ public class TeamInfo {
                     if(username.equals(user.username)) {
                         user.isVimeOnline = isOnline;
                     }
-                }
-            }
-        }
-    }
-
-    /**
-     * Получает статус онлайна игроков в Discord
-     */
-    private void getUsersDiscordOnline() {
-        if(leader.discordId != null) {
-            Member leaderMember = DangerBot.getInstance().guild.getMemberById(leader.discordId);
-            if(leaderMember != null) {
-                leader.isDiscordOnline = leaderMember.getOnlineStatus().equals(OnlineStatus.ONLINE)
-                                         || leaderMember.getOnlineStatus().equals(OnlineStatus.IDLE)
-                                         || leaderMember.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
-            }
-        }
-
-        for(UserAccount user : members) {
-            if(user.discordId != null) {
-                Member member = DangerBot.getInstance().guild.getMemberById(user.discordId);
-                if(member != null) {
-                    user.isDiscordOnline = member.getOnlineStatus().equals(OnlineStatus.ONLINE)
-                                           || member.getOnlineStatus().equals(OnlineStatus.IDLE)
-                                           || member.getOnlineStatus().equals(OnlineStatus.DO_NOT_DISTURB);
                 }
             }
         }

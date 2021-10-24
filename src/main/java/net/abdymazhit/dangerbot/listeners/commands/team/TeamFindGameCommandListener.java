@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Команда поиск игры
  *
- * @version   23.10.2021
+ * @version   24.10.2021
  * @author    Islam Abdymazhit
  */
 public class TeamFindGameCommandListener extends ListenerAdapter {
@@ -89,7 +89,7 @@ public class TeamFindGameCommandListener extends ListenerAdapter {
 
                 int onlinePlayers = 0;
                 for(UserAccount player : members) {
-                    if(player.isDiscordOnline || player.isVimeOnline) {
+                    if(player.isVimeOnline) {
                         onlinePlayers++;
                     }
                 }

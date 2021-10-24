@@ -31,7 +31,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   23.10.2021
+ * @version   24.10.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -145,12 +145,6 @@ public class Utils {
         } else {
             membersString.append("<:emote:884826184641294346> ");
         }
-
-        if(teamInfo.leader.isDiscordOnline) {
-            membersString.append("<:emote:884825784857010196> ");
-        } else {
-            membersString.append("<:emote:884825362863910962> ");
-        }
         membersString.append("`").append(teamInfo.leader.username).append("`").append("\n");
 
         if(teamInfo.members.size() > 7) {
@@ -161,12 +155,6 @@ public class Utils {
                     membersString.append("<:emote:884826184729366538> ");
                 } else {
                     membersString.append("<:emote:884826184641294346> ");
-                }
-
-                if(user.isDiscordOnline) {
-                    membersString.append("<:emote:884825784857010196> ");
-                } else {
-                    membersString.append("<:emote:884825362863910962> ");
                 }
                 membersString.append("`").append(user.username).append("`").append("\n");
             }
@@ -179,12 +167,6 @@ public class Utils {
                 } else {
                     members2String.append("<:emote:884826184641294346> ");
                 }
-
-                if(user.isDiscordOnline) {
-                    members2String.append("<:emote:884825784857010196> ");
-                } else {
-                    members2String.append("<:emote:884825362863910962> ");
-                }
                 members2String.append("`").append(user.username).append("`").append("\n");
             }
         } else {
@@ -193,12 +175,6 @@ public class Utils {
                     membersString.append("<:emote:884826184729366538> ");
                 } else {
                     membersString.append("<:emote:884826184641294346> ");
-                }
-
-                if(user.isDiscordOnline) {
-                    membersString.append("<:emote:884825784857010196> ");
-                } else {
-                    membersString.append("<:emote:884825362863910962> ");
                 }
                 membersString.append("`").append(user.username).append("`").append("\n");
             }

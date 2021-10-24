@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.entities.Member;
 /**
  * Представляет собой аккаунт пользователя
  *
- * @version   23.10.2021
+ * @version   24.10.2021
  * @author    Islam Abdymazhit
  */
 public class UserAccount {
@@ -31,9 +31,6 @@ public class UserAccount {
 
     /** Статус онлайна пользователя в VimeWorld */
     public boolean isVimeOnline;
-
-    /** Статус онлайна пользователя в Discord */
-    public boolean isDiscordOnline;
 
     /**
      * Инициализирует аккаунт пользователя
