@@ -1,5 +1,6 @@
 package net.abdymazhit.dangerbot.managers;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.dangerbot.DangerBot;
@@ -20,7 +21,7 @@ import java.util.TimerTask;
 /**
  * Менеджер активных трансляции
  *
- * @version   23.10.2021
+ * @version   25.10.2021
  * @author    Islam Abdymazhit
  */
 public class LiveStreamsManager {
@@ -87,10 +88,18 @@ public class LiveStreamsManager {
                         HttpEntity entity = response.getEntity();
                         String jsonString = EntityUtils.toString(entity);
                         JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
-                        JsonObject itemObject = jsonObject.get("items").getAsJsonArray().get(0).getAsJsonObject();
-                        JsonObject snippetObject = itemObject.get("snippet").getAsJsonObject();
-                        String isLive = snippetObject.get("liveBroadcastContent").getAsString();
-                        if(!isLive.equals("live")) {
+                        JsonArray itemsArray = jsonObject.get("items").getAsJsonArray();
+                        if(!itemsArray.isEmpty()) {
+                            JsonObject itemObject = itemsArray.get(0).getAsJsonObject();
+                            JsonObject snippetObject = itemObject.get("snippet").getAsJsonObject();
+                            String isLive = snippetObject.get("liveBroadcastContent").getAsString();
+                            if(!isLive.equals("live")) {
+                                int youtuberId = getYoutuberId(link);
+                                if(youtuberId > 0) {
+                                    DangerBot.getInstance().database.deleteStream(youtuberId, youtuberId);
+                                }
+                            }
+                        } else {
                             int youtuberId = getYoutuberId(link);
                             if(youtuberId > 0) {
                                 DangerBot.getInstance().database.deleteStream(youtuberId, youtuberId);
