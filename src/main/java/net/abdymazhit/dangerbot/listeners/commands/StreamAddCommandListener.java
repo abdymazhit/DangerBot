@@ -1,5 +1,6 @@
 package net.abdymazhit.dangerbot.listeners.commands;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.dangerbot.DangerBot;
@@ -23,7 +24,7 @@ import java.time.Instant;
 /**
  * Команда добавления трансляции
  *
- * @version   23.10.2021
+ * @version   27.10.2021
  * @author    Islam Abdymazhit
  */
 public class StreamAddCommandListener extends ListenerAdapter {
@@ -95,7 +96,14 @@ public class StreamAddCommandListener extends ListenerAdapter {
                     String jsonString = EntityUtils.toString(entity);
 
                     JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
-                    JsonObject itemObject = jsonObject.get("items").getAsJsonArray().get(0).getAsJsonObject();
+
+                    JsonArray itemsArray = jsonObject.get("items").getAsJsonArray();
+                    if(itemsArray.isEmpty()) {
+                        message.reply("Ошибка! Не удалось получить информацию о вашей трансляции!").queue();
+                        return;
+                    }
+
+                    JsonObject itemObject = itemsArray.get(0).getAsJsonObject();
                     JsonObject snippetObject = itemObject.get("snippet").getAsJsonObject();
 
                     String youtubeChannelId = snippetObject.get("channelId").getAsString();

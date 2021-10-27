@@ -1,5 +1,6 @@
 package net.abdymazhit.dangerbot.channels;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.abdymazhit.dangerbot.DangerBot;
@@ -25,7 +26,7 @@ import java.util.*;
 /**
  * Канал активных трансляции
  *
- * @version   23.10.2021
+ * @version   27.10.2021
  * @author    Islam Abdymazhit
  */
 public class ActiveBroadcastsChannel extends Channel {
@@ -109,15 +110,18 @@ public class ActiveBroadcastsChannel extends Channel {
                 ведет прямую трансляцию на нашем проекте!
                 
                 %link%"""
+                .replace("%everyone%", DangerBot.getInstance().guild.getPublicRole().getAsMention())
                 .replace("%youtuber%", liveStream.username)
                 .replace("%link%", liveStream.link));
         embedBuilder.setColor(3092790);
-        embedBuilder.setThumbnail("http://skin.vimeworld.ru/helm/3d/%username%.png"
+        embedBuilder.setThumbnail("https://skin.vimeworld.ru/helm/3d/%username%.png"
                 .replace("%username%", liveStream.username));
         if(messageId == null) {
-            channel.sendMessageEmbeds(embedBuilder.build()).queue(message -> channelLiveStreamsMessagesId.put(liveStream, message.getId()));
+            channel.sendMessageEmbeds(embedBuilder.build()).content("@everyone")
+                    .queue(message -> channelLiveStreamsMessagesId.put(liveStream, message.getId()));
         } else {
-            channel.editMessageEmbedsById(messageId, embedBuilder.build()).queue();
+            channel.editMessageEmbedsById(messageId, embedBuilder.build())
+                    .content("@everyone").queue();
         }
         embedBuilder.clear();
     }
@@ -164,9 +168,12 @@ public class ActiveBroadcastsChannel extends Channel {
             HttpEntity entity = response.getEntity();
             String jsonString = EntityUtils.toString(entity);
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
-            JsonObject itemObject = jsonObject.get("items").getAsJsonArray().get(0).getAsJsonObject();
-            JsonObject snippetObject = itemObject.get("snippet").getAsJsonObject();
-            return snippetObject.get("title").getAsString();
+            JsonArray itemsArray = jsonObject.get("items").getAsJsonArray();
+            if(!itemsArray.isEmpty()) {
+                JsonObject itemObject = itemsArray.get(0).getAsJsonObject();
+                JsonObject snippetObject = itemObject.get("snippet").getAsJsonObject();
+                return snippetObject.get("title").getAsString();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
