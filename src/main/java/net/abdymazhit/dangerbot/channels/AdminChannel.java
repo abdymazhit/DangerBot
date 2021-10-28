@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Канал администрации
  *
- * @version   23.10.2021
+ * @version   28.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminChannel extends Channel {
@@ -57,8 +57,8 @@ public class AdminChannel extends Channel {
                 Удаление команды
                 `!adminteam disband <TEAM_NAME>`
                 
-                Добавление участника в команду
-                `!adminteam add <TEAM_NAME> <MEMBER_NAME>`
+                Добавление участника/участников в команду
+                `!adminteam add <TEAM_NAME> <MEMBER_NAME> (<MEMBER_NAME>...)`
 
                 Удаление участника из команды
                 `!adminteam delete <TEAM_NAME> <MEMBER_NAME>`

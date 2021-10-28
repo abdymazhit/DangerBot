@@ -13,12 +13,15 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Администраторская команда добавления участника в команду
  *
- * @version   23.10.2021
+ * @version   28.10.2021
  * @author    Islam Abdymazhit
  */
 public class AdminTeamAddCommandListener {
@@ -44,11 +47,6 @@ public class AdminTeamAddCommandListener {
             return;
         }
 
-        if(command.length > 4) {
-            message.reply("Ошибка! Неверная команда!").queue();
-            return;
-        }
-
         if(!adder.getRoles().contains(UserRole.ADMIN.getRole())) {
             message.reply("Ошибка! У вас нет прав для этого действия!").queue();
             return;
@@ -66,36 +64,82 @@ public class AdminTeamAddCommandListener {
         }
 
         String teamName = command[2];
-        String memberName = command[3];
 
+        List<String> membersGoodResults = new ArrayList<>();
+        Map<String, String> membersBadResults = new HashMap<>();
+
+        for(int i = 3; i < command.length; i++) {
+            String memberName = command[i];
+            String result = addMember(memberName, teamName, adderId);
+
+            if(result.equals("Успешное добавление")) {
+                membersGoodResults.add(memberName);
+            } else {
+                membersBadResults.put(memberName, result);
+            }
+        }
+
+        StringBuilder resultsOfGoodAdding = new StringBuilder();
+        for(String memberName : membersGoodResults) {
+            resultsOfGoodAdding.append(memberName).append("\n");
+        }
+        if(resultsOfGoodAdding.isEmpty()) {
+            resultsOfGoodAdding.append("-");
+        }
+
+        StringBuilder resultsOfBadAdding = new StringBuilder();
+        for(String memberName : membersBadResults.keySet()) {
+            resultsOfBadAdding.append(memberName).append(": ").append(membersBadResults.get(memberName)).append("\n");
+        }
+        if(resultsOfBadAdding.isEmpty()) {
+            resultsOfBadAdding.append("-");
+        }
+
+        message.reply("""
+                **Результаты добавления:**
+                Название команды: %team%
+                
+                Успешно добавлены:
+                %resultsOfGoodAdding%
+                Не были добавлены:
+                %resultsOfBadAdding%
+                """
+                .replace("%team%", teamName)
+                .replace("%resultsOfGoodAdding%", resultsOfGoodAdding)
+                .replace("%resultsOfBadAdding%", resultsOfBadAdding)).queue();
+    }
+
+    /**
+     * Добавляет участника в команду
+     * @param memberName Имя участника
+     * @param teamName Имя команды участника
+     * @param adderId Id добавлящего
+     * @return Результат
+     */
+    private String addMember(String memberName, String teamName, int adderId) {
         UserAccount memberAccount = DangerBot.getInstance().database.getUserAccount(memberName);
         if(memberAccount == null) {
-            message.reply("Ошибка! Участник не зарегистрирован на сервере!").queue();
-            return;
+            return "Ошибка! Участник не зарегистрирован на сервере!";
         }
 
         int memberTeamId = DangerBot.getInstance().database.getUserTeamId(memberAccount.id);
         if(memberTeamId > 0) {
-            message.reply("Ошибка! Участник уже состоит в команде!").queue();
-            return;
+            return "Ошибка! Участник уже состоит в команде!";
         }
 
         int teamId = DangerBot.getInstance().database.getTeamId(teamName);
         if(teamId < 0) {
-            message.reply("Ошибка! Команда с таким именем не существует!").queue();
-            return;
+            return "Ошибка! Команда с таким именем не существует!";
         }
 
         boolean isMemberAdded = addTeamMember(teamId, memberAccount.id, adderId);
         if(!isMemberAdded) {
-            message.reply("Критическая ошибка при добавлении участника в команду! Свяжитесь с разработчиком бота!").queue();
-            return;
+            return "Критическая ошибка при добавлении участника в команду! Свяжитесь с разработчиком бота!";
         }
 
         List<Role> teamRoles = DangerBot.getInstance().guild.getRolesByName(teamName, true);
         if(teamRoles.size() != 1) {
-            message.reply("Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!").queue();
-            return;
+            return "Критическая ошибка при получении роли команды! Свяжитесь с разработчиком бота!";
         }
 
         if(memberAccount.discordId != null) {
@@ -103,9 +147,7 @@ public class AdminTeamAddCommandListener {
             DangerBot.getInstance().guild.addRoleToMember(memberAccount.discordId, UserRole.MEMBER.getRole()).queue();
         }
 
-        message.reply("Участник успешно добавлен в команду! Название команды: %team%, ник участника: %member%"
-                .replace("%team%", teamName)
-                .replace("%member%", memberName)).queue();
+        return "Успешное добавление";
     }
 
     /**
