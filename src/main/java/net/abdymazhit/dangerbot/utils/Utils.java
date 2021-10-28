@@ -32,7 +32,7 @@ import java.util.Date;
 /**
  * Представляет собой инструменты для упрощения работы
  *
- * @version   24.10.2021
+ * @version   28.10.2021
  * @author    Islam Abdymazhit
  */
 public class Utils {
@@ -164,9 +164,9 @@ public class Utils {
                 UserAccount user = teamInfo.members.get(i);
 
                 if(user.isVimeOnline) {
-                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_ONLINE.getEmote().getId()));
+                    members2String.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_ONLINE.getEmote().getId()));
                 } else {
-                    membersString.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_OFFLINE.getEmote().getId()));
+                    members2String.append("<:emote:%emote_id%> ".replace("%emote_id%", Emoji.VIME_OFFLINE.getEmote().getId()));
                 }
                 members2String.append("`").append(user.username).append("`").append("\n");
             }
