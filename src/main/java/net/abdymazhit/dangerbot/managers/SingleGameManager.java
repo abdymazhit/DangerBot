@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Менеджер Single Rating игр
  *
- * @version   23.10.2021
+ * @version   06.11.2021
  * @author    Islam Abdymazhit
  */
 public record SingleGameManager(GameManager gameManager) {
@@ -194,7 +194,6 @@ public record SingleGameManager(GameManager gameManager) {
                             .replace("%first_team_rating%", String.valueOf(firstTeamRating))
                             .replace("%second_team_rating%", String.valueOf(secondTeamRating)), true);
                 }
-
                 embedBuilder.addField("Помощник", game.assistantAccount.username, false);
 
                 gameCategoryManager.gameChannel.channel.editMessageEmbedsById(gameCategoryManager.gameChannel.channelMessage.getId(), embedBuilder.build()).queue();
@@ -240,10 +239,22 @@ public record SingleGameManager(GameManager gameManager) {
 
                 for(int playerId : firstTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
-                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
+                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id, points) VALUES (?, ?, ?, ?);");
                     playersStatement.setInt(1, finishedGameId);
                     playersStatement.setInt(2, 0);
                     playersStatement.setInt(3, playerId);
+
+                    PreparedStatement pointsStatement = connection.prepareStatement(
+                            "SELECT points FROM players WHERE player_id = ?");
+                    pointsStatement.setInt(1, playerId);
+                    ResultSet resultSet = pointsStatement.executeQuery();
+                    if(resultSet.next()) {
+                        int points = resultSet.getInt("points");
+                        playersStatement.setInt(4, points);
+                    } else {
+                        playersStatement.setInt(4, 0);
+                    }
+
                     playersStatement.executeUpdate();
 
                     if(winnerTeamId == 0) {
@@ -260,10 +271,22 @@ public record SingleGameManager(GameManager gameManager) {
 
                 for(int playerId : secondTeamPlayersId) {
                     PreparedStatement playersStatement = connection.prepareStatement(
-                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id) VALUES (?, ?, ?);");
+                            "INSERT INTO single_finished_games_players_history (finished_game_id, team_id, player_id, points) VALUES (?, ?, ?, ?);");
                     playersStatement.setInt(1, finishedGameId);
                     playersStatement.setInt(2, 1);
                     playersStatement.setInt(3, playerId);
+
+                    PreparedStatement pointsStatement = connection.prepareStatement(
+                            "SELECT points FROM players WHERE player_id = ?");
+                    pointsStatement.setInt(1, playerId);
+                    ResultSet resultSet = pointsStatement.executeQuery();
+                    if(resultSet.next()) {
+                        int points = resultSet.getInt("points");
+                        playersStatement.setInt(4, points);
+                    } else {
+                        playersStatement.setInt(4, 0);
+                    }
+
                     playersStatement.executeUpdate();
 
                     if(winnerTeamId == 1) {

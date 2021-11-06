@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Отвечает за создание таблиц в базе данных
  *
- * @version   23.10.2021
+ * @version   06.11.2021
  * @author    Islam Abdymazhit
  */
 public record DatabaseTables(Connection connection) {
@@ -261,6 +261,7 @@ public record DatabaseTables(Connection connection) {
                     finished_game_id int not null,
                     team_id boolean not null,
                     player_id int not null,
+                    points int not null,
                     PRIMARY KEY (id));
             """);
             preparedStatement.executeUpdate();
